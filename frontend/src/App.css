@@ -1,0 +1,182 @@
+.app-shell {
+  height: 100vh;
+  min-height: 100vh;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  overflow: visible;
+  transition: grid-template-columns 0.22s ease;
+}
+
+.app-shell.is-sidebar-collapsed {
+  grid-template-columns: 84px minmax(0, 1fr);
+}
+
+.app-workspace {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 0;
+  height: 100vh;
+  min-height: 100vh;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: inset 1px 0 0 rgba(15, 23, 42, 0.04);
+}
+
+.app-page-heading {
+  padding: 14px 18px 0;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.app-page-heading__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.app-page-heading h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.03em;
+}
+
+.app-page-heading p {
+  margin: 6px 0 14px;
+  max-width: 760px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  z-index: 0;
+  padding: 18px 18px 22px;
+  background: #ffffff;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+body.dark-mode .app-shell {
+  background: #0f172a;
+}
+
+body.dark-mode .app-workspace {
+  background: #111827;
+}
+
+body.dark-mode .app-page-heading {
+  background: #111827;
+  border-bottom-color: #1e293b;
+}
+
+body.dark-mode .app-page-heading h1,
+body.dark-mode .app-page-heading p {
+  color: #f1f5f9;
+}
+
+body.dark-mode .app-main {
+  background: #111827;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.dark-mode .auth-route-stage {
+  background: #0f172a;
+}
+
+.route-stage {
+  min-height: 100%;
+  animation: routeEnter 0.28s ease-out;
+}
+
+.route-stage.is-animating {
+  opacity: 0.98;
+}
+
+.auth-route-stage {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.admin-loading {
+  min-height: 100vh;
+  background: #f8f9fb;
+}
+
+@keyframes routeEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .app-shell.is-sidebar-collapsed {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100dvh;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app-workspace {
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+    order: 1;
+    flex: 1;
+  }
+
+  .app-main {
+    min-height: auto;
+    padding: 14px 12px calc(18px + 72px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-page-heading {
+    padding: 12px 12px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-stage {
+    animation: none !important;
+  }
+}

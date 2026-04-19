@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="5e8f177c-3180-490d-b9ed-262278c7a9ba" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/AdminApp.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/AdminApp.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/assets/css/admin-console.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/assets/css/admin-console.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/data/adminData.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/data/adminData.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/pages/lessons/LessonManagement.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/pages/lessons/LessonManagement.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/pages/readings/ReadingManagement.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/pages/readings/ReadingManagement.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/pages/topics/TopicManagement.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/pages/topics/TopicManagement.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/pages/users/UserManagement.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/pages/users/UserManagement.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/pages/videos/VideoManagement.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/pages/videos/VideoManagement.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/admin/pages/vocabulary/VocabularyManagement.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/admin/pages/vocabulary/VocabularyManagement.jsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/frontend" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="3BLgH3Da8Og0pmHgCX4Z9RDQ09b" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "E:/DATN",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-cffe25b9f5b3-intellij.indexing.shared.core-IU-253.28294.334" />
+        <option value="bundled-js-predefined-d6986cc7102b-c7e53b3be11b-JavaScript-IU-253.28294.334" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5e8f177c-3180-490d-b9ed-262278c7a9ba" name="Changes" comment="" />
+      <created>1774273673475</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774273673475</updated>
+      <workItem from="1774273674920" duration="494000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>

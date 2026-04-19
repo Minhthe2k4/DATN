@@ -1,0 +1,176 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --app-page-background: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-border: #e2e8f0;
+  --text-main: #0f172a;
+  --text-soft: #64748b;
+  --brand-primary: #0ea5e9;
+  --brand-primary-dark: #0284c7;
+  --brand-accent: #3b82f6;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--app-page-background);
+  color: var(--text-main);
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  overflow: hidden;
+}
+
+body.admin-mode {
+  background: #f8f9fb;
+  color: #303e67;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  overflow: auto;
+}
+
+body.admin-mode #root {
+  height: auto;
+  min-height: 100vh;
+}
+
+#root {
+  height: 100%;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+::selection {
+  background: rgba(17, 24, 39, 0.14);
+  color: #111827;
+
+/* ── Dark mode ──────────────────────────────────────────── */
+body.dark-mode {
+  --app-shell-background: #0f172a;
+  --app-page-background: #111827;
+  --app-page-background-rgb: 17, 24, 39;
+  --surface-card: #1e293b;
+  --surface-border: #334155;
+  --text-main: #f1f5f9;
+  --text-soft: #94a3b8;
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+
+.homepage__container > *,
+.vocabulary-page__container > *,
+.video-page__container > *,
+.video-channel-page__container > *,
+.video-watch-page__container > *,
+.reading-page__container > *,
+.reading-detail-page__container > *,
+.dictionary-page__container > *,
+.subscription-page__container > * {
+  animation: sectionIn 0.5s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.homepage__container > *:nth-child(1),
+.vocabulary-page__container > *:nth-child(1),
+.video-page__container > *:nth-child(1),
+.video-channel-page__container > *:nth-child(1),
+.video-watch-page__container > *:nth-child(1),
+.reading-page__container > *:nth-child(1),
+.reading-detail-page__container > *:nth-child(1),
+.dictionary-page__container > *:nth-child(1),
+.subscription-page__container > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.homepage__container > *:nth-child(2),
+.vocabulary-page__container > *:nth-child(2),
+.video-page__container > *:nth-child(2),
+.video-channel-page__container > *:nth-child(2),
+.video-watch-page__container > *:nth-child(2),
+.reading-page__container > *:nth-child(2),
+.reading-detail-page__container > *:nth-child(2),
+.dictionary-page__container > *:nth-child(2),
+.subscription-page__container > *:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.homepage__container > *:nth-child(3),
+.vocabulary-page__container > *:nth-child(3),
+.video-page__container > *:nth-child(3),
+.video-channel-page__container > *:nth-child(3),
+.video-watch-page__container > *:nth-child(3),
+.reading-page__container > *:nth-child(3),
+.reading-detail-page__container > *:nth-child(3),
+.dictionary-page__container > *:nth-child(3),
+.subscription-page__container > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+@keyframes sectionIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage__container > *,
+  .vocabulary-page__container > *,
+  .video-page__container > *,
+  .video-channel-page__container > *,
+  .video-watch-page__container > *,
+  .reading-page__container > *,
+  .reading-detail-page__container > *,
+  .dictionary-page__container > *,
+  .subscription-page__container > * {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 680px) {
+  body {
+    overflow: auto;
+  }
+}

@@ -1,0 +1,38 @@
+package com.example.DATN.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "segments")
+public class Segment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    public Long id;
+
+    @Column(name = "segment_order")
+    public Long segmentOrder;
+
+    @Column(name = "start_sec")
+    public Double startSec;
+
+    @Column(name = "end_sec")
+    public Double endSec;
+
+    @Column(name = "text", columnDefinition = "TEXT")
+    public String text;
+
+    @ManyToOne
+    @JoinColumn(name = "video_id")
+    public Video video;
+
+    public Segment() {}
+
+    public Segment(Long segmentOrder, Double startSec, Double endSec, String text, Video video) {
+        this.segmentOrder = segmentOrder;
+        this.startSec = startSec;
+        this.endSec = endSec;
+        this.text = text;
+        this.video = video;
+    }
+}

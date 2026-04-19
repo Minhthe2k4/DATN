@@ -1,0 +1,6 @@
+1. Them cac trang dang nhap, dang ky tai khoan
+2. Phan hien dung sai trong phan kiem tra tu vung can ro rang hon coi nhu mot lan on lai
+3. Them muc them tu vung thu cong, sua va xoa con ve level trinh do co the nho AI xac dinh level cua tu do va co the them bang file .csv, 
+4. Sua lai giao dien phang hon, dung mot tong mau chu dao thoi, sua lai phan sidebar vs header
+5. Sua lai giao dien Admin cho phu hop voi do an
+6. Viet mo ta bai toan

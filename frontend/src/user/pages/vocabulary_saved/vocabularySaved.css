@@ -1,0 +1,348 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.saved-vocab-page {
+	width: 100%;
+	min-height: calc(100vh - 54px);
+	background: var(--app-page-background, #ffffff);
+	padding: 14px;
+	font-family: 'Manrope', sans-serif;
+}
+
+.saved-vocab-page__container {
+	max-width: 1320px;
+	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* Premium Storage Status Bar */
+.premium-storage-info {
+	background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+	border: 1px solid #fcd34d;
+	border-radius: 14px;
+	padding: 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.storage-bar {
+	width: 100%;
+	height: 8px;
+	background: #fef08a;
+	border-radius: 999px;
+	overflow: hidden;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.storage-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+	border-radius: 999px;
+	transition: width 0.3s ease, background 0.3s ease;
+}
+
+.storage-fill.warning {
+	background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.storage-fill.limited {
+	background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.storage-text {
+	margin: 0;
+	font-size: 13px;
+	font-weight: 600;
+	color: #854d0e;
+}
+
+.storage-text.highlight {
+	color: #7c2d12;
+	font-weight: 700;
+}
+
+.storage-hint {
+	margin: 0;
+	font-size: 12px;
+	color: #b45309;
+}
+
+.premium-badge {
+	background: linear-gradient(135deg, #dbeafe 0%, #cffafe 100%);
+	border: 1px solid #7dd3fc;
+	border-radius: 14px;
+	padding: 12px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #0369a1;
+	text-align: center;
+}
+
+.saved-vocab-header {
+	background: #ffffff;
+	border: 1px solid #dde3ec;
+	border-radius: 16px;
+	padding: 18px;
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 14px;
+}
+
+.saved-vocab-header__eyebrow {
+	margin: 0;
+	display: inline-flex;
+	padding: 5px 9px;
+	border-radius: 999px;
+	background: #f3f4f6;
+	color: #475569;
+	font-size: 11px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.saved-vocab-header h1 {
+	margin: 10px 0 6px;
+	font-size: clamp(22px, 2.1vw, 34px);
+	line-height: 1.1;
+	color: #0f172a;
+}
+
+.saved-vocab-header p {
+	margin: 0;
+	color: #64748b;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.saved-vocab-header__back {
+	height: 40px;
+	padding: 0 14px;
+	border-radius: 10px;
+	border: 1px solid #d6deea;
+	background: #ffffff;
+	color: #334155;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.saved-vocab-header__back:hover {
+	background: #f8fafc;
+}
+
+.saved-vocab-toolbar {
+	background: #ffffff;
+	border: 1px solid #dde3ec;
+	border-radius: 14px;
+	padding: 12px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.saved-vocab-toolbar input {
+	flex: 1;
+	height: 42px;
+	padding: 0 12px;
+	border: 1px solid #d5dce8;
+	border-radius: 10px;
+	font-size: 14px;
+	font-family: 'Manrope', sans-serif;
+}
+
+.saved-vocab-toolbar input:focus {
+	outline: 0;
+	border-color: #93c5fd;
+	box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.22);
+}
+
+.saved-vocab-toolbar span {
+	white-space: nowrap;
+	font-size: 13px;
+	font-weight: 700;
+	color: #475569;
+}
+
+.saved-vocab-grid {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.saved-level-column {
+	border: 1px solid #dde3ec;
+	border-radius: 14px;
+	background: #ffffff;
+	min-height: 460px;
+	display: flex;
+	flex-direction: column;
+}
+
+.saved-level-column__head {
+	padding: 10px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid #eef2f7;
+}
+
+.saved-level-column__head h2 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 800;
+	color: #0f172a;
+}
+
+.saved-level-column__head span {
+	font-size: 12px;
+	font-weight: 700;
+	color: #64748b;
+}
+
+.saved-level-column__list {
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	overflow: auto;
+	max-height: 620px;
+}
+
+.saved-level-empty {
+	margin: 0;
+	font-size: 13px;
+	color: #94a3b8;
+}
+
+.saved-word-card {
+	border: 1px solid #e5e9f0;
+	border-radius: 10px;
+	padding: 10px;
+	background: #fdfdff;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.saved-word-card.is-editing {
+	background: #f8fbff;
+}
+
+.saved-word-card__head {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	align-items: center;
+}
+
+.saved-word-card__head h3 {
+	margin: 0;
+	font-size: 16px;
+	color: #0f172a;
+	text-transform: lowercase;
+}
+
+.saved-word-card__head span {
+	font-size: 11px;
+	font-weight: 700;
+	padding: 4px 8px;
+	border-radius: 999px;
+	background: #eff5ff;
+	color: #1d4ed8;
+}
+
+.saved-word-card p {
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.45;
+	color: #334155;
+}
+
+.saved-word-card__phonetic {
+	font-style: italic;
+	color: #64748b;
+}
+
+.saved-word-card__example {
+	color: #64748b;
+}
+
+.saved-word-card input,
+.saved-word-card textarea {
+	width: 100%;
+	border: 1px solid #d6deea;
+	border-radius: 8px;
+	padding: 8px;
+	font-size: 12px;
+	font-family: 'Manrope', sans-serif;
+	background: #ffffff;
+}
+
+.saved-word-card textarea {
+	resize: vertical;
+}
+
+.saved-word-card__actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.saved-word-card__actions button {
+	height: 30px;
+	padding: 0 10px;
+	border-radius: 8px;
+	border: 0;
+	background: #1d4ed8;
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.saved-word-card__actions button.is-ghost {
+	background: #e5e7eb;
+	color: #374151;
+}
+
+.saved-word-card__actions button.is-danger {
+	background: #ef4444;
+}
+
+@media (max-width: 1400px) {
+	.saved-vocab-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 960px) {
+	.saved-vocab-header {
+		flex-direction: column;
+	}
+
+	.saved-vocab-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.saved-vocab-toolbar span {
+		white-space: normal;
+	}
+
+	.saved-vocab-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 680px) {
+	.saved-vocab-page {
+		padding: 12px;
+	}
+
+	.saved-vocab-grid {
+		grid-template-columns: 1fr;
+	}
+}

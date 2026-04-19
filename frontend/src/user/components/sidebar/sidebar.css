@@ -1,0 +1,333 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap');
+
+.dashboard-sidebar {
+	width: 232px;
+	min-width: 232px;
+	position: relative;
+	z-index: 3;
+	height: 100vh;
+	min-height: 100vh;
+	background: #ffffff;
+	border-radius: 0;
+	display: flex;
+	flex-direction: column;
+	padding: 18px 14px 16px;
+	gap: 20px;
+	font-family: 'Manrope', sans-serif;
+	box-shadow: inset -1px 0 0 rgba(15, 23, 42, 0.05), 10px 0 24px rgba(15, 23, 42, 0.025);
+	overflow: visible;
+	transition: width 0.22s ease, min-width 0.22s ease, padding 0.22s ease;
+}
+
+.dashboard-sidebar.is-collapsed {
+	width: 84px;
+	min-width: 84px;
+	padding: 18px 10px 16px;
+}
+
+.sidebar-brand {
+	padding: 4px 8px 14px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.sidebar-brand__toggle {
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 12px;
+	transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+.sidebar-brand__toggle:hover {
+	background: #f3f4f6;
+	transform: none;
+}
+
+.sidebar-brand__toggle:focus-visible {
+	outline: 2px solid #c7d2fe;
+	outline-offset: 3px;
+}
+
+.sidebar-brand__mark {
+	width: 45px;
+	height: 45px;
+	border-radius: 12px;
+	background: #ffffff url('/vocasmart-logo.png') center / cover no-repeat;
+	display: block;
+	border: 1px solid #dbe3f4;
+	box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.sidebar-brand__text {
+	min-width: 0;
+}
+
+.sidebar-brand__label {
+	display: block;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: #94a3b8;
+	margin-bottom: 4px;
+}
+
+.sidebar-brand strong {
+	font-size: 17px;
+	font-weight: 800;
+	color: #0f172a;
+	letter-spacing: -0.03em;
+}
+
+.sidebar-nav {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	overflow: visible;
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-brand {
+	justify-content: center;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-brand__text,
+.dashboard-sidebar.is-collapsed .sidebar-item__label {
+	display: none;
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-item {
+	justify-content: center;
+	padding: 0;
+}
+
+.sidebar-item {
+	position: relative;
+	overflow: visible;
+	width: 100%;
+	min-height: 48px;
+	border-radius: 14px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: #475569;
+	text-decoration: none;
+	padding: 0 14px;
+	transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.sidebar-item svg {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+	stroke-width: 1.9;
+}
+
+.sidebar-item__label {
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1.3;
+}
+
+.sidebar-item__tooltip {
+	position: absolute;
+	left: calc(100% + 10px);
+	top: 50%;
+	transform: translateY(-50%) translateX(-6px);
+	padding: 7px 10px;
+	border-radius: 10px;
+	background: #111827;
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	visibility: hidden;
+	transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+	box-shadow: 0 12px 24px rgba(17, 24, 39, 0.18);
+	z-index: 999;
+}
+
+.sidebar-item__tooltip::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: -4px;
+	width: 8px;
+	height: 8px;
+	background: #111827;
+	transform: translateY(-50%) rotate(45deg);
+}
+
+.sidebar-item:hover {
+	background: #f8fafc;
+	color: #0f172a;
+}
+
+.sidebar-item.is-active {
+	background: #111827;
+	color: #ffffff;
+	box-shadow: none;
+}
+
+.sidebar-item.is-active svg {
+	filter: none;
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-item:hover .sidebar-item__tooltip,
+.dashboard-sidebar.is-collapsed .sidebar-item:focus-visible .sidebar-item__tooltip {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(-50%) translateX(0);
+}
+
+.sidebar-item:focus-visible {
+	outline: 2px solid #c7d2fe;
+	outline-offset: 2px;
+}
+
+/* ── Dark mode — sidebar ────────────────────────────────── */
+body.dark-mode .dashboard-sidebar {
+	background: #1e293b;
+	box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04), 10px 0 24px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .sidebar-brand__mark {
+	border-color: #4b5f82;
+}
+
+body.dark-mode .sidebar-brand strong {
+	color: #f1f5f9;
+}
+
+body.dark-mode .sidebar-brand__label {
+	color: #64748b;
+}
+
+body.dark-mode .sidebar-brand__toggle {
+	color: #94a3b8;
+}
+
+body.dark-mode .sidebar-brand__toggle:hover {
+	background: #273348;
+}
+
+body.dark-mode .sidebar-item {
+	color: #94a3b8;
+}
+
+body.dark-mode .sidebar-item:hover {
+	background: #273348;
+	color: #f1f5f9;
+}
+
+body.dark-mode .sidebar-item.is-active {
+	background: #3b82f6;
+	color: #ffffff;
+}
+
+body.dark-mode .sidebar-section__label {
+	color: #475569;
+}
+
+@media (max-width: 960px) {
+	.dashboard-sidebar {
+		width: 88px;
+		min-width: 88px;
+		height: 100vh;
+		min-height: 100vh;
+		padding: 14px 10px;
+		border-radius: 0;
+	}
+
+	.dashboard-sidebar.is-collapsed {
+		width: 88px;
+		min-width: 88px;
+	}
+
+	.sidebar-brand__text,
+	.sidebar-item__label {
+		display: none;
+	}
+
+	.sidebar-brand {
+		padding: 0 0 4px;
+		border-bottom: 0;
+		justify-content: center;
+	}
+
+	.sidebar-brand__toggle {
+		border-radius: 12px;
+	}
+
+	.sidebar-nav {
+		gap: 8px;
+	}
+
+	.sidebar-item {
+		justify-content: center;
+		padding: 0;
+	}
+
+	.sidebar-item:hover .sidebar-item__tooltip,
+	.sidebar-item:focus-visible .sidebar-item__tooltip {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(-50%) translateX(0);
+	}
+}
+
+@media (max-width: 680px) {
+	.dashboard-sidebar {
+		width: 100%;
+		min-width: 100%;
+		min-height: auto;
+		border-radius: 0;
+		box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.07);
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-around;
+		padding: 8px 8px env(safe-area-inset-bottom, 8px);
+		overflow-x: auto;
+		gap: 0;
+		order: 2;
+		z-index: 200;
+		position: sticky;
+		bottom: 0;
+		height: auto;
+	}
+
+	.sidebar-brand {
+		display: none;
+	}
+
+	.sidebar-nav {
+		flex-direction: row;
+		gap: 4px;
+		width: 100%;
+		justify-content: space-around;
+	}
+
+	.sidebar-item {
+		min-width: 44px;
+		width: 44px;
+		height: 44px;
+		min-height: 44px;
+		border-radius: 12px;
+	}
+
+	.sidebar-item__tooltip {
+		display: none;
+	}
+}
