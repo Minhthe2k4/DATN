@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './support.css'
 import { fetchFAQ, fetchSupportTopics, submitSupportTicket } from '@/lib/api/support-api'
+import { getUserSession } from '../../utils/authSession'
 
 // Default fallback topics in case API fails
 const DEFAULT_TOPICS = [
@@ -94,9 +95,14 @@ export function Support() {
   const [faqItems, setFaqItems] = useState(DEFAULT_FAQ)
   const [topicOptions, setTopicOptions] = useState(DEFAULT_TOPICS)
   const [faqLoading, setFaqLoading] = useState(true)
+  const session = getUserSession()
+  const isLoggedIn = !!session
 
   // Load FAQ and topics from API on mount
   useEffect(() => {
+    if (isLoggedIn && session.email) {
+      setForm(prev => ({ ...prev, email: session.email }))
+    }
     const loadData = async () => {
       setFaqLoading(true)
       try {
@@ -123,6 +129,13 @@ export function Support() {
 
   const validate = () => {
     const next = {}
+    if (!isLoggedIn) {
+      if (!form.email.trim()) {
+        next.email = 'Vui lòng nhập email để chúng tôi phản hồi.'
+      } else if (!/\S+@\S+\.\S+/.test(form.email)) {
+        next.email = 'Email không hợp lệ.'
+      }
+    }
     if (!form.topic) next.topic = 'Vui lòng chọn chủ đề.'
     if (!form.message.trim()) next.message = 'Vui lòng mô tả vấn đề của bạn.'
     else if (form.message.trim().length < 20) next.message = 'Mô tả cần ít nhất 20 ký tự để chúng tôi hiểu rõ vấn đề.'
@@ -144,6 +157,7 @@ export function Support() {
       const result = await submitSupportTicket({
         topic: form.topic,
         message: form.message,
+        email: form.email,
       })
       setTicketId(result.id)
       setSubmitted(true)
@@ -223,6 +237,24 @@ export function Support() {
               </div>
             )}
             <form onSubmit={handleSubmit} noValidate>
+              {!isLoggedIn && (
+                <div className="support-form__field">
+                  <label className="support-form__label" htmlFor="support-email">
+                    Email liên hệ <span>*</span>
+                  </label>
+                  <input
+                    id="support-email"
+                    type="email"
+                    className="support-form__select"
+                    style={{ padding: '10px 12px' }}
+                    placeholder="name@example.com"
+                    value={form.email}
+                    onChange={(e) => setField('email', e.target.value)}
+                  />
+                  {errors.email ? <div className="support-form__error">{errors.email}</div> : null}
+                </div>
+              )}
+
               <div className="support-form__field">
                 <label className="support-form__label" htmlFor="support-topic">
                   Chủ đề <span>*</span>

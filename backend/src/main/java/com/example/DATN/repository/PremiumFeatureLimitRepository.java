@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface PremiumFeatureLimitRepository extends JpaRepository<PremiumFeatureLimit, Long> {
     List<PremiumFeatureLimit> findByPlanId(Long planId);
+    java.util.Optional<PremiumFeatureLimit> findByPlanIdAndFeatureName(Long planId, String featureName);
     void deleteByPlanId(Long planId);
 }

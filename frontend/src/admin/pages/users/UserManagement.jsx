@@ -83,7 +83,9 @@ export function UserManagement() {
   const [actionError, setActionError] = useState('')
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [detailUser, setDetailUser] = useState(null)
   const [draft, setDraft] = useState(emptyDraft())
 
   useEffect(() => {
@@ -147,6 +149,24 @@ export function UserManagement() {
     setEditingId(null)
     setDraft(emptyDraft())
     setIsModalOpen(false)
+  }
+
+  const openDetailModal = async (user) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users/${user.id}`)
+      if (response.ok) {
+        const fullUser = await response.json()
+        setDetailUser(fullUser)
+        setIsDetailModalOpen(true)
+      }
+    } catch (error) {
+      console.error('Error fetching user details:', error)
+    }
+  }
+
+  const closeDetailModal = () => {
+    setDetailUser(null)
+    setIsDetailModalOpen(false)
   }
 
   const setDraftField = (field, value) => {
@@ -323,6 +343,7 @@ export function UserManagement() {
                     label: 'Hành động',
                     render: (row) => (
                       <div className="d-flex flex-wrap gap-2">
+                        <button type="button" className="btn btn-sm btn-soft-info" onClick={() => openDetailModal(row)}>Chi tiết</button>
                         <button type="button" className="btn btn-sm btn-soft-primary" onClick={() => openEditModal(row)}>Sửa</button>
                         <button
                           type="button"
@@ -390,6 +411,87 @@ export function UserManagement() {
                 <div className="modal-footer">
                   <button type="button" className="btn btn-outline-secondary" onClick={closeModal}>Hủy</button>
                   <button type="button" className="btn btn-primary" onClick={handleSave}>Lưu thay đổi</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {isDetailModalOpen && detailUser ? (
+          <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(19, 26, 44, 0.45)' }}>
+            <div className="modal-dialog modal-dialog-centered modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Chi tiết người dùng: {detailUser.username}</h5>
+                  <button type="button" className="btn-close" onClick={closeDetailModal}></button>
+                </div>
+                <div className="modal-body">
+                  <div className="row">
+                    <div className="col-md-4 text-center mb-3">
+                      <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style={{ width: '100px', height: '100px', fontSize: '2.5rem' }}>
+                        {detailUser.fullName?.charAt(0) || detailUser.username?.charAt(0) || 'U'}
+                      </div>
+                      <h4 className="mt-3">{detailUser.fullName || '---'}</h4>
+                      <Badge tone={detailUser.role === 'ADMIN' ? 'danger' : 'info'}>{detailUser.role}</Badge>
+                    </div>
+                    <div className="col-md-8">
+                      <div className="row g-3">
+                        <div className="col-6">
+                          <label className="text-muted small d-block">ID người dùng</label>
+                          <strong>#{detailUser.id}</strong>
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted small d-block">Email</label>
+                          <strong>{detailUser.email}</strong>
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted small d-block">Ngày đăng ký</label>
+                          <strong>{formatDate(detailUser.registeredAt)}</strong>
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted small d-block">Trạng thái</label>
+                          <strong>{detailUser.active ? 'Đang hoạt động' : 'Bị khóa'}</strong>
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted small d-block">Gói dịch vụ</label>
+                          <strong>{detailUser.premium ? 'Premium' : 'Thường'}</strong>
+                        </div>
+                        {detailUser.premium && (
+                          <div className="col-6">
+                            <label className="text-muted small d-block">Hạn dùng Premium</label>
+                            <strong>{formatDate(detailUser.premiumUntil)}</strong>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <hr />
+                  
+                  <h6 className="mb-3">Thống kê học tập</h6>
+                  <div className="row text-center">
+                    <div className="col-4">
+                      <div className="p-3 bg-light rounded">
+                        <div className="h4 mb-0">{detailUser.learnedWords}</div>
+                        <div className="small text-muted">Từ đã học</div>
+                      </div>
+                    </div>
+                    <div className="col-4">
+                      <div className="p-3 bg-light rounded">
+                        <div className="h4 mb-0">{formatActivity(detailUser.lastActivityAt)}</div>
+                        <div className="small text-muted">Hoạt động cuối</div>
+                      </div>
+                    </div>
+                    <div className="col-4">
+                      <div className="p-3 bg-light rounded">
+                        <div className="h4 mb-0">{detailUser.active ? 'Online' : 'Offline'}</div>
+                        <div className="small text-muted">Trạng thái hiện tại</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={closeDetailModal}>Đóng</button>
                 </div>
               </div>
             </div>

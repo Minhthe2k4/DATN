@@ -72,12 +72,10 @@ public class SupportPublicController {
             Authentication auth) {
         try {
             Long userId = getUserIdFromAuth(auth);
-            if (userId == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để gửi yêu cầu hỗ trợ.");
-            }
-
+            
             SupportTicket ticket = userSupportService.createTicket(
                     userId,
+                    request.email(),
                     request.topic(), // Map topic to title in service
                     request.message()
             );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserSession } from '../../utils/authSession'
+import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
 import './vocabularyTest.css'
 
 // --- Data ---
@@ -516,9 +517,22 @@ export function VocabularyTest() {
 	const [isSyncing, setIsSyncing] = useState(false)
 	const startTimeRef = useRef(null)
 
+	const session = getUserSession()
+	const userId = session?.userId ? Number(session.userId) : null
+	const premiumStatus = usePremiumStatus(userId)
+
 	useEffect(() => {
-		fetchReviewQueue()
-	}, [])
+		if (!premiumStatus.loading && !premiumStatus.isPremium) {
+			alert('✨ Tính năng ôn tập từ vựng (SRS) chỉ dành cho thành viên Premium. Hãy nâng cấp ngay để sử dụng!')
+			navigate('/vocabulary')
+		}
+	}, [premiumStatus.loading, premiumStatus.isPremium, navigate])
+
+	useEffect(() => {
+		if (premiumStatus.isPremium) {
+			fetchReviewQueue()
+		}
+	}, [premiumStatus.isPremium])
 
 	useEffect(() => {
 		if (!isLoading && questions.length > 0 && !isFinished) {

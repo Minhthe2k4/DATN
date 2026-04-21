@@ -3,6 +3,8 @@ package com.example.DATN.controller;
 import com.example.DATN.dto.UserVideoChannelDto;
 import com.example.DATN.dto.UserVideoDto;
 import com.example.DATN.dto.VideoChannelWithVideosDto;
+import com.example.DATN.entity.Segment;
+import com.example.DATN.repository.SegmentRepository;
 import com.example.DATN.service.UserVideoService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,9 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/videos")
 public class UserVideoController {
     private final UserVideoService videoService;
+    private final SegmentRepository segmentRepository;
 
-    public UserVideoController(UserVideoService videoService) {
+    public UserVideoController(UserVideoService videoService, SegmentRepository segmentRepository) {
         this.videoService = videoService;
+        this.segmentRepository = segmentRepository;
     }
 
     /**
@@ -53,12 +57,21 @@ public class UserVideoController {
 
     /**
      * Lấy thông tin video theo ID
-     * GET /api/videos/{videoId}
+     * GET /api/user/videos/{videoId}
      */
     @GetMapping("/{videoId}")
     public UserVideoDto getVideoById(@PathVariable Long videoId) {
         return videoService.getVideoById(videoId);
     }
 
+    /**
+     * Lấy danh sách phụ đề (segments) của video
+     * GET /api/user/videos/{videoId}/segments
+     * Frontend dùng để hiển thị phụ đề đồng bộ khi xem video
+     */
+    @GetMapping("/{videoId}/segments")
+    public List<Segment> getVideoSegments(@PathVariable Long videoId) {
+        return segmentRepository.findByVideoIdOrderBySegmentOrderAsc(videoId);
+    }
 
 }

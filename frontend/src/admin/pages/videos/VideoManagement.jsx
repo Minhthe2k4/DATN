@@ -12,7 +12,7 @@ function emptyChannelDraft() {
 }
 
 function emptyVideoDraft() {
-  return { title: '', youtubeUrl: '', channelId: '', topicId: '', difficulty: 'Trung bình', duration: '', status: 'Chờ biên tập', transcript: '' }
+  return { title: '', channelId: '', topicId: '', difficulty: 'Trung bình', status: 'Chờ biên tập', transcript: '' }
 }
 
 function normalizeChannelRow(row) {
@@ -63,8 +63,19 @@ export function VideoManagement() {
 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
   const [editingVideoId, setEditingVideoId] = useState(null)
-  const [videoDraft, setVideoDraft] = useState(emptyVideoDraft())
+  const [videoDraft, setVideoDraft] = useState({ ...emptyVideoDraft(), difficulty: 'All', status: 'Công khai' })
   const [videoError, setVideoError] = useState('')
+
+  // State cho upload video file
+  const [uploadFile, setUploadFile] = useState(null)         // File được chọn
+  const [youtubeUrl, setYoutubeUrl] = useState('')           // URL YouTube
+  const [uploadMode, setUploadMode] = useState('youtube')    // 'youtube' | 'file'
+  const [isUploading, setIsUploading] = useState(false)      // Đang upload
+
+  // State cho modal polling trạng thái phụ đề
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
+  const [uploadedVideoId, setUploadedVideoId] = useState(null)
+  const [subtitleStatus, setSubtitleStatus] = useState('PROCESSING')
 
   // Nâng cấp: Tìm kiếm và Lọc
   const [searchTerm, setSearchTerm] = useState('')
@@ -142,6 +153,29 @@ export function VideoManagement() {
       disposed = true
     }
   }, [])
+
+  // Polling trạng thái phụ đề mỗi 3 giây khi modal status đang mở
+  useEffect(() => {
+    if (!isStatusModalOpen || !uploadedVideoId) return
+    if (subtitleStatus === 'DONE' || subtitleStatus === 'ERROR') return
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/videos/${uploadedVideoId}/status`)
+        if (!res.ok) return
+        const data = await res.json()
+        setSubtitleStatus(data.status)
+        // Nếu xong thì reload danh sách video
+        if (data.status === 'DONE' || data.status === 'ERROR') {
+          await reloadData()
+        }
+      } catch (err) {
+        console.error('Lỗi polling status:', err)
+      }
+    }, 3000) // kiểm tra mỗi 3 giây
+
+    return () => clearInterval(interval)
+  }, [isStatusModalOpen, uploadedVideoId, subtitleStatus])
 
   // Fetch YouTube captions when preview modal opens
   useEffect(() => {
@@ -305,15 +339,54 @@ export function VideoManagement() {
     setEditingVideoId(video.id)
     setVideoDraft({
       title: video.title,
-      youtubeUrl: video.youtubeUrl || '',
+      youtubeUrl: video.url || '', // Hiện lại link YouTube cũ
       channelId: video.channelId || '',
       topicId: video.topicId || '',
-      difficulty: video.difficulty || 'Trung bình',
+      difficulty: video.difficulty || 'All',
       duration: video.duration || '',
-      status: video.status || 'Chờ biên tập',
+      status: video.status || 'Hiển thị',
+      transcript: video.transcript || '',
     })
+    setYoutubeUrl(video.url || '') // Sync youtubeUrl state
+    setReprocessVideo(false) // Mặc định không xử lý lại
     setVideoError('')
     setIsVideoModalOpen(true)
+  }
+
+  const handleVideoSubmit = async (e) => {
+    e.preventDefault()
+    if (editingVideoId && !reprocessVideo) {
+      // LUỒNG 1: CHỈ CẬP NHẬT THÔNG TIN (Metadata only)
+      setVideoError('')
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/admin/videos/${editingVideoId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: videoDraft.title.trim(),
+            channelId: Number(videoDraft.channelId),
+            difficulty: videoDraft.difficulty,
+            status: videoDraft.status || 'Công khai',
+            youtubeUrl: videoDraft.youtubeUrl,
+            transcript: videoDraft.transcript
+          }),
+        })
+
+        if (!response.ok) throw new Error('Lỗi cập nhật thông tin')
+        
+        setIsVideoModalOpen(false)
+        fetchVideos()
+      } catch (err) {
+        setVideoError(err.message)
+      }
+    } else {
+      // LUỒNG 2: THÊM MỚI HOẶC SỬA + TẢI LẠI VIDEO
+      if (uploadType === 'youtube') {
+        handleUploadFromYoutube()
+      } else {
+        handleUploadFromFile()
+      }
+    }
   }
 
   const closeVideoModal = () => {
@@ -365,48 +438,69 @@ export function VideoManagement() {
     }
   }
 
-  const handleSaveVideo = async () => {
-    if (!videoDraft.title.trim()) { setVideoError('Tiêu đề video không được để trống.'); return }
-    if (!videoDraft.channelId) { setVideoError('Vui lòng chọn kênh YouTube chứa video này.'); return }
+  // Khai báo hàm gọi API chung sau khi nhận videoId
+  const handleUploadSuccess = (videoId) => {
+    closeVideoModal()
+    setUploadedVideoId(videoId)
+    setSubtitleStatus('PROCESSING')
+    setIsStatusModalOpen(true)
+  }
 
+  // Luồng 1: Từ YouTube URL → yt-dlp download → Cloudinary → Whisper
+  const handleUploadFromYoutube = async () => {
+    if (!videoDraft.title.trim()) { setVideoError('Tiêu đề không được để trống.'); return }
+    if (!videoDraft.channelId) { setVideoError('Vui lòng chọn kênh.'); return }
+    if (!youtubeUrl.trim()) { setVideoError('Vui lòng nhập URL YouTube.'); return }
+
+    setIsUploading(true)
     try {
-      const payload = {
-        title: videoDraft.title.trim(),
-        youtubeUrl: videoDraft.youtubeUrl.trim(),
-        channelId: Number(videoDraft.channelId),
-        topicId: videoDraft.topicId ? Number(videoDraft.topicId) : null,
-        difficulty: videoDraft.difficulty,
-        duration: videoDraft.duration,
-        status: videoDraft.status,
-        transcript: '', // Lúc này transcript còn trống, sẽ fill ở preview modal
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/admin/videos${editingVideoId ? `/${editingVideoId}` : ''}`, {
-        method: editingVideoId ? 'PUT' : 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/admin/videos/upload-url`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          title: videoDraft.title.trim(),
+          channelId: Number(videoDraft.channelId),
+          youtubeUrl: youtubeUrl.trim(),
+          difficulty: videoDraft.difficulty || 'All',
+          status: videoDraft.status || 'Hiển thị',
+        }),
       })
+      if (!response.ok) throw new Error(await response.text() || 'Lỗi gửi request')
+      const data = await response.json()
+      handleUploadSuccess(data.videoId)
+    } catch (err) {
+      setVideoError('Lỗi: ' + err.message)
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
-      if (!response.ok) {
-        throw new Error('Cannot save video')
-      }
+  // Luồng 2: Upload file video trực tiếp → Cloudinary → Whisper
+  const handleUploadFromFile = async () => {
+    if (!videoDraft.title.trim()) { setVideoError('Tiêu đề không được để trống.'); return }
+    if (!videoDraft.channelId) { setVideoError('Vui lòng chọn kênh.'); return }
+    if (!uploadFile) { setVideoError('Vui lòng chọn file video.'); return }
 
-      const savedVideo = await response.json()
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('title', videoDraft.title.trim())
+      formData.append('channelId', videoDraft.channelId)
+      formData.append('difficulty', videoDraft.difficulty || 'All')
+      formData.append('status', videoDraft.status || 'Hiển thị')
+      formData.append('file', uploadFile)
 
-      // Nếu là thêm mới, hiện preview modal để pick transcript
-      if (!editingVideoId) {
-        setPreviewVideo(savedVideo)
-        setPreviewSegments([])
-        setIsPreviewModalOpen(true)
-        closeVideoModal()
-      } else {
-        // Nếu sửa existing video, reload và close
-        await reloadData()
-        setVideoError('')
-        closeVideoModal()
-      }
-    } catch {
-      setVideoError('Lưu video thất bại. Vui lòng thử lại.')
+      const response = await fetch(`${API_BASE_URL}/api/admin/videos/upload-file`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (!response.ok) throw new Error(await response.text() || 'Upload thất bại')
+      const data = await response.json()
+      handleUploadSuccess(data.videoId)
+    } catch (err) {
+      setVideoError('Lỗi upload: ' + err.message)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -621,99 +715,182 @@ export function VideoManagement() {
         </>
       ) : null}
 
+      {/* Modal Thêm Video — hỗ trợ 2 luồng */}
       {isVideoModalOpen ? (
         <>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '90%', width: '1000px' }}>
+            <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '90%', width: '600px' }}>
               <div className="modal-content topic-bulk-modal">
                 <div className="modal-header">
                   <div>
-                    <h5 className="modal-title mb-1">{editingVideoId ? 'Sửa video' : 'Thêm video mới'}</h5>
-                    <div className="topic-bulk-modal__subtitle">Video mới sẽ vào hàng chờ biên tập để đánh dấu từ nổi bật trước khi xuất bản.</div>
+                    <h5 className="modal-title mb-1">Thêm video mới</h5>
+                    <div className="topic-bulk-modal__subtitle">Hệ thống tự động tạo phụ đề bằng AI sau khi upload.</div>
                   </div>
-                  <button type="button" className="btn-close" aria-label="Đóng" onClick={closeVideoModal}></button>
+                  <button type="button" className="btn-close" aria-label="Đóng" onClick={closeVideoModal} />
                 </div>
+
                 <div className="modal-body">
+                  {/* Tiêu đề */}
                   <div className="mb-3">
                     <label className="form-label fw-semibold">Tiêu đề video <span className="text-danger">*</span></label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="Ví dụ: Business Meeting Vocabulary in Context"
-                      value={videoDraft.title}
-                      onChange={(e) => setVideoField('title', e.target.value)}
-                    />
+                    <input className="form-control" type="text" placeholder="Ví dụ: Business Meeting Vocabulary"
+                      value={videoDraft.title} onChange={(e) => setVideoField('title', e.target.value)} />
                   </div>
+
+                  {/* Chọn kênh */}
                   <div className="mb-3">
-                    <label className="form-label fw-semibold">Link YouTube</label>
-                    <input
-                      className="form-control"
-                      type="url"
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      value={videoDraft.youtubeUrl}
-                      onChange={(e) => setVideoField('youtubeUrl', e.target.value)}
-                    />
+                    <label className="form-label fw-semibold">Kênh <span className="text-danger">*</span></label>
+                    <select className="form-select" value={videoDraft.channelId}
+                      onChange={(e) => setVideoField('channelId', e.target.value)}>
+                      <option value="">Chọn kênh</option>
+                      {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
                   </div>
-                  <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Kênh YouTube <span className="text-danger">*</span></label>
-                      <select
-                        className="form-select"
-                        value={videoDraft.channelId}
-                        onChange={(e) => setVideoField('channelId', e.target.value)}
-                      >
-                        <option value=""> Chọn kênh </option>
-                        {channels.filter((c) => c.status === 'Hoạt động').map((c) => (
-                          <option key={c.id} value={c.id}>{c.name} ({c.handle})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Chủ đề</label>
-                      <select
-                        className="form-select"
-                        value={videoDraft.topicId}
-                        onChange={(e) => setVideoField('topicId', e.target.value)}
-                      >
-                        <option value=""> Chọn chủ đề </option>
-                        {topicOptions.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
-                    </div>
+
+                  {/* Độ khó */}
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Độ khó <span className="text-danger">*</span></label>
+                    <select className="form-select" value={videoDraft.difficulty}
+                      onChange={(e) => setVideoField('difficulty', e.target.value)}>
+                      {['All', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lvl => (
+                        <option key={lvl} value={lvl}>{lvl}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">Độ khó</label>
-                      <select className="form-select" value={videoDraft.difficulty} onChange={(e) => setVideoField('difficulty', e.target.value)}>
-                        {DIFFICULTY_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">Thời lượng</label>
-                      <input
-                        className="form-control"
-                        type="text"
-                        placeholder="Ví dụ: 12:30"
-                        value={videoDraft.duration}
-                        onChange={(e) => setVideoField('duration', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label fw-semibold">Trạng thái</label>
-                      <select className="form-select" value={videoDraft.status} onChange={(e) => setVideoField('status', e.target.value)}>
-                        {VIDEO_STATUS_OPTIONS.map((s) => <option key={s}>{s}</option>)}
-                      </select>
-                    </div>
+
+                  {/* Trạng thái */}
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Trạng thái <span className="text-danger">*</span></label>
+                    <select className="form-select" value={videoDraft.status}
+                      onChange={(e) => setVideoField('status', e.target.value)}>
+                      <option value="Công khai">Công khai</option>
+                      <option value="Chờ biên tập">Chờ biên tập</option>
+                    </select>
                   </div>
-                  {videoError ? <div className="text-danger mt-3">{videoError}</div> : null}
+
+                  {/* Lựa chọn xử lý lại (Chỉ hiện khi sửa) */}
+                  {editingVideoId && (
+                    <div className="mb-3 form-check">
+                      <input type="checkbox" className="form-check-input" id="reprocessCheck"
+                        checked={reprocessVideo} onChange={(e) => setReprocessVideo(e.target.checked)} />
+                      <label className="form-check-label text-primary fw-bold" htmlFor="reprocessCheck">
+                        Tải lại video & tạo lại phụ đề (Mất nhiều thời gian hơn)
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Tab switch: YouTube URL vs Upload file */}
+                  <div className="mb-3">
+                    <div className="btn-group w-100 mb-3" role="group">
+                      <button type="button"
+                        className={`btn btn-sm ${uploadMode === 'youtube' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => setUploadMode('youtube')}>
+                        🔗 Từ link YouTube
+                      </button>
+                      <button type="button"
+                        className={`btn btn-sm ${uploadMode === 'file' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => setUploadMode('file')}>
+                        ⬆ Upload file từ máy
+                      </button>
+                    </div>
+
+                    {/* Luồng 1: YouTube URL */}
+                    {uploadMode === 'youtube' && (
+                      <div>
+                        <label className="form-label fw-semibold">Link YouTube <span className="text-danger">*</span></label>
+                        <input className="form-control" type="url"
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={youtubeUrl}
+                          onChange={(e) => setYoutubeUrl(e.target.value)} />
+                        <div className="form-text">
+                          ℹ️ Nhập link YouTube → hệ thống tự download bằng yt-dlp, upload Cloudinary, rồi tạo phụ đề bằng Whisper AI.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Luồng 2: Upload file */}
+                    {uploadMode === 'file' && (
+                      <div>
+                        <label className="form-label fw-semibold">File video <span className="text-danger">*</span></label>
+                        <input className="form-control" type="file" accept="video/*"
+                          onChange={(e) => setUploadFile(e.target.files[0] || null)} />
+                        <div className="form-text">Hỗ trợ: mp4, webm, mov. Tối đa 500MB.</div>
+                        {uploadFile && (
+                          <small className="text-success d-block mt-1">
+                            ✓ Đã chọn: {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(1)} MB)
+                          </small>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {videoError ? <div className="text-danger mt-2">{videoError}</div> : null}
                 </div>
+
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={closeVideoModal}>Hủy</button>
-                  <button type="button" className="btn btn-primary" onClick={handleSaveVideo}>{editingVideoId ? 'Lưu cập nhật' : 'Thêm vào hàng chờ biên tập'}</button>
+                  <button type="button" className="btn btn-outline-secondary" onClick={closeVideoModal} disabled={isUploading}>Hủy</button>
+                  <button type="button" className="btn btn-primary" disabled={isUploading}
+                    onClick={uploadMode === 'youtube' ? handleUploadFromYoutube : handleUploadFromFile}>
+                    {isUploading ? '⏳ Đang xử lý...' : '▶ Bắt đầu – Tạo phụ đề AI'}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show"></div>
+          <div className="modal-backdrop fade show" />
+        </>
+      ) : null}
+
+      {/* Modal theo dõi trạng thái tạo phụ đề */}
+      {isStatusModalOpen ? (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '90%', width: '500px' }}>
+              <div className="modal-content topic-bulk-modal">
+                <div className="modal-header">
+                  <h5 className="modal-title">Trạng thái tạo phụ đề</h5>
+                </div>
+                <div className="modal-body" style={{ textAlign: 'center', padding: '32px' }}>
+                  {subtitleStatus === 'PROCESSING' && (
+                    <>
+                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+                      <h5>AI đang tạo phụ đề...</h5>
+                      <p className="text-muted">FFmpeg đang extract audio, sau đó Whisper AI sẽ chuyển đổi thành phụ đề.</p>
+                      <p className="text-muted"><small>Thường mất 1–3 phút tùy độ dài video.</small></p>
+                      <div className="spinner-border text-primary mt-2" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    </>
+                  )}
+                  {subtitleStatus === 'DONE' && (
+                    <>
+                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+                      <h5>Tạo phụ đề thành công!</h5>
+                      <p className="text-muted">Video đã được chèn phụ đề tự động. Admin có thể sửa lại trước khi xuất bản.</p>
+                    </>
+                  )}
+                  {subtitleStatus === 'ERROR' && (
+                    <>
+                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+                      <h5>Tạo phụ đề thất bại</h5>
+                      <p className="text-muted">Kiểm tra FFmpeg đã cài chưa và API key còn hạn.</p>
+                    </>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setIsStatusModalOpen(false)}
+                    disabled={subtitleStatus === 'PROCESSING'}
+                  >
+                    {subtitleStatus === 'PROCESSING' ? 'Đang xử lý...' : 'Đóng'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" />
         </>
       ) : null}
       {isPreviewModalOpen && previewVideo ? (

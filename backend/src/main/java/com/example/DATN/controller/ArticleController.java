@@ -28,6 +28,8 @@ public class ArticleController {
     private ArticleTopicRepository articleTopicRepository;
     @Autowired
     private ReadingDictionaryService readingDictionaryService;
+    @Autowired
+    private com.example.DATN.service.PremiumService premiumService;
 
     // Lấy danh sách chủ đề bài báo cho user
     @GetMapping("/topics")
@@ -39,8 +41,7 @@ public class ArticleController {
                         defaultString(topic.getDescription(), ""),
                         defaultString(topic.getLevel(), "Trung bình"),
                         defaultString(topic.getArticleTopicImage(), ""),
-                        topic.getArticleCount() == null ? 0L : topic.getArticleCount()
-                ))
+                        topic.getArticleCount() == null ? 0L : topic.getArticleCount()))
                 .toList();
     }
 
@@ -52,8 +53,22 @@ public class ArticleController {
                 .toList();
     }
 
+    @PostMapping("/lookup-word")
+    public ReadingWordLookupResponse lookupWord(@RequestBody ReadingWordLookupRequest request) {
+        return readingDictionaryService.lookupWord(
+                request.word(),
+                request.sentence(),
+                request.userId(),
+                request.articleId());
+    }
+
+    @PostMapping("/save-word")
+    public com.example.DATN.entity.UserVocabularyCustom saveWord(@RequestBody SaveReadingWordRequest request) {
+        return readingDictionaryService.saveWordToPersonalVocabulary(request);
+    }
+
     // Chi tiết bài báo
-    @GetMapping("/{articleId}")
+    @GetMapping("/{articleId:[0-9]+}")
     public UserReadingArticleDto getArticleById(@PathVariable Long articleId) {
         UserReadingArticleProjection row = articleRepository.findArticleForUserById(articleId);
         if (row == null) {
@@ -62,19 +77,9 @@ public class ArticleController {
         return toUserReadingArticleDto(row);
     }
 
-    @PostMapping("/lookup-word")
-    public ReadingWordLookupResponse lookupWord(@RequestBody ReadingWordLookupRequest request) {
-        return readingDictionaryService.lookupWord(
-                request.word(),
-                request.sentence(),
-                request.userId(),
-                request.articleId()
-        );
-    }
-
-    @PostMapping("/save-word")
-    public void saveWord(@RequestBody SaveReadingWordRequest request) {
-        readingDictionaryService.saveWordToPersonalVocabulary(request);
+    @PostMapping("/{articleId:[0-9]+}/check-download-limit")
+    public void checkDownloadLimit(@PathVariable Long articleId, @RequestParam Long userId) {
+        premiumService.checkAndIncrementDownloadLimit(userId);
     }
 
     private UserReadingArticleDto toUserReadingArticleDto(UserReadingArticleProjection row) {
@@ -89,8 +94,7 @@ public class ArticleController {
                 defaultString(row.getArticleImage(), ""),
                 row.getTopicId(),
                 defaultString(row.getTopicName(), ""),
-                defaultString(row.getTopicImage(), "")
-        );
+                defaultString(row.getTopicImage(), ""));
     }
 
     private String defaultString(String value, String fallback) {

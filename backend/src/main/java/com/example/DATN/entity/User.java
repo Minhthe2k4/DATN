@@ -34,5 +34,9 @@ public class User {
 
     // No-arg constructor required by JPA
     public User() {}
+
+    public Long getId() {
+        return id;
+    }
 }
 

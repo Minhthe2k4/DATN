@@ -28,9 +28,18 @@ public class Transaction {
     @Column(name = "status", length = 50)
     public String status;
 
+    @Column(name = "vnp_txn_ref", length = 100)
+    public String paymentTransId;
+
+    @ManyToOne
+    @JoinColumn(name = "plan_id")
+    public PremiumPlan plan;
+
     @Column(name = "created_at")
     public Date createdAt;
 
-    public Transaction() {}
+    public Transaction() {
+        this.createdAt = new Date();
+    }
 }
 

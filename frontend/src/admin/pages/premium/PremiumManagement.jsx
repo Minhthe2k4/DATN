@@ -67,6 +67,7 @@ function normalizePlanRow(row) {
     price: typeof row.price === 'number' ? row.price : parseFloat(row.price) || 0,
     durationDays: typeof row.durationDays === 'number' ? row.durationDays : parseInt(row.durationDays) || 30,
     description: row.description || '',
+    limits: row.limits || []
   }
 }
 
@@ -75,12 +76,16 @@ const DEFAULT_MEMBER_FILTER = { status: 'ALL', email: '', expiringInDays: '' }
 
 const CONFIGURABLE_FEATURES = [
   { id: 'SAVED_VOCABULARY', label: 'Lưu từ vựng', description: 'Giới hạn số lượng từ có thể lưu', defaultLimit: 50 },
+  { id: 'DICTIONARY_LOOKUP', label: 'Tra cứu từ điển', description: 'Giới hạn lượt tra từ mỗi ngày', defaultLimit: 5 },
   { id: 'ARTICLE_DOWNLOADS', label: 'Tải bài báo', description: 'Cho phép tải nội dung bài báo về máy', defaultLimit: 0 },
   { id: 'VIDEO_TRANSCRIPT_DOWNLOADS', label: 'Tải phụ đề video', description: 'Cho phép tải phụ đề video về máy', defaultLimit: 0 },
   { id: 'SAVED_ARTICLES', label: 'Lưu bài báo', description: 'Giới hạn số lượng bài báo có thể lưu', defaultLimit: 10 },
   { id: 'CUSTOM_VOCABULARY_SETS', label: 'Bộ từ vựng tùy chỉnh', description: 'Giới hạn số lượng bộ từ vựng cá nhân', defaultLimit: 2 },
   { id: 'MONTHLY_VOCABULARY_TESTS', label: 'Bài kiểm tra tháng', description: 'Giới hạn số lượng bài kiểm tra mỗi tháng', defaultLimit: 5 },
   { id: 'VOCABULARY_REVIEW', label: 'Ôn tập từ vựng', description: 'Quyền sử dụng tính năng ôn tập (Review)', defaultLimit: 0, lockOnly: true },
+  { id: 'FLASHCARD_DECKS', label: 'Số lượng bộ thẻ Flashcard', description: 'Giới hạn số bộ thẻ Flashcard người dùng có thể tạo', defaultLimit: 2 },
+  { id: 'FLASHCARDS_PER_DECK', label: 'Số lượng thẻ mỗi bộ', description: 'Giới hạn số thẻ tối đa trong một bộ Flashcard', defaultLimit: 20 },
+  { id: 'SRS_GOLDEN_TIME', label: 'Tính năng Thời điểm vàng (SRS)', description: 'Cho phép sử dụng tính năng học theo thời điểm vàng', defaultLimit: 0, lockOnly: true },
 ]
 
 function requestStatusTone(status) {
@@ -810,8 +815,11 @@ export function PremiumManagement() {
                   { key: 'description', label: 'Mô tả', render: r => <small>{r.description || '—'}</small> },
                   { key: 'actions', label: '', render: p => (
                     <div className="premium-row-actions">
+                      {p.name === 'Free' && <Badge tone="info">Mặc định</Badge>}
                       <button className="btn btn-sm btn-outline-primary" onClick={() => handleEditPlan(p)} title="Chỉnh sửa">✏️</button>
-                      <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePlan(p)} title="Xóa">🗑️</button>
+                      {p.name !== 'Free' && (
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePlan(p)} title="Xóa">🗑️</button>
+                      )}
                     </div>
                   )},
                 ]}
@@ -942,19 +950,40 @@ export function PremiumManagement() {
                                 {!currentLimit.isLocked && !feat.lockOnly && (
                                   <div className="d-flex align-items-center gap-2 mt-2">
                                     <label className="small text-nowrap">Hạn mức:</label>
-                                    <input 
-                                      type="number" 
-                                      className="form-control form-control-sm" 
-                                      style={{ width: '100px' }}
-                                      value={currentLimit.usageLimit}
-                                      onChange={(e) => {
-                                        const newLimits = planForm.limits.map(l => 
-                                          l.featureName === feat.id ? { ...l, usageLimit: parseInt(e.target.value) || 0 } : l
-                                        )
-                                        setPlanForm({ ...planForm, limits: newLimits })
-                                      }}
-                                    />
-                                    <span className="small text-muted">(0 = không giới hạn)</span>
+                                    <div className="input-group input-group-sm" style={{ width: '180px' }}>
+                                      <input 
+                                        type="number" 
+                                        className="form-control" 
+                                        disabled={currentLimit.usageLimit >= 999999}
+                                        value={currentLimit.usageLimit >= 999999 ? '' : currentLimit.usageLimit}
+                                        placeholder={currentLimit.usageLimit >= 999999 ? "∞ Vô hạn" : "0"}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value) || 0
+                                          const newLimits = planForm.limits.map(l => 
+                                            l.featureName === feat.id ? { ...l, usageLimit: val } : l
+                                          )
+                                          setPlanForm({ ...planForm, limits: newLimits })
+                                        }}
+                                      />
+                                      <button 
+                                        className={`btn ${currentLimit.usageLimit >= 999999 ? 'btn-success' : 'btn-outline-secondary'}`}
+                                        type="button"
+                                        title="Chuyển sang Vô hạn"
+                                        onClick={() => {
+                                          const isCurrentlyUnlimited = currentLimit.usageLimit >= 999999
+                                          const newLimit = isCurrentlyUnlimited ? feat.defaultLimit : 999999
+                                          const newLimits = planForm.limits.map(l => 
+                                            l.featureName === feat.id ? { ...l, usageLimit: newLimit } : l
+                                          )
+                                          setPlanForm({ ...planForm, limits: newLimits })
+                                        }}
+                                      >
+                                        {currentLimit.usageLimit >= 999999 ? '✅ Vô hạn' : '∞'}
+                                      </button>
+                                    </div>
+                                    <span className="small text-muted">
+                                      {currentLimit.usageLimit >= 999999 ? '(Không giới hạn)' : '(0 = không dùng)'}
+                                    </span>
                                   </div>
                                 )}
                               </div>

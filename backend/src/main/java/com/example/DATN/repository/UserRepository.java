@@ -63,6 +63,37 @@ public interface UserRepository extends JpaRepository<User, Long> {
         """, nativeQuery = true)
     List<UserManagementProjection> findUserManagementRows(@Param("now") Date now);
 
+    @Query(value = """
+        select u.id as id,
+             u.username as username,
+             u.email as email,
+             u.role as role,
+             u.is_active as isActive,
+             u.created_at as createdAt,
+             up.full_name as fullName,
+             coalesce(ust.learned_words, 0) as learnedWords,
+             rs.last_review_at as lastReviewAt,
+             case when ps.user_id is null then false else true end as isPremium,
+             ps.premium_until as premiumUntil
+        from Users u
+        left join User_Profile up on up.user_id = u.id
+        left join User_Stats ust on ust.user_id = u.id
+        left join (
+          select user_id, max(created_at) as last_review_at
+          from Review_Sessions
+          group by user_id
+        ) rs on rs.user_id = u.id
+        left join (
+          select us.user_id, max(us.end_date) as premium_until
+          from User_Subscriptions us
+          where upper(coalesce(us.status, '')) in ('ACTIVE', 'ACTIVATED', 'PAID', 'PREMIUM')
+            and (us.end_date is null or us.end_date >= :now)
+          group by us.user_id
+        ) ps on ps.user_id = u.id
+        where u.deleted_at is null and u.id = :id
+        """, nativeQuery = true)
+    Optional<UserManagementProjection> findUserManagementRowById(@Param("id") Long id, @Param("now") Date now);
+
     @Query("""
             select u
             from User u

@@ -32,10 +32,9 @@ public class AdminUserService {
     }
 
     public AdminUserDto findById(Long id) {
-        return findAll().stream()
-                .filter(item -> item.id().equals(id))
-                .findFirst()
+        UserManagementProjection row = userRepository.findUserManagementRowById(id, new Date())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return toDto(row);
     }
 
     public AdminUserDto update(Long id, UpdateAdminUserRequest request) {

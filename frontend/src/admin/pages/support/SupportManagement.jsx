@@ -56,7 +56,9 @@ export function SupportManagement() {
     const status = statusFilter === 'Tất cả' ? 'ALL' : statusFilter
     const query = new URLSearchParams({ status, limit: '200' })
 
-    const response = await fetch(`${API_BASE_URL}/api/admin/support/tickets?${query.toString()}`)
+    const response = await fetch(`${API_BASE_URL}/api/admin/support/tickets?${query.toString()}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
     if (!response.ok) {
       throw new Error('Cannot fetch support tickets')
     }
@@ -99,7 +101,10 @@ export function SupportManagement() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/support/tickets/${ticketId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({ status: newStatus }),
       })
 
@@ -127,9 +132,12 @@ export function SupportManagement() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/support/tickets/${selectedTicket.id}/reply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
-          adminEmail: window.localStorage.getItem('admin_actor') || 'admin@system.local',
+          adminEmail: window.localStorage.getItem('admin_actor') || '',
           response: replyText.trim(),
           status: 'Đã giải quyết',
         }),

@@ -91,6 +91,37 @@
 	gap: 14px;
 }
 
+.saved-vocab-header__actions {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+}
+
+.saved-vocab-refresh-btn {
+	background: #f1f5f9;
+	color: #475569;
+	border: 1px solid #e2e8f0;
+	padding: 10px 16px;
+	border-radius: 12px;
+	font-weight: 600;
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.2s;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.saved-vocab-refresh-btn:hover:not(:disabled) {
+	background: #e2e8f0;
+	color: #1e293b;
+}
+
+.saved-vocab-refresh-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
 .saved-vocab-header__eyebrow {
 	margin: 0;
 	display: inline-flex;
@@ -310,6 +341,39 @@
 
 .saved-word-card__actions button.is-danger {
 	background: #ef4444;
+}
+
+.saved-vocab-sync-btn {
+	background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+	color: white;
+	border: none;
+	padding: 10px 18px;
+	border-radius: 12px;
+	font-weight: 700;
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.saved-vocab-sync-btn:hover:not(:disabled) {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+	filter: brightness(1.1);
+}
+
+.saved-vocab-sync-btn:active {
+	transform: translateY(0);
+}
+
+.saved-vocab-sync-btn:disabled {
+	background: #94a3b8;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
 }
 
 @media (max-width: 1400px) {

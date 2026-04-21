@@ -12,6 +12,7 @@ import com.example.DATN.repository.UserRepository;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -56,7 +57,7 @@ public class AdminSupportService {
         return toTicketDto(ticket);
     }
 
-    public AdminSupportTicketDto reply(Long ticketId, AdminSupportReplyRequest request) {
+    public AdminSupportTicketDto reply(Long ticketId, AdminSupportReplyRequest request, Long currentAdminId) {
         SupportTicket ticket = supportTicketRepository.findById(toInteger(ticketId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
 
@@ -65,7 +66,7 @@ public class AdminSupportService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Response is required");
         }
 
-        User admin = resolveAdmin(request);
+        User admin = resolveAdmin(request, currentAdminId);
 
         SupportResponse response = new SupportResponse();
         response.ticket = ticket;
@@ -106,18 +107,26 @@ public class AdminSupportService {
         );
     }
 
-    private User resolveAdmin(AdminSupportReplyRequest request) {
+    private User resolveAdmin(AdminSupportReplyRequest request, Long currentAdminId) {
+        // 1. Try explicit ID from request
         if (request != null && request.adminId() != null) {
-            return userRepository.findActiveById(request.adminId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin not found"));
+            Optional<User> opt = userRepository.findActiveById(request.adminId());
+            if (opt.isPresent()) return opt.get();
         }
 
+        // 2. Try explicit email from request
         if (request != null && request.adminEmail() != null && !request.adminEmail().isBlank()) {
-            return userRepository.findActiveByEmail(request.adminEmail())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin not found"));
+            Optional<User> opt = userRepository.findActiveByEmail(request.adminEmail());
+            if (opt.isPresent()) return opt.get();
         }
 
-        return null;
+        // 3. Fallback to authenticated admin ID
+        if (currentAdminId != null) {
+            return userRepository.findById(currentAdminId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Authenticated Admin not found"));
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin not found and no authenticated user provided");
     }
 
     private String normalizeStatusFilter(String status) {

@@ -43,6 +43,7 @@ public class UserSupportController {
 
             SupportTicket ticket = userSupportService.createTicket(
                     userId,
+                    null, // User is logged in, no guest email needed
                     request.topic(),
                     request.message()
             );

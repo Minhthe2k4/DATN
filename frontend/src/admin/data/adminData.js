@@ -626,7 +626,7 @@ export const revenueTransactions = [
     email: 'an.le@example.com',
     plan: 'Premium 1 tháng',
     amount: 100000,
-    gateway: 'VNPay',
+    gateway: 'ZaloPay',
     status: 'Hoàn tiền',
     createdAt: '13/03/2026 11:06',
   },

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './subscription.css'
 import { fetchSubscriptionPlans } from '@/lib/api/premium-api'
 import { getUserSession } from '../../utils/authSession'
@@ -13,6 +14,7 @@ function CheckIcon({ muted = false }) {
 }
 
 export function Subscription() {
+	const navigate = useNavigate()
 	const session = getUserSession()
 	const userId = session?.userId ? Number(session.userId) : null
 	const premiumStatus = usePremiumStatus(userId)
@@ -26,12 +28,22 @@ export function Subscription() {
 		const loadPlans = async () => {
 			setLoading(true)
 			try {
-				const fetchedPlans = await fetchSubscriptionPlans()
+				const response = await fetch('/api/payment/plans')
+				const fetchedPlans = await response.json()
 				if (fetchedPlans && fetchedPlans.length > 0) {
-					setPlans(fetchedPlans)
-					// Set first plan as selected if available
-					if (fetchedPlans[0].id) {
-						setSelectedPlanId(fetchedPlans[0].id)
+					// Map backend fields to frontend expectations
+					const mappedPlans = fetchedPlans.map(p => ({
+						id: p.id,
+						label: p.name,
+						price: p.price.toLocaleString('vi-VN') + ' ₫',
+						note: p.description,
+						duration: p.duration,
+						priceVal: p.price
+					})).filter(p => p.priceVal > 0); // Bỏ qua gói Free
+					
+					setPlans(mappedPlans)
+					if (mappedPlans.length > 0) {
+						setSelectedPlanId(mappedPlans[0].id)
 					}
 				}
 			} catch (error) {
@@ -43,6 +55,10 @@ export function Subscription() {
 
 		loadPlans()
 	}, [])
+
+	const handleUpgradeClick = () => {
+		navigate('/premium-checkout')
+	}
 
 	const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0]
 
@@ -151,10 +167,14 @@ export function Subscription() {
 
 											{premiumStatus.status !== 'LIFETIME' && (
 												<div className="subscription-cta-container">
-													<button type="button" className="subscription-cta">
+													<button 
+														type="button" 
+														className="subscription-cta"
+														onClick={handleUpgradeClick}
+													>
 														{premiumStatus.isPremium ? 'Gia hạn thêm' : `Nâng cấp ngay`}
 													</button>
-													<p className="subscription-cta__note">Thanh toán an toàn qua thẻ ATM/Naphtẻ hoặc Chuyển khoản.</p>
+													<p className="subscription-cta__note">Thanh toán an toàn qua ZaloPay.</p>
 												</div>
 											)}
 											

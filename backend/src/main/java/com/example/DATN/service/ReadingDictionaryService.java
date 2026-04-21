@@ -2,7 +2,6 @@ package com.example.DATN.service;
 
 import com.example.DATN.dto.SaveReadingWordRequest;
 import com.example.DATN.dto.ReadingWordLookupResponse;
-import com.example.DATN.entity.Article;
 import com.example.DATN.entity.LookupHistory;
 import com.example.DATN.entity.User;
 import com.example.DATN.entity.UserVocabularyCustom;
@@ -12,28 +11,16 @@ import com.example.DATN.repository.UserRepository;
 import com.example.DATN.repository.UserVocabularyCustomRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,8 +44,7 @@ public class ReadingDictionaryService {
     private final LookupHistoryRepository lookupHistoryRepository;
     private final UserVocabularyCustomRepository userVocabularyCustomRepository;
     private final UserVocabularyCustomService userVocabularyCustomService;
-    private final String openAiApiKey;
-    private final String openAiModel;
+    private final AiDictionaryService aiDictionaryService;
 
     public ReadingDictionaryService(
             UserRepository userRepository,
@@ -66,16 +52,14 @@ public class ReadingDictionaryService {
             LookupHistoryRepository lookupHistoryRepository,
             UserVocabularyCustomRepository userVocabularyCustomRepository,
             UserVocabularyCustomService userVocabularyCustomService,
-            @Value("${datn.ai.openai-api-key:}") String openAiApiKey,
-            @Value("${datn.ai.openai-model:gpt-4o-mini}") String openAiModel) {
+            AiDictionaryService aiDictionaryService) {
         this.objectMapper = new ObjectMapper();
         this.userRepository = userRepository;
         this.articleRepository = articleRepository;
         this.lookupHistoryRepository = lookupHistoryRepository;
         this.userVocabularyCustomRepository = userVocabularyCustomRepository;
         this.userVocabularyCustomService = userVocabularyCustomService;
-        this.openAiApiKey = openAiApiKey == null ? "" : openAiApiKey.trim();
-        this.openAiModel = openAiModel == null || openAiModel.isBlank() ? "gpt-4o-mini" : openAiModel.trim();
+        this.aiDictionaryService = aiDictionaryService;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -102,7 +86,7 @@ public class ReadingDictionaryService {
                 .orElse("");
 
         // Gọi AI để lấy nghĩa từ và bản dịch của cả câu văn
-        AiOnlyResult aiResult = lookupWithAiOnly(normalizedWord, sentence);
+        AiOnlyResult aiResult = lookupWithAiOnly(normalizedWord, sentence, userId);
 
         List<ReadingWordLookupResponse.MeaningItem> meaningItems = new ArrayList<>();
         meaningItems.add(new ReadingWordLookupResponse.MeaningItem(
@@ -141,65 +125,17 @@ public class ReadingDictionaryService {
      * AI sẽ phân tích và trả về: Nghĩa từ, phiên âm IPA, cấp độ (A1-C2) và bản dịch
      * tiếng Việt của câu văn.
      */
-    private AiOnlyResult lookupWithAiOnly(String word, String sentence) {
-        if (openAiApiKey.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "AI Lookup is not configured (missing API Key)");
-        }
-
-        String prompt = "You are a linguistics expert and a bilingual English-Vietnamese dictionary. " +
-                "Given a word and its context sentence from an article, generate a concise dictionary entry for that word "
-                +
-                "specifcally for that context. Return ONLY a JSON object with this structure: " +
-                "{\"ipaUk\": \"string\", \"ipaUs\": \"string\", \"pos\": \"string\", \"level\": \"A1-C2\", " +
-                "\"defEn\": \"string\", \"defVi\": \"string\", \"sentenceVi\": \"string\"}. " +
-                "Rules: \n" +
-                "1. ipaUk/ipaUs should be in IPA format.\n" +
-                "2. defEn and defVi should be the one meaning that fits the context sentence.\n" +
-                "3. sentenceVi should be a natural Vietnamese translation of the entire context sentence provided.\n" +
-                "WORD: " + word + "\n" +
-                "CONTEXT: " + sentence;
-
-        Map<String, Object> requestBody = Map.of(
-                "model", openAiModel,
-                "temperature", 0.3,
-                "response_format", Map.of("type", "json_object"),
-                "messages", List.of(
-                        Map.of("role", "system", "content",
-                                "You are a helpful assistant that returns only valid JSON."),
-                        Map.of("role", "user", "content", prompt)));
-
+    private AiOnlyResult lookupWithAiOnly(String word, String sentence, Long userId) {
         try {
-            String payload = objectMapper.writeValueAsString(requestBody);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/chat/completions"))
-                    .timeout(Duration.ofSeconds(15))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + openAiApiKey)
-                    .POST(HttpRequest.BodyPublishers.ofString(payload))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IOException("OpenAI Error: " + response.body());
-            }
-
-            JsonNode root = objectMapper.readTree(response.body());
-            String content = root.path("choices").path(0).path("message").path("content").asText("");
-            JsonNode aiJson = parseAiJson(content);
-
-            if (aiJson == null) {
-                throw new IOException("Failed to parse AI JSON");
-            }
-
+            Map<String, String> data = aiDictionaryService.lookupWord(word, sentence, userId);
             return new AiOnlyResult(
-                    trimToEmpty(aiJson.path("ipaUk").asText("")),
-                    trimToEmpty(aiJson.path("ipaUs").asText("")),
-                    trimToEmpty(aiJson.path("pos").asText("")),
-                    trimToEmpty(aiJson.path("level").asText("")),
-                    trimToEmpty(aiJson.path("defEn").asText("")),
-                    trimToEmpty(aiJson.path("defVi").asText("")),
-                    trimToEmpty(aiJson.path("sentenceVi").asText("")));
+                    data.get("phonetic"),
+                    data.get("phonetic"), // Dùng chung IPA
+                    "word", // POS mặc định
+                    "All", // Level mặc định
+                    data.get("definitionEn"),
+                    data.get("definitionVi"),
+                    data.get("example"));
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI Lookup failed: " + ex.getMessage());
         }
@@ -221,7 +157,7 @@ public class ReadingDictionaryService {
      * đọc xong.
      */
     @Transactional
-    public void saveWordToPersonalVocabulary(SaveReadingWordRequest request) {
+    public com.example.DATN.entity.UserVocabularyCustom saveWordToPersonalVocabulary(SaveReadingWordRequest request) {
         if (request == null || request.userId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
         }
@@ -235,8 +171,9 @@ public class ReadingDictionaryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         // Kiểm tra xem từ này đã có trong sổ tay chưa để tránh trùng lặp
-        if (userVocabularyCustomRepository.existsByUser_IdAndWordIgnoreCase(user.id, normalizedWord)) {
-            return;
+        Optional<com.example.DATN.entity.UserVocabularyCustom> existing = userVocabularyCustomRepository.findByUser_IdAndWordIgnoreCase(user.id, normalizedWord);
+        if (existing.isPresent()) {
+            return existing.get();
         }
 
         UserVocabularyCustom vocab = new UserVocabularyCustom();
@@ -250,7 +187,7 @@ public class ReadingDictionaryService {
         vocab.exampleVi = trimToEmpty(request.exampleVi());
         vocab.createdAt = new Date();
 
-        userVocabularyCustomService.save(vocab);
+        return userVocabularyCustomService.save(vocab);
     }
 
     /**

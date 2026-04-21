@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { getUserSession } from '../../utils/authSession'
+import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
 import './vocabularyManager.css'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 const STORAGE_KEY = 'dashboard-vocab-bank-v1'
 
 const KNOWN_WORDS = {
@@ -262,6 +264,9 @@ function parseImportText(text, termMode, termCustom, cardMode, cardCustom) {
 
 export function VocabularyManager() {
 	const session = getUserSession()
+	const userId = session?.userId ? Number(session.userId) : null
+	const premiumStatus = usePremiumStatus(userId)
+
 	const isLoggedIn = !!session
 	const [rows, setRows] = useState(() => [createRow()])
 	const [savedItems, setSavedItems] = useState(() => readStorage())
@@ -275,6 +280,13 @@ export function VocabularyManager() {
 	const [termCustomDelimiter, setTermCustomDelimiter] = useState('')
 	const [cardDelimiterMode, setCardDelimiterMode] = useState('newline')
 	const [cardCustomDelimiter, setCardCustomDelimiter] = useState('')
+	const [saveOptions, setSaveOptions] = useState({
+		saveToSRS: true,
+		saveToFlashcard: false,
+		selectedDeckId: ''
+	})
+	const [availableDecks, setAvailableDecks] = useState([])
+	const [isLoading, setIsLoading] = useState(false)
 
 	const totalWords = savedItems.length
 	const avgLevel = useMemo(() => {
@@ -295,6 +307,41 @@ export function VocabularyManager() {
 		setSavedItems(nextItems)
 		writeStorage(nextItems)
 	}
+
+	const fetchLearningVocab = async () => {
+		if (!isLoggedIn) return
+		setIsLoading(true)
+		try {
+			const response = await fetch(`${API_BASE_URL}/api/user/learning/all-vocab`, {
+				headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || session?.userId}` }
+			})
+			if (response.ok) {
+				const data = await response.json()
+				console.log('Fetched learning vocab:', data)
+				setSavedItems(data)
+			} else {
+				console.error('Failed to fetch:', response.status)
+			}
+		} catch (err) {
+			console.warn('Failed to fetch learning vocab:', err)
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	useEffect(() => {
+		if (isLoggedIn) {
+			console.log('VocabularyManager: Fetching data for user', session?.userId)
+			fetchLearningVocab()
+
+			fetch(`${API_BASE_URL}/api/user/flashcards/decks`, {
+				headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || session?.userId}` }
+			})
+				.then(res => res.json())
+				.then(data => setAvailableDecks(data))
+				.catch(err => console.warn('Failed to fetch decks:', err))
+		}
+	}, [isLoggedIn, session?.userId])
 
 	const updateRow = (id, patch) => {
 		setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))
@@ -421,6 +468,18 @@ export function VocabularyManager() {
 			return
 		}
 
+		// Kiểm tra quyền Premium & Feature Lock
+		const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
+		if (vocabLimit?.IS_LOCKED) {
+			alert(`🔒 Tính năng lưu từ vựng hiện đang bị khóa cho gói cước của bạn.\nHãy nâng cấp gói cước để sử dụng tính năng này!`)
+			return
+		}
+
+		if (!premiumStatus?.isPremium && !vocabLimit) {
+			alert('✨ Tính năng lưu từ vựng thủ công vào "Thời điểm vàng" (SRS) chỉ dành cho thành viên Premium. Hãy nâng cấp ngay để sử dụng!')
+			return
+		}
+
 		const filledRows = rows.filter((row) => row.word.trim())
 
 		setIsSaving(true)
@@ -449,10 +508,7 @@ export function VocabularyManager() {
 			return
 		}
 
-		const nextItems = [...generatedRows, ...savedItems]
-		persistSavedItems(nextItems)
-		
-		// Save to backend API
+		// 1. Save to Backend Custom Vocab (for SRS)
 		try {
 			const vocabsToSave = generatedRows.map((item) => ({
 				word: item.word,
@@ -466,34 +522,54 @@ export function VocabularyManager() {
 			}))
 
 			const authToken = localStorage.getItem('token') || session?.userId;
-			const response = await fetch('/api/user/vocab-custom/save-multiple', {
+			const response = await fetch(`${API_BASE_URL}/api/user/vocab-custom/save-multiple`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					'Authorization': `Bearer ${authToken}`
 				},
-				body: JSON.stringify({ vocabularies: vocabsToSave }),
-				credentials: 'include',
+				body: JSON.stringify({
+					vocabularies: vocabsToSave,
+					addToSRS: saveOptions.saveToSRS
+				}),
 			})
 
 			if (response.ok) {
-				const data = await response.json()
-				console.log('Backend response:', data)
-				if (data.status === 'local_storage') {
-					console.log('Saved to local storage (not authenticated)')
-				} else {
-					console.log('Saved to backend successfully')
+				const savedVocabs = await response.json()
+
+				// 2. If save to Flashcard is enabled
+				if (saveOptions.saveToFlashcard && saveOptions.selectedDeckId) {
+					for (const vocab of savedVocabs) {
+						await fetch(`${API_BASE_URL}/api/user/flashcards/decks/${saveOptions.selectedDeckId}/cards`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'Authorization': `Bearer ${authToken}`
+							},
+							body: JSON.stringify({
+								customVocab: { id: vocab.id },
+								frontText: vocab.word,
+								backText: vocab.meaningVi
+							})
+						})
+					}
 				}
+				setMessage(`Đã thành công lưu ${generatedRows.length} từ vựng.`)
 			} else {
-				console.warn('Failed to save to backend:', response.statusText)
+				const errorText = await response.text()
+				setMessage(`Lỗi: ${errorText}`)
 			}
 		} catch (error) {
-			console.warn('Error saving to backend:', error)
+			console.warn('Error saving:', error)
+			setMessage('Lỗi kết nối khi lưu dữ liệu.')
 		}
+
+		// Refresh the list from server
+		console.log('Refreshing list after save...')
+		await fetchLearningVocab()
 
 		setRows([createRow()])
 		setIsSaving(false)
-		setMessage(`Đã thêm ${generatedRows.length} từ vựng thủ công vào bộ từ.`)
 	}
 
 	const startEdit = (item) => {
@@ -506,29 +582,112 @@ export function VocabularyManager() {
 		setEditDraft(null)
 	}
 
-	const saveEdit = () => {
-		if (!editDraft?.word?.trim()) {
-			setMessage('Không thể lưu: từ vựng đang trống.')
+	const saveEdit = async () => {
+		if (!editingId) return
+
+		const item = savedItems.find((it) => it.id === editingId)
+		if (!item) return
+
+		const sanitizedDraft = {
+			...editDraft,
+			level: editDraft.level ? String(editDraft.level) : 'A1'
+		}
+
+		// Update locally first for snappy UI
+		const nextItems = savedItems.map((it) => (it.id === editingId ? { ...it, ...sanitizedDraft } : it))
+		setSavedItems(nextItems)
+
+		// Then update server
+		try {
+			const targetId = item.vocabId || item.id;
+			await fetch(`${API_BASE_URL}/api/user/vocab-custom/${targetId}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${localStorage.getItem('token') || session?.userId}`
+				},
+				body: JSON.stringify(sanitizedDraft)
+			})
+			setMessage('Đã cập nhật từ vựng lên hệ thống.')
+		} catch (err) {
+			console.warn('Update failed:', err)
+			setMessage('Lỗi khi lưu lên server, nhưng đã cập nhật tạm trên máy.')
+		}
+
+		setEditingId(null)
+		setEditDraft({})
+	}
+
+	const deleteItem = async (id) => {
+		if (!window.confirm('Bạn có chắc muốn xóa từ này khỏi lộ trình học tập?')) return
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/api/user/learning/vocab/${id}`, {
+				method: 'DELETE',
+				headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || session?.userId}` }
+			})
+			if (response.ok) {
+				const nextItems = savedItems.filter((item) => item.id !== id)
+				setSavedItems(nextItems)
+				setMessage('Đã xóa từ vựng khỏi lộ trình học.')
+			} else {
+				setMessage('Lỗi khi xóa từ vựng.')
+			}
+		} catch (err) {
+			setMessage('Lỗi kết nối khi xóa.')
+		}
+
+		if (editingId === id) {
+			cancelEdit()
+		}
+	}
+
+	const syncLocalToCloud = async () => {
+		const localData = readStorage()
+		if (!localData || localData.length === 0) {
+			setMessage('Không có dữ liệu cục bộ để đồng bộ.')
 			return
 		}
 
-		const nextItems = savedItems.map((item) => (item.id === editingId
-			? {
-				...item,
-				...editDraft,
-				level: clampLevel(Number(editDraft.level) || 1),
-			}
-			: item))
-		persistSavedItems(nextItems)
-		cancelEdit()
-		setMessage('Đã cập nhật từ vựng.')
-	}
+		if (!window.confirm(`Bạn có ${localData.length} từ vựng trên máy này chưa được đồng bộ. Bạn có muốn đưa chúng lên hệ thống học tập không?`)) return
 
-	const deleteItem = (id) => {
-		const nextItems = savedItems.filter((item) => item.id !== id)
-		persistSavedItems(nextItems)
-		if (editingId === id) {
-			cancelEdit()
+		setIsLoading(true)
+		try {
+			const response = await fetch(`${API_BASE_URL}/api/user/vocab-custom/save-multiple`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${localStorage.getItem('token') || session?.userId}`
+				},
+				body: JSON.stringify({
+					vocabularies: localData.map(v => ({
+						word: v.word,
+						pronunciation: v.phonetic,
+						phonetic: v.phonetic,
+						partOfSpeech: v.partOfSpeech || 'n',
+						meaningEn: v.meaningEn || '',
+						meaningVi: v.meaningVi || v.definition || '',
+						example: v.example || '',
+						exampleVi: v.exampleVi || '',
+						level: v.level || 'A1',
+						levelSource: 'manual'
+					})),
+					addToSRS: true
+				})
+			})
+
+			if (response.ok) {
+				setMessage('Đồng bộ thành công! Toàn bộ từ vựng đã được đưa vào lộ trình học.')
+				// Clear local storage after successful sync
+				localStorage.removeItem('dashboard-vocab-bank-v1')
+				await fetchLearningVocab()
+			} else {
+				setMessage('Lỗi khi đồng bộ dữ liệu.')
+			}
+		} catch (err) {
+			setMessage('Lỗi kết nối khi đồng bộ.')
+		} finally {
+			setIsLoading(false)
 		}
 	}
 
@@ -540,25 +699,50 @@ export function VocabularyManager() {
 						<h1>Thêm từ vựng thủ công</h1>
 						<p>Nhập từ, AI sẽ tự động điền phiên âm, nghĩa Anh, nghĩa Việt và level.</p>
 					</div>
-					<div className="vmanager-summary">
-						<div>
-							<span>Total words</span>
-							<strong>{totalWords}</strong>
-						</div>
-						<div>
-							<span>Avg level</span>
-							<strong>{avgLevel}</strong>
-						</div>
-					</div>
 				</header>
 
-				{message && <div className="vmanager-note">{message}</div>}
+				{message && (
+					<div className={`vmanager-note ${message.includes('Lỗi') ? 'is-error' : ''}`}>
+						{message}
+						<button type="button" onClick={() => setMessage('')} className="vmanager-note-close">&times;</button>
+					</div>
+				)}
 
 				<section className="vmanager-builder">
 					<div className="vmanager-toolbar">
-						<button type="button" className="vmanager-btn vmanager-btn--ghost" onClick={() => setIsImportModalOpen(true)}>Thêm từ</button>
+						<button type="button" className="vmanager-btn vmanager-btn--ghost" onClick={() => setIsImportModalOpen(true)}>Nhập dữ liệu</button>
+						<div className="vmanager-save-options">
+							<label className="save-option-checkbox">
+								<input
+									type="checkbox"
+									checked={saveOptions.saveToSRS}
+									onChange={e => setSaveOptions(prev => ({ ...prev, saveToSRS: e.target.checked }))}
+								/>
+								Lưu học thời điểm vàng (SRS)
+							</label>
+							<label className="save-option-checkbox">
+								<input
+									type="checkbox"
+									checked={saveOptions.saveToFlashcard}
+									onChange={e => setSaveOptions(prev => ({ ...prev, saveToFlashcard: e.target.checked }))}
+								/>
+								Lưu vào Flashcard
+							</label>
+							{saveOptions.saveToFlashcard && (
+								<select
+									className="deck-selector-mini"
+									value={saveOptions.selectedDeckId}
+									onChange={e => setSaveOptions(prev => ({ ...prev, selectedDeckId: e.target.value }))}
+								>
+									<option value="">— Chọn bộ thẻ —</option>
+									{availableDecks.map(deck => (
+										<option key={deck.id} value={deck.id}>{deck.name}</option>
+									))}
+								</select>
+							)}
+						</div>
 						<button type="button" className="vmanager-btn" onClick={saveAllRows} disabled={isSaving}>
-							{isSaving ? 'Đang lưu...' : 'Lưu vào bộ từ vựng'}
+							{isSaving ? 'Đang lưu...' : 'Lưu tất cả'}
 						</button>
 					</div>
 
@@ -708,53 +892,7 @@ export function VocabularyManager() {
 					</div>
 				)}
 
-				<section className="vmanager-library">
-					<h2>Từ đã thêm</h2>
-					<div className="vmanager-library__list">
-						{savedItems.map((item) => {
-							const isEditing = editingId === item.id
-							return (
-								<article key={item.id} className="vmanager-saved-card">
-									{isEditing ? (
-										<div className="vmanager-saved-edit">
-											<input value={editDraft.word} onChange={(event) => setEditDraft((prev) => ({ ...prev, word: event.target.value }))} />
-											<input value={editDraft.phonetic} onChange={(event) => setEditDraft((prev) => ({ ...prev, phonetic: event.target.value }))} />
-											<input value={editDraft.meaningEn} onChange={(event) => setEditDraft((prev) => ({ ...prev, meaningEn: event.target.value }))} />
-											<input value={editDraft.meaningVi} onChange={(event) => setEditDraft((prev) => ({ ...prev, meaningVi: event.target.value }))} />
-											<input value={editDraft.example} onChange={(event) => setEditDraft((prev) => ({ ...prev, example: event.target.value }))} />
-											<input value={editDraft.exampleVi} onChange={(event) => setEditDraft((prev) => ({ ...prev, exampleVi: event.target.value }))} />
-											<input value={editDraft.level} onChange={(event) => setEditDraft((prev) => ({ ...prev, level: event.target.value }))} />
-											<div className="vmanager-saved-card__actions">
-												<button type="button" className="vmanager-mini-btn" onClick={saveEdit}>Save</button>
-												<button type="button" className="vmanager-mini-btn" onClick={cancelEdit}>Hủy</button>
-											</div>
-										</div>
-									) : (
-										<>
-											<div className="vmanager-saved-card__head">
-												<div>
-													<h3>{item.word}</h3>
-													<p>{item.phonetic}</p>
-												</div>
-												<span className="vmanager-level-pill">Level {item.level}</span>
-											</div>
-											<p><strong>EN:</strong> {item.meaningEn}</p>
-											<p><strong>VI:</strong> {item.meaningVi}</p>
-											<p><strong>Example:</strong> {item.example}</p>
-											<p><strong>Dịch ví dụ:</strong> {item.exampleVi}</p>
-											<div className="vmanager-saved-card__actions">
-												<button type="button" className="vmanager-mini-btn" onClick={() => playWordAudio(item.word)}>Audio</button>
-												<button type="button" className="vmanager-mini-btn" onClick={() => startEdit(item)}>Sửa</button>
-												<button type="button" className="vmanager-mini-btn is-danger" onClick={() => deleteItem(item.id)}>Xóa</button>
-											</div>
-										</>
-									)}
-								</article>
-							)
-						})}
-									{savedItems.length === 0 && <div className="vmanager-empty">Chưa có từ nào được thêm thủ công.</div>}
-					</div>
-				</section>
+				{/* Dữ liệu được quản lý tập trung tại trang VocabularySaved */}
 			</div>
 		</section>
 	)

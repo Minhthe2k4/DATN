@@ -42,8 +42,15 @@ public class AdminSupportController {
     @PostMapping("/tickets/{ticketId}/reply")
     public AdminSupportTicketDto reply(
             @PathVariable Long ticketId,
-            @RequestBody AdminSupportReplyRequest request
+            @RequestBody AdminSupportReplyRequest request,
+            org.springframework.security.core.Authentication auth
     ) {
-        return adminSupportService.reply(ticketId, request);
+        Long adminId = null;
+        if (auth != null && !auth.getName().equals("anonymousUser")) {
+            try {
+                adminId = Long.parseLong(auth.getName());
+            } catch (Exception ignored) {}
+        }
+        return adminSupportService.reply(ticketId, request, adminId);
     }
 }

@@ -75,18 +75,25 @@ public class UserVocabularyCustomController {
             // Check Premium Limit
             Map<String, Object> premiumStatus = userHomepageService.getPremiumStatus(userId);
             Map<String, Object> featureLimits = (Map<String, Object>) premiumStatus.get("featureLimits");
-            Map<String, Object> vocabLimit = (Map<String, Object>) featureLimits.get("SAVED_VOCABULARY");
+            Map<String, Object> vocabLimitMap = (Map<String, Object>) featureLimits.get("SAVED_VOCABULARY");
             
-            // If limit exists and user is not premium (or limit is strictly enforced)
-            int limit = vocabLimit != null ? (int) vocabLimit.get("FREE_LIMIT") : 50; // Default 50
+            // 1. Check if feature is locked
+            if (vocabLimitMap != null && Boolean.TRUE.equals(vocabLimitMap.get("IS_LOCKED"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Tính năng lưu từ vựng hiện đang bị khóa cho gói cước của bạn.");
+            }
+
+            // 2. Check usage limit
+            // Default 50 for free if not specified. For premium, if not specified, we assume unlimited.
             boolean isPremium = (boolean) premiumStatus.get("isPremium");
+            int limit = vocabLimitMap != null ? (int) vocabLimitMap.get("FREE_LIMIT") : (isPremium ? 999999 : 50);
             
-            if (!isPremium) {
-                long currentCount = userVocabularyCustomService.countByUser_Id(userId);
-                if (currentCount >= limit) {
-                    return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
-                        .body("Bạn đã đạt giới hạn lưu từ vựng (" + limit + " từ). Vui lòng nâng cấp Premium để lưu thêm!");
-                }
+            long currentCount = userVocabularyCustomService.countByUser_Id(userId);
+            if (currentCount >= limit) {
+                String msg = isPremium 
+                    ? "Bạn đã đạt giới hạn lưu từ vựng của gói Premium này (" + limit + " từ)."
+                    : "Bạn đã đạt giới hạn lưu từ vựng (" + limit + " từ). Vui lòng nâng cấp Premium để lưu thêm!";
+                return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(msg);
             }
 
             vocab.user = user;
@@ -145,7 +152,7 @@ public class UserVocabularyCustomController {
                 vocabularies.add(vocab);
             }
 
-            List<UserVocabularyCustom> saved = userVocabularyCustomService.saveMultiple(vocabularies, userId);
+            List<UserVocabularyCustom> saved = userVocabularyCustomService.saveMultiple(vocabularies, userId, request.addToSRS);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

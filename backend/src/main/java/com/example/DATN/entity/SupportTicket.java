@@ -1,5 +1,6 @@
 package com.example.DATN.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.Date;
 
@@ -11,6 +12,7 @@ public class SupportTicket {
     @Column(name = "id")
     public Long id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_id")
     public User user;
@@ -24,9 +26,12 @@ public class SupportTicket {
     @Column(name = "status", length = 50)
     public String status;
 
+    @Column(name = "email", length = 255)
+    public String email;
+
     @Column(name = "created_at")
     public Date createdAt;
 
-    public SupportTicket() {}
+    public SupportTicket() {
+    }
 }
-

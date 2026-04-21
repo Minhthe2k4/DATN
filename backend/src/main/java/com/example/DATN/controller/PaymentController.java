@@ -1,17 +1,23 @@
 package com.example.DATN.controller;
 
-import com.example.DATN.config.VNPAYConfig;
+import com.example.DATN.config.ZaloPayUtils;
 import com.example.DATN.dto.PaymentResponse;
-import jakarta.servlet.http.HttpServletRequest;
+import com.example.DATN.entity.PremiumPlan;
+import com.example.DATN.entity.Transaction;
+import com.example.DATN.entity.User;
+import com.example.DATN.repository.PremiumPlanRepository;
+import com.example.DATN.repository.TransactionRepository;
+import com.example.DATN.repository.UserRepository;
+import com.example.DATN.service.PremiumService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -19,88 +25,156 @@ import java.util.*;
 @RequestMapping("/api/payment")
 public class PaymentController {
 
-    @Value("${vnpay.tmn-code}")
-    private String vnp_TmnCode;
-    
-    @Value("${vnpay.hash-secret}")
-    private String secretKey;
-    
-    @Value("${vnpay.vnp-url}")
-    private String vnp_PayUrl;
-    
-    @Value("${vnpay.vnp-return-url}")
-    private String vnp_ReturnUrl;
+    @Value("${zalopay.app-id}")
+    private String appId;
+
+    @Value("${zalopay.key1}")
+    private String key1;
+
+    @Value("${zalopay.key2}")
+    private String key2;
+
+    @Value("${zalopay.endpoint}")
+    private String endpoint;
+
+    @Value("${zalopay.redirect-url}")
+    private String redirectUrl;
+
+    private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
+    private final PremiumPlanRepository premiumPlanRepository;
+    private final PremiumService premiumService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public PaymentController(TransactionRepository transactionRepository,
+                             UserRepository userRepository,
+                             PremiumPlanRepository premiumPlanRepository,
+                             PremiumService premiumService) {
+        this.transactionRepository = transactionRepository;
+        this.userRepository = userRepository;
+        this.premiumPlanRepository = premiumPlanRepository;
+        this.premiumService = premiumService;
+    }
+
+    @GetMapping("/plans")
+    public ResponseEntity<List<PremiumPlan>> getAllPlans() {
+        return ResponseEntity.ok(premiumPlanRepository.findAll());
+    }
 
     @GetMapping("/create-order")
     public ResponseEntity<PaymentResponse> createPayment(
-            HttpServletRequest request,
-            @RequestParam("amount") long amountValue,
-            @RequestParam(value = "orderInfo", defaultValue = "Thanh toan don hang") String orderInfo) {
+            @RequestParam("userId") Long userId,
+            @RequestParam("planId") Long planId) {
 
-        String vnp_Version = "2.1.0";
-        String vnp_Command = "pay";
-        String vnp_TxnRef = VNPAYConfig.getRandomNumber(8);
-        String vnp_IpAddr = "127.0.0.1"; // Hardcoded for local test or request.getRemoteAddr()
-        String vnp_TmnCode_local = vnp_TmnCode;
+        try {
+            User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+            PremiumPlan plan = premiumPlanRepository.findById(planId).orElseThrow(() -> new RuntimeException("Plan not found"));
 
-        long amount = amountValue * 100;
-        Map<String, String> vnp_Params = new HashMap<>();
-        vnp_Params.put("vnp_Version", vnp_Version);
-        vnp_Params.put("vnp_Command", vnp_Command);
-        vnp_Params.put("vnp_TmnCode", vnp_TmnCode_local);
-        vnp_Params.put("vnp_Amount", String.valueOf(amount));
-        vnp_Params.put("vnp_CurrCode", "VND");
-        vnp_Params.put("vnp_BankCode", "NCB"); // For testing
-        vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-        vnp_Params.put("vnp_OrderInfo", orderInfo);
-        vnp_Params.put("vnp_OrderType", "other");
-        vnp_Params.put("vnp_Locale", "vn");
-        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
-        vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
+            Random rand = new Random();
+            int res = rand.nextInt(1000000);
+            long amount = plan.price.longValue();
+            long app_time = System.currentTimeMillis();
+            String app_user = user.username;
+            
+            // Chuỗi dữ liệu để tạo MAC
+            // app_trans_id định dạng: yyMMdd_random
+            String app_trans_id = new SimpleDateFormat("yyMMdd").format(new Date()) + "_" + res;
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        String vnp_CreateDate = formatter.format(cld.getTime());
-        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+            // ZaloPay redirect_url cần truyền qua embed_data
+            Map<String, String> embedDataMap = new HashMap<>();
+            embedDataMap.put("redirecturl", redirectUrl);
+            String embed_data_str = objectMapper.writeValueAsString(embedDataMap);
+            
+            String item_str = "[]"; 
 
-        cld.add(Calendar.MINUTE, 15);
-        String vnp_ExpireDate = formatter.format(cld.getTime());
-        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
+            String data = appId + "|" + app_trans_id + "|" + app_user + "|" + amount + "|" + app_time + "|" + embed_data_str + "|" + item_str;
+            String mac = ZaloPayUtils.hmacSHA256(key1, data);
 
-        // Build string to hash
-        List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
-        Collections.sort(fieldNames);
-        StringBuilder hashData = new StringBuilder();
-        StringBuilder query = new StringBuilder();
-        Iterator<String> itr = fieldNames.iterator();
-        while (itr.hasNext()) {
-            String fieldName = itr.next();
-            String fieldValue = vnp_Params.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                // Build hash data
-                hashData.append(fieldName);
-                hashData.append('=');
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
-                // Build query
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII));
-                query.append('=');
-                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
-                if (itr.hasNext()) {
-                    query.append('&');
-                    hashData.append('&');
-                }
+            // Dùng Map để ObjectMapper tự động tạo JSON chuẩn
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("app_id", Integer.parseInt(appId));
+            body.put("app_user", app_user);
+            body.put("app_trans_id", app_trans_id);
+            body.put("app_time", app_time);
+            body.put("amount", amount);
+            body.put("item", item_str);
+            body.put("description", "Thanh toan Premium " + plan.name);
+            body.put("embed_data", embed_data_str);
+            body.put("mac", mac);
+
+            String jsonBody = objectMapper.writeValueAsString(body);
+
+            System.out.println("--- DEBUG ZALOPAY 2553 ---");
+            System.out.println("Data string: " + data);
+            System.out.println("JSON Body: " + jsonBody);
+
+            // Lưu transaction
+            Transaction transaction = new Transaction();
+            transaction.user = user;
+            transaction.plan = plan;
+            transaction.amount = plan.price;
+            transaction.paymentMethod = "ZALOPAY";
+            transaction.status = "PENDING";
+            transaction.paymentTransId = app_trans_id;
+            transactionRepository.save(transaction);
+
+            // Gửi yêu cầu
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("ZaloPay Raw Response: " + response.body());
+            Map<String, Object> result = objectMapper.readValue(response.body(), Map.class);
+
+            if (result.get("return_code").toString().equals("1")) {
+                return ResponseEntity.ok(PaymentResponse.builder()
+                        .status("Ok")
+                        .message("Successfully")
+                        .url(result.get("order_url").toString())
+                        .build());
+            } else {
+                return ResponseEntity.status(500).body(PaymentResponse.builder()
+                        .status("Error")
+                        .message(result.get("return_message").toString())
+                        .build());
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(PaymentResponse.builder()
+                    .status("Error")
+                    .message(e.getMessage())
+                    .build());
         }
-        String queryUrl = query.toString();
-        String vnp_SecureHash = VNPAYConfig.hmacSHA512(secretKey, hashData.toString());
-        queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-        String paymentUrl = vnp_PayUrl + "?" + queryUrl;
+    }
 
-        PaymentResponse response = PaymentResponse.builder()
-                .status("Ok")
-                .message("Successfully")
-                .url(paymentUrl)
-                .build();
-        return ResponseEntity.ok(response);
+    @GetMapping("/verify-payment")
+    public ResponseEntity<?> verifyPayment(@RequestParam Map<String, String> params) {
+        // ZaloPay trả về apptransid trong params redirect
+        String apptransid = params.get("apptransid");
+        String statusStr = params.get("status");
+        
+        if (statusStr == null) {
+            return ResponseEntity.status(400).body(Map.of("status", "ERROR", "message", "Missing status parameter"));
+        }
+        
+        int status = Integer.parseInt(statusStr);
+
+        if (status == 1) { // 1 là thành công tại ZaloPay
+            Transaction transaction = transactionRepository.findByPaymentTransId(apptransid)
+                    .orElseThrow(() -> new RuntimeException("Transaction not found"));
+            
+            // Cập nhật trạng thái chờ duyệt thay vì tự động kích hoạt
+            if ("PENDING".equals(transaction.status)) {
+                transaction.status = "AWAITING"; // Đã thanh toán, chờ duyệt
+                transactionRepository.save(transaction);
+                // Không gọi premiumService.upgradeUserAfterPayment ở đây nữa
+            }
+            return ResponseEntity.ok(Map.of("status", "SUCCESS", "message", "Thanh toán thành công! Vui lòng chờ quản trị viên duyệt."));
+        }
+        return ResponseEntity.ok(Map.of("status", "FAILED", "message", "Giao dịch không thành công hoặc đã bị hủy."));
     }
 }

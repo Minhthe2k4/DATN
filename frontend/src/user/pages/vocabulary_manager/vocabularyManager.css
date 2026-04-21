@@ -72,13 +72,38 @@
 }
 
 .vmanager-note {
-	padding: 10px 12px;
+	padding: 12px 16px;
 	border-radius: 14px;
 	background: #eff6ff;
 	border: 1px solid #bfdbfe;
 	color: #1d4ed8;
-	font-size: 12px;
+	font-size: 13px;
 	font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideIn 0.3s ease-out;
+}
+
+.vmanager-note.is-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.vmanager-note-close {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .vmanager-toolbar {
@@ -110,6 +135,40 @@
 	background: #eef2ff;
 	color: #475569;
 	box-shadow: none;
+}
+
+.vmanager-btn--sync {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+    margin-right: 12px;
+}
+
+.vmanager-btn--sync:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.vmanager-stat-box {
+	min-width: 110px;
+	padding: 10px 12px;
+	border-radius: 14px;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+}
+
+.vmanager-stat-box span {
+	display: block;
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	color: #94a3b8;
+	margin-bottom: 2px;
+}
+
+.vmanager-stat-box strong {
+	font-size: 18px;
+	color: #0f172a;
 }
 
 .vmanager-rows {
@@ -591,6 +650,162 @@
 	grid-column: 1 / -1;
 }
 
+/* SRS & Mastery Styles */
+.vmanager-saved-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.vmanager-saved-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.vmanager-mastery-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.vmanager-mastery--1 { background: #fee2e2; color: #991b1b; } /* New */
+.vmanager-mastery--2 { background: #ffedd5; color: #9a3412; }
+.vmanager-mastery--3 { background: #fef9c3; color: #854d0e; }
+.vmanager-mastery--4 { background: #dcfce7; color: #166534; }
+.vmanager-mastery--5 { background: #d1fae5; color: #065f46; }
+.vmanager-mastery--6 { background: #e0f2fe; color: #075985; } /* Mastered */
+
+.vmanager-type-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.vmanager-level-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.vmanager-next-review {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.vmanager-saved-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vmanager-saved-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.vmanager-saved-row strong {
+    font-size: 18px;
+    color: #0f172a;
+}
+
+.vmanager-saved-phonetic {
+    font-size: 14px;
+    color: #64748b;
+    font-style: normal;
+}
+
+.vmanager-audio-icon {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.vmanager-audio-icon:hover {
+    background: #f1f5f9;
+}
+
+.vmanager-saved-meaning {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.vmanager-saved-meaning-en {
+    font-size: 13px;
+    color: #64748b;
+    margin: 4px 0 0;
+    line-height: 1.4;
+}
+
+.vmanager-saved-ops {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.vmanager-saved-ops button {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vmanager-saved-ops button:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.vmanager-saved-ops .vmanager-ops-del {
+    color: #dc2626;
+}
+
+.vmanager-saved-ops .vmanager-ops-del:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.vmanager-empty-library {
+    padding: 40px;
+    text-align: center;
+    color: #94a3b8;
+    font-weight: 600;
+    border: 2px dashed #e2e8f0;
+    border-radius: 20px;
+    grid-column: 1 / -1;
+}
+
 @media (max-width: 980px) {
 	.vmanager-head,
 	.vmanager-toolbar,
@@ -628,4 +843,170 @@
 		padding: 18px;
 		border-radius: 20px;
 	}
+}
+
+/* --- FILTERS & SEARCH --- */
+.vmanager-filters {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.vmanager-search-box {
+  position: relative;
+  width: 100%;
+}
+
+.vmanager-search-box input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  padding-right: 3rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: #f9fafb;
+}
+
+.vmanager-search-box input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.vmanager-clear-search {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f3f4f6;
+  border: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.vmanager-filter-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+}
+
+.vmanager-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vmanager-filter-group label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.vmanager-filter-group select {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.vmanager-level-tabs {
+  display: flex;
+  gap: 0.375rem;
+  background: #f3f4f6;
+  padding: 0.25rem;
+  border-radius: 0.625rem;
+}
+
+.vmanager-level-tabs button {
+  padding: 0.375rem 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.vmanager-level-tabs button.active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.vmanager-level-tabs button.active.lvl-1 { border-bottom: 2px solid #ef4444; }
+.vmanager-level-tabs button.active.lvl-2 { border-bottom: 2px solid #f97316; }
+.vmanager-level-tabs button.active.lvl-3 { border-bottom: 2px solid #f59e0b; }
+.vmanager-level-tabs button.active.lvl-4 { border-bottom: 2px solid #14b8a6; }
+.vmanager-level-tabs button.active.lvl-5 { border-bottom: 2px solid #10b981; }
+.vmanager-level-tabs button.active.lvl-6 { border-bottom: 2px solid #3b82f6; }
+
+.vmanager-library__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.vmanager-reset-filter {
+  font-size: 0.75rem;
+  color: #3b82f6;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+.vmanager-btn--refresh {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.vmanager-btn--refresh:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.vmanager-empty {
+  padding: 3rem;
+  text-align: center;
+  background: #f9fafb;
+  border-radius: 1rem;
+  border: 2px dashed #e5e7eb;
+  color: #6b7280;
+  grid-column: 1 / -1;
+}
+
+.vmanager-empty button {
+  margin-top: 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
 }

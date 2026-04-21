@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserSession } from '../../utils/authSession'
 import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
 import { checkPremiumLimit } from '../../config/premiumLimits'
 import './vocabularySaved.css'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 const STORAGE_KEY = 'dashboard-vocab-bank-v1'
 
@@ -33,12 +35,14 @@ export function VocabularySaved() {
 	const navigate = useNavigate()
 	const session = getUserSession()
 	const userId = session?.userId ? Number(session.userId) : null
+	const isLoggedIn = !!session
 	const premiumStatus = usePremiumStatus(userId)
 	
 	const [items, setItems] = useState(() => readSavedVocabulary())
 	const [searchTerm, setSearchTerm] = useState('')
 	const [editingId, setEditingId] = useState(null)
 	const [draft, setDraft] = useState(null)
+	const [isLoading, setIsLoading] = useState(false)
 
 	// Check if user has reached vocabulary limit
 	const vocabLimit = useMemo(() => {
@@ -59,6 +63,90 @@ export function VocabularySaved() {
 			return text.includes(q)
 		})
 	}, [items, searchTerm])
+
+	const fetchLearningVocab = async () => {
+		if (!isLoggedIn) {
+			console.log('VocabularySaved: Not logged in, skipping fetch.')
+			return
+		}
+		setIsLoading(true)
+		console.log('VocabularySaved: Fetching SRS data for user', session?.userId)
+		try {
+			const authToken = localStorage.getItem('token') || session?.userId
+			const response = await fetch(`${API_BASE_URL}/api/user/learning/all-vocab`, {
+				headers: { 'Authorization': `Bearer ${authToken}` }
+			})
+			if (response.ok) {
+				const data = await response.json()
+				console.log('VocabularySaved: SUCCESS! Fetched:', data.length, 'words')
+				// Transform cloud data
+				const cloudItems = data.map(it => ({
+					...it,
+					level: it.masteryLevel || 1,
+					isCloud: true // Mark as synchronized
+				}))
+				setItems(cloudItems)
+				writeSavedVocabulary(cloudItems)
+			} else {
+				console.error('VocabularySaved: API Error:', response.status)
+			}
+		} catch (err) {
+			console.warn('VocabularySaved: Network error:', err)
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const syncLocalToCloud = async () => {
+		if (!isLoggedIn) return
+		const localItems = readSavedVocabulary().filter(it => !it.isCloud)
+		if (localItems.length === 0) {
+			alert('Tất cả từ vựng đã được đồng bộ!')
+			return
+		}
+
+		setIsLoading(true)
+		try {
+			const authToken = localStorage.getItem('token') || session?.userId
+			const vocabsToSave = localItems.map(it => ({
+				word: it.word,
+				phonetic: it.phonetic,
+				meaningEn: it.meaningEn,
+				meaningVi: it.meaningVi,
+				example: it.example,
+				exampleVi: it.exampleVi,
+				level: 'A1' // Default
+			}))
+
+			const response = await fetch(`${API_BASE_URL}/api/user/learning/complete-lesson/custom`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${authToken}`
+				},
+				body: JSON.stringify({
+					vocabularies: vocabsToSave,
+					addToSRS: true
+				}),
+			})
+
+			if (response.ok) {
+				alert(`Đã đồng bộ thành công ${localItems.length} từ vào hệ thống SRS!`)
+				fetchLearningVocab()
+			}
+		} catch (err) {
+			console.error('Sync failed:', err)
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	useEffect(() => {
+		console.log('VocabularySaved: Component Mounted. isLoggedIn:', isLoggedIn)
+		if (isLoggedIn) {
+			fetchLearningVocab()
+		}
+	}, [isLoggedIn, session?.userId])
 
 	const groupedByLevel = useMemo(() => {
 		const groups = new Map()
@@ -133,13 +221,34 @@ export function VocabularySaved() {
 			<div className="saved-vocab-page__container">
 				<header className="saved-vocab-header">
 					<div>
-						<p className="saved-vocab-header__eyebrow">Từ vựng đã lưu</p>
-						<h1>Quản lý ngân hàng từ vựng</h1>
-						<p>Tìm kiếm nhanh và chỉnh sửa/xóa từ theo từng cấp độ từ 1 đến 6.</p>
+						<p className="saved-vocab-header__eyebrow">Hệ thống Spaced Repetition</p>
+						<h1 style={{ color: '#2563eb', textTransform: 'uppercase' }}>Quản lý Thời điểm vàng (SRS)</h1>
+						<p style={{ fontWeight: 'bold', color: '#1e293b' }}>
+							Dữ liệu 6 cột dưới đây được đồng bộ 100% với Biểu đồ học tập của bạn.
+						</p>
 					</div>
-					<button type="button" className="saved-vocab-header__back" onClick={() => navigate('/vocabulary')}>
-						Quay lại Học từ vựng
-					</button>
+					<div className="saved-vocab-header__actions">
+						<button 
+							type="button" 
+							className="saved-vocab-sync-btn" 
+							onClick={syncLocalToCloud}
+							disabled={isLoading}
+							title="Đưa từ vựng từ máy này vào hệ thống học SRS"
+						>
+							☁️ Đồng bộ SRS
+						</button>
+						<button 
+							type="button" 
+							className="saved-vocab-refresh-btn" 
+							onClick={fetchLearningVocab}
+							disabled={isLoading}
+						>
+							{isLoading ? '🔄...' : '🔄 Làm mới'}
+						</button>
+						<button type="button" className="saved-vocab-header__back" onClick={() => navigate('/vocabulary')}>
+							Quay lại Học từ vựng
+						</button>
+					</div>
 				</header>
 
 				{/* Premium Storage Status */}

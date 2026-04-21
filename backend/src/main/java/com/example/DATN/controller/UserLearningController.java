@@ -1,5 +1,6 @@
 package com.example.DATN.controller;
 
+import com.example.DATN.dto.UserLearningVocabDto;
 import com.example.DATN.dto.UserLearningStatsDto;
 import com.example.DATN.dto.ReviewQueueItemDto;
 import com.example.DATN.dto.BulkSubmitReviewResultRequest;
@@ -42,6 +43,9 @@ public class UserLearningController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.example.DATN.service.PremiumService premiumService;
+
     private Long getUserIdFromAuth(Authentication auth, HttpServletRequest request) {
         // 1. Try to get from Spring Security Auth
         if (auth != null && !auth.getName().equals("anonymousUser")) {
@@ -71,6 +75,9 @@ public class UserLearningController {
     public ResponseEntity<?> getReviewQueue(Authentication auth, HttpServletRequest request) {
         Long userId = getUserIdFromAuth(auth, request);
         if (userId == null) return ResponseEntity.status(401).body("Vui lòng đăng nhập để xem từ vựng cần ôn.");
+        
+        // Kiểm tra quyền truy cập tính năng Ôn tập
+        premiumService.checkFeatureAccess(userId, "VOCABULARY_REVIEW", "Ôn tập từ vựng thời điểm vàng (SRS)");
         
         List<UserVocabularyLearning> dueReviews = userVocabularyLearningRepository.findDueReviewsByUserId(userId, new Date());
         
@@ -103,6 +110,78 @@ public class UserLearningController {
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
+    }
+
+    /**
+     * Sub-UC: Lấy toàn bộ từ vựng đang học (UC_LayTatCaTuVungHoc)
+     * Trả về danh sách tất cả các từ mà người dùng đang theo dõi trong hệ thống SRS.
+     */
+    @GetMapping("/all-vocab")
+    public ResponseEntity<?> getAllLearningVocab(Authentication auth, HttpServletRequest request) {
+        Long userId = getUserIdFromAuth(auth, request);
+        if (userId == null) return ResponseEntity.status(401).body("Unauthorized");
+
+        List<UserVocabularyLearning> records = userVocabularyLearningRepository.findByUser_Id(userId);
+        System.out.println("DEBUG: getAllLearningVocab found " + records.size() + " records for user " + userId);
+        
+        List<UserLearningVocabDto> dtos = records.stream()
+            .filter(r -> r.vocabulary != null || r.customVocab != null) // Safety filter
+            .map(r -> {
+                boolean isCustom = r.customVocab != null;
+                Long vocabId = isCustom ? r.customVocab.id : r.vocabulary.id;
+                String word = isCustom ? r.customVocab.word : r.vocabulary.word;
+                String phonetic = isCustom ? r.customVocab.phonetic : r.vocabulary.pronunciation;
+                String meaningEn = isCustom ? r.customVocab.meaningEn : r.vocabulary.meaningEn;
+                String meaningVi = isCustom ? r.customVocab.meaningVi : r.vocabulary.meaningVi;
+                String example = isCustom ? r.customVocab.example : r.vocabulary.example;
+                String exampleVi = isCustom ? r.customVocab.exampleVi : r.vocabulary.exampleVi;
+                String level = isCustom 
+                    ? (r.customVocab.level != null ? String.valueOf(r.customVocab.level) : "A1") 
+                    : (r.vocabulary.level != null ? r.vocabulary.level : "A1");
+
+                // Sync level calculation with stats (getDifficultyLevel from Entity)
+                Integer mastery = r.getDifficultyLevel();
+
+                return new UserLearningVocabDto(
+                    r.id,
+                    vocabId,
+                    word,
+                    phonetic,
+                    meaningEn,
+                    meaningVi,
+                    example,
+                    exampleVi,
+                    level,
+                    mastery,
+                    r.streakCorrect != null ? r.streakCorrect : 0,
+                    r.nextReview,
+                    isCustom
+                );
+            }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
+
+    /**
+     * Xóa một từ khỏi lộ trình học tập
+     */
+    @DeleteMapping("/vocab/{id}")
+    public ResponseEntity<?> deleteLearningVocab(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
+        Long userId = getUserIdFromAuth(auth, request);
+        if (userId == null) return ResponseEntity.status(401).body("Unauthorized");
+
+        Optional<UserVocabularyLearning> recordOpt = userVocabularyLearningRepository.findById(id);
+        if (recordOpt.isEmpty()) {
+            return ResponseEntity.status(404).body("Record not found");
+        }
+
+        UserVocabularyLearning record = recordOpt.get();
+        if (!record.user.id.equals(userId)) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
+        userVocabularyLearningRepository.delete(record);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/submit-result")
@@ -208,7 +287,7 @@ public class UserLearningController {
         Date now = new Date();
         
         for (UserVocabularyLearning r : records) {
-            int level = mapStreakToLevel(r.streakCorrect);
+            int level = r.getDifficultyLevel();
             distribution.put(level, distribution.get(level) + 1);
             
             if (r.nextReview != null) {

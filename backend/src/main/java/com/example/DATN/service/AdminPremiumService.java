@@ -7,6 +7,7 @@ import com.example.DATN.dto.ManualPremiumGrantRequest;
 import com.example.DATN.entity.Transaction;
 import com.example.DATN.entity.PremiumAuditLog;
 import com.example.DATN.entity.PremiumPlan;
+import com.example.DATN.entity.PremiumFeatureLimit;
 import com.example.DATN.entity.User;
 import com.example.DATN.entity.UserSubscription;
 import com.example.DATN.repository.PremiumAuditLogRepository;
@@ -28,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.annotation.PostConstruct;
 
 @Service
 @Transactional
@@ -57,6 +59,39 @@ public class AdminPremiumService {
         this.premiumPlanRepository = premiumPlanRepository;
         this.premiumAuditLogRepository = premiumAuditLogRepository;
         this.premiumFeatureLimitRepository = premiumFeatureLimitRepository;
+    }
+
+    @PostConstruct
+    @Transactional
+    public void initDefaultPlans() {
+        if (premiumPlanRepository.findByName("Free").isEmpty()) {
+            PremiumPlan freePlan = new PremiumPlan();
+            freePlan.name = "Free";
+            freePlan.price = 0.0;
+            freePlan.duration = 36500; // 100 years
+            freePlan.description = "Gói mặc định cho người dùng mới";
+            
+            PremiumPlan saved = premiumPlanRepository.save(freePlan);
+            
+            // Add default limits
+            List<PremiumFeatureLimit> defaultLimits = new ArrayList<>();
+            defaultLimits.add(createLimit(saved, "SAVED_VOCABULARY", false, 50));
+            defaultLimits.add(createLimit(saved, "DICTIONARY_LOOKUP", false, 5));
+            defaultLimits.add(createLimit(saved, "ARTICLE_DOWNLOADS", true, 0));
+            defaultLimits.add(createLimit(saved, "VIDEO_TRANSCRIPT_DOWNLOADS", true, 0));
+            
+            saved.setFeatureLimits(defaultLimits);
+            premiumPlanRepository.save(saved);
+        }
+    }
+
+    private PremiumFeatureLimit createLimit(PremiumPlan plan, String feature, boolean locked, int limit) {
+        PremiumFeatureLimit entity = new PremiumFeatureLimit();
+        entity.setPlan(plan);
+        entity.setFeatureName(feature);
+        entity.setIsLocked(locked);
+        entity.setUsageLimit(limit);
+        return entity;
     }
 
     public List<AdminPremiumRequestDto> findRequests(String status, String email, LocalDate fromDate, LocalDate toDate) {
@@ -132,14 +167,20 @@ public class AdminPremiumService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request missing user information");
         }
 
+        // Identify the plan to apply: prioritize transaction.plan, then fallback to transaction.subscription.plan
+        PremiumPlan planToApply = transaction.plan;
+        if (planToApply == null && transaction.subscription != null) {
+            planToApply = transaction.subscription.plan;
+        }
+
         int durationDays = DEFAULT_DURATION_DAYS;
-        if (transaction.subscription != null && transaction.subscription.plan != null && transaction.subscription.plan.duration != null) {
-            durationDays = Math.max(1, transaction.subscription.plan.duration);
+        if (planToApply != null && planToApply.duration != null) {
+            durationDays = Math.max(1, planToApply.duration);
         }
 
         UserSubscription subscription = grantOrExtendSubscription(
                 transaction.user,
-                transaction.subscription == null ? null : transaction.subscription.plan,
+                planToApply,
                 durationDays
         );
 
@@ -251,7 +292,7 @@ public class AdminPremiumService {
         }
         
         // Basic enforcement: New subscriptions MUST have a plan
-        List<UserSubscription> activeSubs = userSubscriptionRepository.findActiveSubscriptionsByUserId(toLong(Math.toIntExact(user.id)), new Date());
+        List<UserSubscription> activeSubs = userSubscriptionRepository.findActiveSubscriptionsByUserId(user.id, new Date());
         if (activeSubs.isEmpty() && plan == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cần chọn gói cước cụ thể khi cấp mới Premium cho người dùng này.");
         }
@@ -323,9 +364,9 @@ public class AdminPremiumService {
         final PremiumPlan saved = premiumPlanRepository.save(plan);
         
         if (request.limits() != null) {
-            List<com.example.DATN.entity.PremiumFeatureLimit> entities = request.limits().stream()
+            List<PremiumFeatureLimit> entities = request.limits().stream()
                 .map(l -> {
-                    com.example.DATN.entity.PremiumFeatureLimit entity = new com.example.DATN.entity.PremiumFeatureLimit();
+                    PremiumFeatureLimit entity = new PremiumFeatureLimit();
                     entity.setPlan(saved);
                     entity.setFeatureName(l.featureName());
                     entity.setIsLocked(l.isLocked());
@@ -336,9 +377,8 @@ public class AdminPremiumService {
             if (saved.getFeatureLimits() == null) {
                 saved.setFeatureLimits(new ArrayList<>());
             }
-            saved.getFeatureLimits().clear();
             saved.getFeatureLimits().addAll(entities);
-            premiumFeatureLimitRepository.saveAll(entities);
+            premiumPlanRepository.saveAndFlush(saved);
         }
 
         return findPlanById(saved.id);
@@ -368,9 +408,9 @@ public class AdminPremiumService {
         }
 
         if (request.limits() != null) {
-            List<com.example.DATN.entity.PremiumFeatureLimit> entities = request.limits().stream()
+            List<PremiumFeatureLimit> entities = request.limits().stream()
                 .map(l -> {
-                    com.example.DATN.entity.PremiumFeatureLimit entity = new com.example.DATN.entity.PremiumFeatureLimit();
+                    PremiumFeatureLimit entity = new PremiumFeatureLimit();
                     entity.setPlan(plan);
                     entity.setFeatureName(l.featureName());
                     entity.setIsLocked(l.isLocked());
@@ -382,8 +422,8 @@ public class AdminPremiumService {
                 plan.setFeatureLimits(new ArrayList<>());
             }
             plan.getFeatureLimits().clear();
+            premiumPlanRepository.saveAndFlush(plan); // Force delete orphans
             plan.getFeatureLimits().addAll(entities);
-            premiumFeatureLimitRepository.saveAll(entities);
         }
 
         PremiumPlan saved = premiumPlanRepository.save(plan);

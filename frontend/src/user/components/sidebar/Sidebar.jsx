@@ -67,6 +67,7 @@ const navItems = [
 	{ key: 'vocabulary', label: 'Học từ vựng', icon: BookIcon, to: '/vocabulary' },
 	{ key: 'reading', label: 'Luyện đọc', icon: ReadingIcon, to: '/reading' },
 	{ key: 'videos', label: 'Video', icon: VideoIcon, to: '/video' },
+	{ key: 'flashcards', label: 'Flashcard', icon: ReadingIcon, to: '/flashcards' },
 	{ key: 'dictionary', label: 'Từ điển', icon: SearchDocIcon, to: '/dictionary' },
 	{ key: 'premium', label: 'Gói Premium', icon: GemIcon, to: '/subscription' },
 	{ key: 'support', label: 'Hỗ trợ', icon: HelpIcon, to: '/support' },

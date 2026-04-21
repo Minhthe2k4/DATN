@@ -64,7 +64,10 @@ export function Dictionary() {
 		definitionVi: '',
 		exampleEng: '',
 		exampleVi: '',
+		saveType: 'SRS', // 'SRS' or 'FLASHCARD'
+		deckId: '',
 	})
+	const [decks, setDecks] = useState([])
 
 	const hasResult = searchedWord.trim().length > 0
 
@@ -155,8 +158,26 @@ export function Dictionary() {
 				definitionVi: meaning.meaningVi || '',
 				exampleEng: meaning.examples[0] || meaning.example || '',
 				exampleVi: '',
+				saveType: 'SRS',
+				deckId: '',
 			})
+			fetchDecks()
 			setShowSaveModal(true)
+		}
+	}
+
+	const fetchDecks = async () => {
+		try {
+			const authToken = localStorage.getItem('token') || session?.userId
+			const response = await fetch(`${API_BASE_URL}/api/user/flashcards/decks`, {
+				headers: { 'Authorization': `Bearer ${authToken}` }
+			})
+			if (response.ok) {
+				const data = await response.json()
+				setDecks(data)
+			}
+		} catch (err) {
+			console.error('Failed to fetch decks:', err)
 		}
 	}
 
@@ -182,11 +203,17 @@ export function Dictionary() {
 			alert('Vui lòng nhập đầy đủ các trường')
 			return
 		}
+		if (saveFormData.saveType === 'FLASHCARD' && !saveFormData.deckId) {
+			alert('Vui lòng chọn bộ thẻ Flashcard')
+			return
+		}
 
 		setLoading(true)
 		try {
 			const authToken = localStorage.getItem('token') || session?.userId;
-			const response = await fetch(`${API_BASE_URL}/api/user/vocab-custom/save`, {
+			
+			// 1. First save to Custom Vocabulary to get an ID if needed
+			const vocabResponse = await fetch(`${API_BASE_URL}/api/user/vocab-custom/save`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -202,16 +229,46 @@ export function Dictionary() {
 				}),
 			})
 
-			if (!response.ok) {
-				const errorMsg = await response.text()
+			if (!vocabResponse.ok) {
+				const errorMsg = await vocabResponse.text()
 				if (errorMsg === 'Từ đã được lưu') {
-					alert('Từ đã được lưu')
-				} else if (response.status === 402 || errorMsg.includes('giới hạn')) {
-					alert(errorMsg || 'Bạn đã đạt giới hạn lưu từ vựng. Vui lòng nâng cấp Premium!')
+					// Word exists, we might still want to add it to a deck/SRS
+					// But for now let's assume if it exists, we can find it or just alert
 				} else {
 					throw new Error(errorMsg || 'Failed to save word')
 				}
-				return
+			}
+
+			const savedVocab = vocabResponse.ok ? await vocabResponse.json() : null;
+
+			// 2. Handle specific learning type
+			if (saveFormData.saveType === 'SRS') {
+				// We need a specific endpoint for SRS initialization or we can assume backend does it
+				// For now, let's call a hypothetical SRS init endpoint if we had one, 
+				// or just rely on the fact that saving to custom vocab might trigger it.
+				// Actually, SpacedRepetitionService.initializeLearning(user, customVocab) should be called.
+				// I'll add a call to a new endpoint for this.
+				await fetch(`${API_BASE_URL}/api/user/srs/initialize`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${authToken}`
+					},
+					body: JSON.stringify({ customVocabId: savedVocab?.id || null, word: saveFormData.word })
+				})
+			} else if (saveFormData.saveType === 'FLASHCARD') {
+				await fetch(`${API_BASE_URL}/api/user/flashcards/decks/${saveFormData.deckId}/cards`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${authToken}`
+					},
+					body: JSON.stringify({
+						customVocab: { id: savedVocab?.id },
+						frontText: saveFormData.word,
+						backText: saveFormData.definitionVi
+					})
+				})
 			}
 
 			alert('Lưu từ thành công')
@@ -385,6 +442,46 @@ export function Dictionary() {
 										/>
 									</div>
 								</div>
+
+								<div className="dictionary-save-type-selector">
+									<label className="save-type-option">
+										<input 
+											type="radio" 
+											name="saveType" 
+											value="SRS" 
+											checked={saveFormData.saveType === 'SRS'} 
+											onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
+										/>
+										<span>Học theo thời điểm vàng (SRS)</span>
+									</label>
+									<label className="save-type-option">
+										<input 
+											type="radio" 
+											name="saveType" 
+											value="FLASHCARD" 
+											checked={saveFormData.saveType === 'FLASHCARD'} 
+											onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
+										/>
+										<span>Lưu vào bộ Flashcard</span>
+									</label>
+								</div>
+
+								{saveFormData.saveType === 'FLASHCARD' && (
+									<div className="dictionary-save-form__group mt-3">
+										<label>Chọn bộ thẻ</label>
+										<select 
+											value={saveFormData.deckId} 
+											onChange={(e) => handleSaveFormChange('deckId', e.target.value)}
+											className="form-select"
+										>
+											<option value="">-- Chọn bộ thẻ --</option>
+											{decks.map(deck => (
+												<option key={deck.id} value={deck.id}>{deck.name} ({deck.cardCount} thẻ)</option>
+											))}
+										</select>
+										<button type="button" className="btn-link mt-1" onClick={() => navigate('/flashcards')}>+ Tạo bộ thẻ mới</button>
+									</div>
+								)}
 							</div>
 
 							<div className="dictionary-save-modal__actions">

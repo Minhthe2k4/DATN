@@ -1,61 +1,121 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 const PaymentResult = () => {
-  const [searchParams] = useSearchParams();
+  const [status, setStatus] = useState('verifying'); // verifying, success, failed
+  const [message, setMessage] = useState('Đang xác thực giao dịch...');
+  const location = useLocation();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('processing');
-  
+
   useEffect(() => {
-    const responseCode = searchParams.get('vnp_ResponseCode');
-    
-    if (responseCode === '00') {
-      setStatus('success');
-      // Here usually you would make an API call to verify the signature on backend
-      // and update the user's premium status in the database.
-      // Example: fetch('/api/user/upgrade-premium', { method: 'POST', body: vnp_TxnRef... })
-    } else if (responseCode) {
-      setStatus('failed');
-    } else {
-      setStatus('invalid');
-    }
-  }, [searchParams]);
+    const verifyPayment = async () => {
+      try {
+        // Gửi kết quả giao dịch về backend để verify
+        const response = await fetch(`/api/payment/verify-payment${location.search}`);
+        const data = await response.json();
+
+        if (data.status === 'SUCCESS') {
+          setStatus('success');
+          setMessage(data.message || 'Chúc mừng! Bạn đã nâng cấp Premium thành công.');
+        } else {
+          setStatus('failed');
+          setMessage(data.message || 'Giao dịch không thành công hoặc đã bị hủy.');
+        }
+      } catch (error) {
+        console.error("Verification error:", error);
+        setStatus('failed');
+        setMessage('Không thể xác thực giao dịch. Vui lòng liên hệ hỗ trợ.');
+      }
+    };
+
+    verifyPayment();
+  }, [location.search]);
 
   return (
-    <div style={{ maxWidth: '600px', margin: '50px auto', padding: '30px', textAlign: 'center', boxShadow: '0 0 10px rgba(0,0,0,0.1)', borderRadius: '8px' }}>
-      {status === 'processing' && <h2>Đang xử lý kết quả...</h2>}
-      
+    <div style={{ 
+      maxWidth: '600px', 
+      margin: '100px auto', 
+      padding: '40px', 
+      textAlign: 'center', 
+      background: '#fff',
+      borderRadius: '20px',
+      boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
+    }}>
+      {status === 'verifying' && (
+        <div className="status-verifying">
+          <div className="spinner" style={{ 
+            width: '50px', 
+            height: '50px', 
+            border: '5px solid #f3f3f3', 
+            borderTop: '5px solid #3498db', 
+            borderRadius: '50%', 
+            margin: '0 auto 20px',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          <h2>Đang kiểm tra kết quả...</h2>
+          <p>{message}</p>
+        </div>
+      )}
+
       {status === 'success' && (
-        <>
-          <h1 style={{ color: '#2ecc71' }}>🎉 Thanh toán thành công!</h1>
-          <p>Cảm ơn bạn đã nâng cấp Premium. Các tính năng nâng cao đã được mở khóa.</p>
+        <div className="status-success">
+          <div style={{ fontSize: '60px', color: '#48bb78', marginBottom: '20px' }}>✓</div>
+          <h2 style={{ color: '#2f855a' }}>Thanh toán thành công!</h2>
+          <p style={{ color: '#4a5568', marginBottom: '30px' }}>{message}</p>
           <button 
-            onClick={() => navigate('/')}
-            style={{ padding: '10px 20px', marginTop: '20px', cursor: 'pointer' }}
+            onClick={() => navigate('/subscription')}
+            style={{
+              padding: '12px 30px',
+              backgroundColor: '#48bb78',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
           >
-            Quay lại trang chủ
+            Quay lại trang Premium
           </button>
-        </>
+        </div>
       )}
 
       {status === 'failed' && (
-        <>
-          <h1 style={{ color: '#e74c3c' }}>❌ Thanh toán thất bại</h1>
-          <p>Giao dịch của bạn đã bị hủy hoặc có lỗi xảy ra trong quá trình thanh toán.</p>
-          <button 
-            onClick={() => navigate('/premium-checkout')}
-            style={{ padding: '10px 20px', marginTop: '20px', cursor: 'pointer' }}
-          >
-            Thử lại
-          </button>
-        </>
-      )}
-
-      {status === 'invalid' && (
-        <>
-          <h2>Không tìm thấy thông tin giao dịch</h2>
-          <button onClick={() => navigate('/')}>Về trang chủ</button>
-        </>
+        <div className="status-failed">
+          <div style={{ fontSize: '60px', color: '#f56565', marginBottom: '20px' }}>✕</div>
+          <h2 style={{ color: '#c53030' }}>Giao dịch thất bại</h2>
+          <p style={{ color: '#4a5568', marginBottom: '30px' }}>{message}</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+            <button 
+              onClick={() => navigate('/premium-checkout')}
+              style={{
+                padding: '12px 25px',
+                backgroundColor: '#3182ce',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Thử lại
+            </button>
+            <button 
+              onClick={() => navigate('/')}
+              style={{
+                padding: '12px 25px',
+                backgroundColor: '#edf2f7',
+                color: '#4a5568',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Về trang chủ
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -23,7 +23,15 @@ public class UserVocabularyCustomService {
     @Autowired
     private SpacedRepetitionService spacedRepetitionService;
 
+    @Autowired
+    private PremiumService premiumService;
+
     public UserVocabularyCustom save(UserVocabularyCustom vocab) {
+        // Kiểm tra quyền qua PremiumService (Hạn mức động từ Admin)
+        if (vocab.user != null) {
+            premiumService.checkAndIncrementActionLimit(vocab.user.id, "SAVED_VOCABULARY", "Lưu từ vựng");
+        }
+
         if (vocab.createdAt == null) {
             vocab.createdAt = new Date();
         }
@@ -78,7 +86,7 @@ public class UserVocabularyCustomService {
         return userVocabularyCustomRepository.countByUser_Id(userId);
     }
 
-    public List<UserVocabularyCustom> saveMultiple(List<UserVocabularyCustom> vocabularies, Long userId) {
+    public List<UserVocabularyCustom> saveMultiple(List<UserVocabularyCustom> vocabularies, Long userId, boolean addToSRS) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             throw new RuntimeException("User not found");
@@ -94,9 +102,11 @@ public class UserVocabularyCustomService {
         }
         List<UserVocabularyCustom> savedList = userVocabularyCustomRepository.saveAll(vocabularies);
         
-        // Initialize learning tracking for all
-        for (UserVocabularyCustom saved : savedList) {
-            spacedRepetitionService.initializeLearning(user, saved);
+        // Initialize learning tracking if requested
+        if (addToSRS) {
+            for (UserVocabularyCustom saved : savedList) {
+                spacedRepetitionService.initializeLearning(user, saved);
+            }
         }
         
         return savedList;

@@ -18,7 +18,10 @@ import { Support } from './user/pages/support/Support.jsx'
 import { Login } from './user/pages/auth/Login.jsx'
 import { Register } from './user/pages/auth/Register.jsx'
 import ManagePersonalInfoPage from './user/pages/settings/ManagePersonalInfoPage.jsx'
-import UserProfile from './user/pages/settings/UserProfile.jsx'
+import Profile from './user/pages/profile/Profile.jsx'
+import FlashcardManager from './user/pages/flashcard/FlashcardManager.jsx'
+import FlashcardStudy from './user/pages/flashcard/FlashcardStudy.jsx'
+import FlashcardDeckEditor from './user/pages/flashcard/FlashcardDeckEditor.jsx'
 import AdminLogin from './admin/pages/auth/AdminLogin.jsx'
 import PremiumCheckout from './user/pages/PremiumCheckout.jsx'
 import PaymentResult from './user/pages/PaymentResult.jsx'
@@ -287,7 +290,10 @@ function App() {
               <Route path="/subscription" element={<Subscription />} />
               <Route path="/vocabulary-test" element={<VocabularyTest />} />
               <Route path="/vocabulary-saved" element={<VocabularySaved />} />
-              <Route path="/profile" element={<ProtectedRoute><UserProfile/></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile/></ProtectedRoute>} />
+              <Route path="/flashcards" element={<ProtectedRoute><FlashcardManager/></ProtectedRoute>} />
+              <Route path="/flashcards/study/:deckId" element={<ProtectedRoute><FlashcardStudy/></ProtectedRoute>} />
+              <Route path="/flashcards/deck-editor/:deckId" element={<ProtectedRoute><FlashcardDeckEditor/></ProtectedRoute>} />
               <Route path="/profile/manage" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />
               <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />

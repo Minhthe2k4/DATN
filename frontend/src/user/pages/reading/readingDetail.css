@@ -370,6 +370,29 @@
     color: #5b73aa;
 }
 
+.reading-vocab-error-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+    border-style: solid;
+}
+
+.reading-error-upgrade-link {
+    color: #2563eb;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+}
+
+.reading-error-upgrade-link:hover {
+    color: #1d4ed8;
+}
+
 .dictionary-modal {
     position: fixed;
     inset: 0;

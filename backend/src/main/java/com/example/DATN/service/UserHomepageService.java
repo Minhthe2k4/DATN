@@ -29,6 +29,9 @@ public class UserHomepageService {
     @Autowired
     private PremiumFeatureLimitRepository premiumFeatureLimitRepository;
 
+    @Autowired
+    private PremiumPlanRepository premiumPlanRepository;
+
 
     public Map<String, Object> getDashboard(Long userId) {
         Map<String, Object> dashboard = new HashMap<>();
@@ -93,13 +96,13 @@ public class UserHomepageService {
         dashboard.put("reviewWords", reviewWords);
 
         // 5. Stats from UserStats
+        dashboard.put("totalLearned", (long) userWords.size()); // Use actual learning records count
+        
         Optional<UserStats> statsOpt = userStatsRepository.findByUser_Id(userId);
         if (statsOpt.isPresent()) {
             UserStats stats = statsOpt.get();
-            dashboard.put("totalLearned", stats.learnedWords != null ? stats.learnedWords : 0);
             dashboard.put("streak", stats.streakDays != null ? stats.streakDays : 0);
         } else {
-            dashboard.put("totalLearned", 0);
             dashboard.put("streak", 0);
         }
 
@@ -227,9 +230,16 @@ public class UserHomepageService {
                 response.put("isPremium", false);
                 response.put("status", "free");
                 response.put("premiumUntil", null);
-                // For free users, fetch limits from a "Free" plan if it exists, or use empty
-                // (Frontend will fallback to hardcoded defaults if list is empty)
-                featureLimits = new ArrayList<>();
+                
+                // Fetch limits from "Free" plan if it exists
+                Optional<PremiumPlan> freePlan = premiumPlanRepository.findByName("Free");
+                if (freePlan.isPresent()) {
+                    response.put("planId", freePlan.get().id);
+                    response.put("planName", "Free");
+                    featureLimits = premiumFeatureLimitRepository.findByPlanId(freePlan.get().id);
+                } else {
+                    featureLimits = new ArrayList<>();
+                }
             }
 
             // Map limits to a cleaner format for frontend

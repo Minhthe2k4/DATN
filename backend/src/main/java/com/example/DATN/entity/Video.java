@@ -17,6 +17,14 @@ public class Video {
     @Column(name = "url", length = 255)
     public String url;
 
+    // Đường dẫn file video được upload lên server
+    @Column(name = "file_path", length = 500)
+    public String filePath;
+
+    // Trạng thái tạo phụ đề tự động: PENDING / PROCESSING / DONE / ERROR
+    @Column(name = "subtitle_status", length = 50)
+    public String subtitleStatus;
+
     @Column(name = "transcript", columnDefinition = "TEXT")
     public String transcript;
 

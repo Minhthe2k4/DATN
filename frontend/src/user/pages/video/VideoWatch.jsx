@@ -1,15 +1,11 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getUserSession } from '../../utils/authSession'
-import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
-import { fetchVideoById } from '../../utils/videoApi'
 import './videoWatch.css'
 
-const LEVELS = ['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+// URL backend
+const API_BASE = 'http://localhost:8080'
 
-const VOCABULARY = {}
-const SUBTITLES = []
-
+// Icon phát âm
 const speakerIcon = (
 	<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
 		<path d="M11 5L6 9H2v6h4l5 4V5z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
@@ -17,329 +13,319 @@ const speakerIcon = (
 	</svg>
 )
 
-const bookmarkIcon = (
-	<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-		<path d="M5 3h14v18l-7-4-7 4V3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-	</svg>
-)
-
+// Phát âm bằng Web Speech API
 function speakWord(text, lang) {
-	if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-		return
-	}
-
+	if (!('speechSynthesis' in window)) return
 	window.speechSynthesis.cancel()
 	const utterance = new SpeechSynthesisUtterance(text)
 	utterance.lang = lang
 	window.speechSynthesis.speak(utterance)
 }
 
-/**
- * Extract YouTube video ID từ URL
- * Support: 
- * - https://www.youtube.com/watch?v=dQw4w9WgXcQ
- * - https://youtu.be/dQw4w9WgXcQ
- */
-function extractYoutubeId(url) {
-	if (!url) return null
-	
-	// Format: https://www.youtube.com/watch?v=ID
-	const youtubeMatch = url.match(/youtube\.com\/watch\?v=([^&\n?#]+)/)
-	if (youtubeMatch) return youtubeMatch[1]
-	
-	// Format: https://youtu.be/ID
-	const shortMatch = url.match(/youtu\.be\/([^&\n?#]+)/)
-	if (shortMatch) return shortMatch[1]
-	
-	return null
-}
-
-/**
- * Parse text thành segments, highlight vocabulary words
- * Input: "Hello everybody, welcome to the channel"
- * Output: ['Hello ', { word: 'everybody' }, ', welcome to the ', { word: 'channel' }]
- */
-function parseSegmentsWithVocabulary(text) {
-	if (!text) return []
-
-	const segments = []
-	let currentText = ''
-
-	// Split text thành words
-	const words = text.split(/(\s+)/) // Giữ lại spaces
-
-	for (const w of words) {
-		const wordLower = w.toLowerCase()
-
-		// Kiểm tra word có trong VOCABULARY không (bỏ dấu câu)
-		const cleanWord = wordLower.replace(/[.,!?;:'"]/g, '')
-
-		if (VOCABULARY[cleanWord]) {
-			// Có trong vocabulary → tạo segment riêng
-			if (currentText) {
-				segments.push(currentText)
-				currentText = ''
-			}
-			segments.push({ word: cleanWord })
-		} else {
-			// Không → thêm vào currentText
-			currentText += w
-		}
-	}
-
-	// Thêm phần text cuối cùng
-	if (currentText) {
-		segments.push(currentText)
-	}
-
-	return segments
-}
-
 export function VideoWatch() {
 	const { channelSlug, videoId } = useParams()
-	const session = getUserSession()
-	const userId = session?.userId ? Number(session.userId) : null
-	const premiumStatus = usePremiumStatus(userId)
-	
+
+	// Dữ liệu từ API
 	const [video, setVideo] = useState(null)
-	const [channel, setChannel] = useState(null)
-	const [videoLoading, setVideoLoading] = useState(true)
-	const [videoError, setVideoError] = useState(null)
-	const [selectedLevel, setSelectedLevel] = useState('ALL')
-	const [activeSubtitleId, setActiveSubtitleId] = useState(null)
-	const [selectedWord, setSelectedWord] = useState(null)
+	const [channelName, setChannelName] = useState('')
+	const [segments, setSegments] = useState([]) // Phụ đề từ Whisper
+	const [isLoading, setIsLoading] = useState(true)
+
+	// Trạng thái giao diện
+	const [activeSubtitleId, setActiveSubtitleId] = useState(null) // Segment đang active (click hoặc theo giờ video)
+	const [selectedWord, setSelectedWord] = useState(null)          // Từ đang xem trong từ điển
 	const [showSaveModal, setShowSaveModal] = useState(false)
 	const [saveFormData, setSaveFormData] = useState({
-		word: '',
-		phonetic: '',
-		definitionEng: '',
-		definitionVi: '',
-		exampleEng: '',
-		exampleVi: '',
+		word: '', phonetic: '', definitionEng: '', definitionVi: '',
+		saveType: 'SRS',
+		deckId: '',
 	})
-	const [saveLoading, setSaveLoading] = useState(false)
+	const [availableDecks, setAvailableDecks] = useState([])
 
-	// Tải video từ backend API
+	// Ref đến thẻ <video> HTML để điều khiển playback
+	const videoRef = useRef(null)
+
+	// Trạng thái điều khiển video tùy chỉnh
+	const [isPlaying, setIsPlaying] = useState(false)
+	const [currentTime, setCurrentTime] = useState(0)
+	const [duration, setDuration] = useState(0)
+	const [playbackRate, setPlaybackRate] = useState(1)
+	const [volume, setVolume] = useState(1)
+	const [showControls, setShowControls] = useState(true)
+
+	// ─── Load video + segments từ API ───────────────────────────────────────────
 	useEffect(() => {
-		const loadVideo = async () => {
+		if (!videoId) return
+		let cancelled = false
+
+		async function loadVideo() {
+			setIsLoading(true)
 			try {
-				setVideoLoading(true)
-				const data = await fetchVideoById(videoId)
-				console.log('DEBUG: API response data =', data)
-				
-				// Tạo object channel từ video data
-				const channelObj = {
-					id: data.channelId,
-					slug: channelSlug,
-					name: data.channelName,
-					handle: data.channelName,
-					videoList: []
+				const [videoRes, segmentsRes] = await Promise.all([
+					fetch(`${API_BASE}/api/videos/${videoId}`),
+					fetch(`${API_BASE}/api/videos/${videoId}/segments`),
+				])
+
+				if (cancelled) return
+
+				if (videoRes.ok) {
+					const data = await videoRes.json()
+					setVideo(data)
+					setChannelName(data.channelName ?? '')
 				}
-				
-				// Transform video data
-				const videoObj = {
-					id: data.id,
-					title: data.title,
-					age: '—',
-					duration: data.duration || '—',
-					thumbnail: `http://img.youtube.com/vi/${extractYoutubeId(data.youtubeUrl)}/maxresdefault.jpg`,
-					youtubeUrl: data.youtubeUrl,
-					difficulty: data.difficulty || 'Trung bình',
-					transcript: data.transcript || '',
-					wordsHighlighted: data.wordsHighlighted || 0
+
+				if (segmentsRes.ok) {
+					const segs = await segmentsRes.json()
+					const list = Array.isArray(segs) ? segs : []
+					setSegments(list)
+					// Active segment đầu tiên mặc định
+					if (list.length > 0) setActiveSubtitleId(list[0].id)
 				}
-				
-				setChannel(channelObj)
-				setVideo(videoObj)
-				setVideoError(null)
 			} catch (err) {
-				console.error('Failed to load video:', err)
-				setVideoError('Không tìm thấy video này trong hệ thống.')
+				console.error('Lỗi load video:', err)
 			} finally {
-				setVideoLoading(false)
+				if (!cancelled) setIsLoading(false)
 			}
 		}
 
-		if (videoId) {
-			loadVideo()
-		}
-	}, [videoId, channelSlug])
+		loadVideo()
+		return () => { cancelled = true }
+	}, [videoId])
 
-	// Tạo subtitles từ transcript hoặc dùng mặc định
-	const generatedSubtitles = useMemo(() => {
-		console.log('DEBUG: video?.transcript =', video?.transcript)
-		if (!video?.transcript || video.transcript.trim() === '') {
-			// Nếu không có transcript, trả về rỗng thay vì dùng prototype data
-			return []
-		}
+	// ─── Đồng bộ phụ đề theo thời gian phát video ───────────────────────────────
+	const handleTimeUpdate = () => {
+		const el = videoRef.current
+		if (!el || segments.length === 0) return
 
-		// Parse transcript thành subtitles
-		// Nếu transcript dính liền không có \n, tách theo dấu câu
-		let lines = []
-		if (video.transcript.includes('\n')) {
-			lines = video.transcript.split('\n')
-		} else {
-			lines = video.transcript.match(/[^.!?]+[.!?]+/g) || [video.transcript]
-		}
-		
-		lines = lines.filter(line => line.trim() !== '').slice(0, 20)
-
-		return lines.map((line, idx) => {
-			// Tạo timestamp giả (XX:YY format)
-			const minutes = Math.floor((idx * 3) / 60)
-			const seconds = (idx * 3) % 60
-			const time = `${minutes}:${seconds.toString().padStart(2, '0')}`
-
-			// Parse segments: tách text thành segments với highlight words
-			const segments = parseSegmentsWithVocabulary(line.trim())
-
-			return {
-				id: idx + 1,
-				time,
-				segments
+		const t = el.currentTime
+		// Tìm segment đang được phát
+		const found = segments.find((s) => t >= s.startSec && t <= s.endSec)
+		if (found && found.id !== activeSubtitleId) {
+			setActiveSubtitleId(found.id)
+			// Tự động cuộn đến dòng phụ đề đang active
+			const activeEl = document.getElementById(`subtitle-${found.id}`)
+			if (activeEl) {
+				activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
 			}
-		})
-	}, [video?.transcript])
-
-	// Set activeSubtitleId từ generatedSubtitles
-	useEffect(() => {
-		if (generatedSubtitles && generatedSubtitles.length > 0) {
-			setActiveSubtitleId(generatedSubtitles[0].id)
 		}
-	}, [generatedSubtitles])
-
-	// Filter subtitles theo level
-	const subtitleRows = useMemo(() => {
-		return generatedSubtitles.filter((line) => {
-			if (selectedLevel === 'ALL') {
-				return true
-			}
-
-			return line.segments.some((part) => typeof part !== 'string' && VOCABULARY[part.word]?.level === selectedLevel)
-		})
-	}, [selectedLevel, generatedSubtitles])
-
-	const handleDownloadTranscript = () => {
-		if (!premiumStatus?.isPremium) {
-			alert('📥 Tải phụ đề yêu cầu đăng ký Premium. Nâng cấp ngay để tải và học offline!')
-			return
-		}
-
-		if (!video) return
-
-		// Create transcript content
-		const content = `${video.title}\n${'='.repeat(video.title.length)}\n\nKênh: ${video.channel || 'Unknown'}\nKhó độ: ${video.difficulty || 'Trung bình'}\n\n${video.transcript || 'No transcript available'}`
-
-		// Create blob and download
-		const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-		const link = document.createElement('a')
-		link.href = URL.createObjectURL(blob)
-		link.download = `${video.title.slice(0, 50).replace(/[^a-z0-9]/gi, '_')}_transcript.txt`
-		link.click()
-		URL.revokeObjectURL(link.href)
 	}
 
-	const handleOpenSaveModal = (meaning) => {
-		if (!selectedWord) {
-			return
+	// Khi click một dòng phụ đề → tua video đến đúng thời điểm
+	const handleClickSubtitle = (seg) => {
+		setActiveSubtitleId(seg.id)
+		if (videoRef.current) {
+			videoRef.current.currentTime = seg.startSec
+			videoRef.current.play()
+			setIsPlaying(true) // Cập nhật trạng thái nút Play/Pause tùy chỉnh
+		}
+	}
+
+	// ─── Logic điều khiển Video tùy chỉnh ────────────────────────────────────────
+	const togglePlay = () => {
+		const videoEl = videoRef.current
+		if (!videoEl) return
+		if (videoEl.paused) {
+			videoEl.play()
+			setIsPlaying(true)
+		} else {
+			videoEl.pause()
+			setIsPlaying(false)
+		}
+	}
+
+	const handleSkip = (seconds) => {
+		if (videoRef.current) videoRef.current.currentTime += seconds
+	}
+
+	const changeSpeed = (speed) => {
+		if (videoRef.current) {
+			videoRef.current.playbackRate = speed
+			setPlaybackRate(speed)
+		}
+	}
+
+	const handleProgressChange = (e) => {
+		const time = Number(e.target.value)
+		if (videoRef.current) {
+			videoRef.current.currentTime = time
+			setCurrentTime(time)
+		}
+	}
+
+	const onMetadataLoaded = () => {
+		if (videoRef.current) setDuration(videoRef.current.duration)
+	}
+
+	const handleVideoTimeUpdate = () => {
+		if (videoRef.current) setCurrentTime(videoRef.current.currentTime)
+		handleTimeUpdate() // Gọi logic đồng bộ phụ đề cũ
+	}
+    
+    const formatTime = (time) => {
+        const minutes = Math.floor(time / 60)
+        const seconds = Math.floor(time % 60)
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    }
+
+	// ─── Logic tra từ điển AI ────────────────────────────────────────────────────
+	const [isLookingUp, setIsLookingUp] = useState(false)
+
+	const handleWordClick = async (word, context) => {
+		// 1. Dừng video ngay lập tức
+		if (videoRef.current) {
+			videoRef.current.pause()
+			setIsPlaying(false)
 		}
 
-		setSaveFormData({
-			word: selectedWord.word,
-			phonetic: selectedWord.uk,
-			definitionEng: meaning.definitionEn || '',
-			definitionVi: meaning.explanationVi || '',
-			exampleEng: meaning.examples[0] || '',
-			exampleVi: '',
-		})
+		// 2. Hiển thị trạng thái đang tra cứu
+		setIsLookingUp(true)
+		setSaveFormData({ word, phonetic: 'Đang tra cứu...', definitionEng: '', definitionVi: '' })
+		setShowSaveModal(true)
+		
+		try {
+			const user = JSON.parse(localStorage.getItem('user'))
+			const userId = user ? user.id : ''
+			const res = await fetch(`${API_BASE}/api/dictionary/lookup?word=${word}&context=${context}&userId=${userId}`)
+			if (res.ok) {
+				const data = await res.json()
+				setSaveFormData({
+					word: data.word,
+					phonetic: data.phonetic,
+					level: data.level,
+					definitionEng: data.definitionEn,
+					definitionVi: data.definitionVi,
+					example: data.example,
+					exampleVi: data.exampleVi
+				})
+			} else {
+				const errText = await res.text()
+				alert(errText || 'Hết lượt tra cứu hoặc lỗi hệ thống')
+				setShowSaveModal(false)
+			}
+		} catch (err) {
+			console.error('Lỗi tra từ:', err)
+			alert('Không thể kết nối đến máy chủ tra từ')
+		} finally {
+			setIsLookingUp(false)
+		}
+		fetchDecks()
+	}
+
+	const fetchDecks = async () => {
+		try {
+			const authToken = localStorage.getItem('token') || JSON.parse(localStorage.getItem('user'))?.id
+			const res = await fetch(`${API_BASE}/api/user/flashcards/decks`, {
+				headers: { 'Authorization': `Bearer ${authToken}` }
+			})
+			if (res.ok) setAvailableDecks(await res.json())
+		} catch (err) {}
+	}
+
+	// ─── Modal lưu từ vựng ────────────────────────────────────────────────────────
+	const handleOpenSaveModal = (word) => {
+		setSaveFormData({ word, phonetic: '', definitionEng: '', definitionVi: '' })
 		setShowSaveModal(true)
 	}
 
-	const handleCloseSaveModal = () => {
-		setShowSaveModal(false)
-	}
-
-	const handleSaveFormChange = (field, value) => {
-		setSaveFormData((prev) => ({
-			...prev,
-			[field]: value,
-		}))
-	}
-
 	const handleSaveWord = async () => {
+		const user = JSON.parse(localStorage.getItem('user'))
+		const userId = user ? user.id : null
 		if (!userId) {
-			alert('Vui lòng đăng nhập để lưu từ vựng')
+			alert('Vui lòng đăng nhập để lưu từ')
 			return
 		}
-		
-		setSaveLoading(true)
+
+		if (saveFormData.saveType === 'FLASHCARD' && !saveFormData.deckId) {
+			alert('Vui lòng chọn bộ thẻ để lưu!')
+			return
+		}
+
 		try {
-			const authToken = localStorage.getItem('token') || userId;
-			const response = await fetch('/api/user/vocab-custom/save', {
+			const authToken = localStorage.getItem('token') || userId
+			// 1. Save to custom vocab
+			const res = await fetch(`${API_BASE}/api/user/vocab-custom/save-multiple`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					'Authorization': `Bearer ${authToken}`
 				},
 				body: JSON.stringify({
-					word: saveFormData.word,
-					phonetic: saveFormData.phonetic,
-					meaningEn: saveFormData.definitionEng,
-					meaningVi: saveFormData.definitionVi,
-					example: saveFormData.exampleEng,
-					exampleVi: saveFormData.exampleVi,
-				}),
+					vocabularies: [{
+						word: saveFormData.word,
+						phonetic: saveFormData.phonetic,
+						meaningEn: saveFormData.definitionEng,
+						meaningVi: saveFormData.definitionVi,
+						example: saveFormData.example,
+						exampleVi: saveFormData.exampleVi
+					}],
+					addToSRS: saveFormData.saveType === 'SRS'
+				})
 			})
 
-			if (!response.ok) {
-				const errorMsg = await response.text()
-				throw new Error(errorMsg || 'Failed to save word')
+			if (!res.ok) throw new Error('Lỗi khi lưu từ vựng')
+
+			// 2. Save to Flashcard if selected
+			if (saveFormData.saveType === 'FLASHCARD' && saveFormData.deckId) {
+				await fetch(`${API_BASE}/api/user/flashcards/decks/${saveFormData.deckId}/cards`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${authToken}`
+					},
+					body: JSON.stringify({
+						frontText: saveFormData.word,
+						backText: saveFormData.definitionVi
+					})
+				})
 			}
 
-			alert('Lưu từ vựng thành công! Từ này sẽ được lên lịch ôn tập theo thuật toán Spaced Repetition.')
+			alert('Đã lưu từ vựng thành công!')
 			setShowSaveModal(false)
 		} catch (err) {
-			console.error('Save error:', err)
 			alert('Lỗi: ' + err.message)
-		} finally {
-			setSaveLoading(false)
 		}
 	}
 
-	if (videoLoading) {
+	// ─── Render ───────────────────────────────────────────────────────────────────
+	if (isLoading) {
 		return (
 			<section className="video-watch-page">
 				<div className="video-watch-page__container">
-					<div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-						<p>Đang tải video...</p>
-					</div>
+					<p>Đang tải video...</p>
 				</div>
 			</section>
 		)
 	}
 
-	if (!channel || !video || videoError) {
+	if (!video) {
 		return (
 			<section className="video-watch-page">
 				<div className="video-watch-page__container">
 					<h1>Không tìm thấy video</h1>
-					<p>{videoError || 'Hãy mở một kênh trước và chọn video hợp lệ.'}</p>
+					<p>Video không tồn tại hoặc chưa được xuất bản.</p>
 					<Link to="/video" className="video-watch__back">Quay lại Video</Link>
 				</div>
 			</section>
 		)
 	}
 
+	// URL để stream file video từ backend
+	const videoStreamUrl = `${API_BASE}/api/videos/${video.id}/stream`
+
+	// Segment đang active (hiển thị phía dưới player)
+	const activeSegment = segments.find((s) => s.id === activeSubtitleId)
+
 	return (
 		<section className="video-watch-page">
 			<div className="video-watch-page__container">
+				{/* Breadcrumb + tiêu đề */}
 				<div className="video-watch__sticky-head">
 					<nav className="video-watch__breadcrumb" aria-label="Điều hướng breadcrumb">
 						<Link to="/">Trang chủ</Link>
 						<span>/</span>
 						<Link to="/video">Video</Link>
 						<span>/</span>
-						<Link to={`/video/${channel.slug}`}>{channel.name}</Link>
+						<Link to={`/video/${channelSlug}`}>{channelName}</Link>
 						<span>/</span>
 						<strong>{video.title}</strong>
 					</nav>
@@ -348,254 +334,221 @@ export function VideoWatch() {
 						<h1>{video.title}</h1>
 						<div className="video-watch__meta-row">
 							<span className="video-watch__dot" aria-hidden="true" />
-							<span>{channel.name}</span>
-							{LEVELS.slice(1).map((level) => (
-								<button
-									key={level}
-									type="button"
-									onClick={() => setSelectedLevel(level)}
-									className={`video-watch__level${selectedLevel === level ? ' is-active' : ''}`}
-								>
-									{level}
-								</button>
-							))}
-							<button
-								type="button"
-								onClick={() => setSelectedLevel('ALL')}
-								className={`video-watch__level${selectedLevel === 'ALL' ? ' is-active' : ''}`}
-							>
-								Tất cả
-							</button>
-							<span className="video-watch__dot" aria-hidden="true" />
-							<button
-								type="button"
-								onClick={handleDownloadTranscript}
-								className="video-watch__download-btn"
-								title={premiumStatus?.isPremium ? 'Tải phụ đề' : 'Chỉ thành viên Premium có thể tải'}
-							>
-								{premiumStatus?.isPremium ? '📥 Tải phụ đề' : '🔒 Tải'}
-							</button>
+							<span>{channelName}</span>
 						</div>
 					</header>
 				</div>
 
+				{/* Layout chính: player bên trái, phụ đề bên phải */}
 				<div className="video-watch__layout">
+					{/* Cột trái: Video player */}
 					<div className="video-watch__player-side">
-						<div className="video-watch__player">
-							{video.youtubeUrl ? (
-								<iframe
-									width="100%"
-									height="500"
-									src={`https://www.youtube.com/embed/${extractYoutubeId(video.youtubeUrl)}?controls=1&modestbranding=1`}
-									title={video.title}
-									frameBorder="0"
-									allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-									allowFullScreen
-									style={{ borderRadius: '8px' }}
-								/>
-							) : (
-								<div style={{
-									width: '100%',
-									height: '500px',
-									backgroundColor: '#f0f0f0',
-									borderRadius: '8px',
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-									fontSize: '18px',
-									color: '#666'
-								}}>
-									Không có link video
+						<div 
+							className="video-watch__player-container"
+							onMouseEnter={() => setShowControls(true)}
+							onMouseLeave={() => isPlaying && setShowControls(false)}
+						>
+							<video
+								ref={videoRef}
+								src={videoStreamUrl}
+								onTimeUpdate={handleVideoTimeUpdate}
+								onLoadedMetadata={onMetadataLoaded}
+								onClick={togglePlay}
+								className="video-watch__video-element"
+							>
+								Trình duyệt không hỗ trợ video.
+							</video>
+
+							{/* Custom Controls Overlay */}
+							<div className={`video-watch__controls ${showControls ? 'is-visible' : 'is-hidden'}`}>
+								{/* Progress Bar */}
+								<div className="video-watch__progress-container">
+									<input 
+										type="range" min="0" max={duration} step="0.1"
+										value={currentTime} onChange={handleProgressChange}
+										className="video-watch__progress-bar"
+									/>
 								</div>
-							)}
+
+								<div className="video-watch__controls-main">
+									<div className="video-watch__controls-left">
+										<button onClick={() => handleSkip(-10)} title="Lùi 10s">
+											<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6c-1.66 0-3.15-.69-4.22-1.78L6.31 17.69C7.75 19.13 9.77 20 12 20c4.41 0 8-3.59 8-8s-3.59-8-8-8zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8z"/></svg>
+										</button>
+										
+										<button onClick={togglePlay} className="video-watch__play-btn">
+											{isPlaying ? (
+												<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+											) : (
+												<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+											)}
+										</button>
+
+										<button onClick={() => handleSkip(10)} title="Tiến 10s">
+											<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 3c4.97 0 9 4.03 9 9H23l-3.89 3.89-.07.14L15 12h3c0-3.31-2.69-6-6-6s-6 2.69-6 6 2.69 6 6 6c1.66 0 3.15-.69 4.22-1.78l1.47 1.47c-1.44 1.44-3.46 2.31-5.69 2.31-4.41 0-8-3.59-8-8s3.59-8 8-8zm1 5v5l-4.25 2.52-.77-1.28 3.52-2.09V8z"/></svg>
+										</button>
+
+										<span className="video-watch__time-display">
+											{formatTime(currentTime)} / {formatTime(duration)}
+										</span>
+									</div>
+
+									<div className="video-watch__controls-right">
+										<div className="video-watch__speed-selector">
+											<button className="video-watch__speed-btn">{playbackRate}x</button>
+											<div className="video-watch__speed-options">
+												{[0.5, 0.75, 1, 1.25, 1.5, 2].map(s => (
+													<button key={s} onClick={() => changeSpeed(s)} className={playbackRate === s ? 'is-active' : ''}>{s}x</button>
+												))}
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
 						</div>
+
+						{/* Dòng phụ đề đang hiển thị (lớn, phía dưới player) */}
 						<div className="video-watch__line-preview">
-							{activeSubtitleId && subtitleRows.find((line) => line.id === activeSubtitleId)?.segments.map((segment, idx) => {
-								if (typeof segment === 'string') {
-									return <span key={idx}>{segment}</span>
-								}
+							{activeSegment
+								? (
+									<div className="video-watch__clickable-text-wrapper">
+										<div className="video-watch__clickable-text">
+											{activeSegment.text.split(' ').map((word, idx) => (
+												<span
+													key={idx}
+													className="video-watch__word"
+													onClick={() => handleWordClick(word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,""), activeSegment.text)}
+												>
+													{word}{' '}
+												</span>
+											))}
+										</div>
 
-								const vocab = VOCABULARY[segment.word]
-								if (!vocab) {
-									return null
-								}
+										{/* Quick Dictionary Panel hiện ngay bên dưới */}
+										{showSaveModal && (
+											<div className="video-watch__quick-dict">
+												<div className="video-watch__dict-arrow"></div>
+												<div className="video-watch__dict-content">
+													<header>
+														<div className="dict-title-row">
+															<h3>{saveFormData.word}</h3>
+															<span className="dict-level">{saveFormData.level}</span>
+														</div>
+														<span className="dict-phonetic">{saveFormData.phonetic}</span>
+														<button className="dict-close" onClick={() => setShowSaveModal(false)}>×</button>
+													</header>
+													
+													<div className="dict-body">
+														<div className="dict-section">
+															<label>Nghĩa tiếng Anh</label>
+															<p className="dict-text-en">{saveFormData.definitionEng || '...'}</p>
+														</div>
+														<div className="dict-section">
+															<label>Nghĩa tiếng Việt</label>
+															<p className="dict-text-vi">{saveFormData.definitionVi || '...'}</p>
+														</div>
+														{saveFormData.example && (
+															<div className="dict-section dict-example-section">
+																<label>Ví dụ</label>
+																<p className="dict-example-en">"{saveFormData.example}"</p>
+																<p className="dict-example-vi">{saveFormData.exampleVi}</p>
+															</div>
+														)}
 
-								const isDimmed = selectedLevel !== 'ALL' && vocab.level !== selectedLevel
-								const isSelected = selectedWord?.word === vocab.word
-								return (
-									<button
-										key={idx}
-										type="button"
-										onClick={() => setSelectedWord(vocab)}
-										className={`video-watch__word${isDimmed ? ' is-dimmed' : ''}${isSelected ? ' is-selected' : ''}`}
-									>
-										{vocab.word}
-									</button>
+														<div className="dict-save-type-selector" style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+															<div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+																<label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+																	<input 
+																		type="radio" 
+																		name="saveType" 
+																		value="SRS" 
+																		checked={saveFormData.saveType === 'SRS'} 
+																		onChange={(e) => setSaveFormData({...saveFormData, saveType: e.target.value})}
+																	/>
+																	<span>Học thời điểm vàng (SRS)</span>
+																</label>
+																<label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+																	<input 
+																		type="radio" 
+																		name="saveType" 
+																		value="FLASHCARD" 
+																		checked={saveFormData.saveType === 'FLASHCARD'} 
+																		onChange={(e) => setSaveFormData({...saveFormData, saveType: e.target.value})}
+																	/>
+																	<span>Lưu vào bộ Flashcard</span>
+																</label>
+															</div>
+
+															{saveFormData.saveType === 'FLASHCARD' && (
+																<div style={{ marginTop: '0.75rem' }}>
+																	<select 
+																		value={saveFormData.deckId} 
+																		onChange={(e) => setSaveFormData({...saveFormData, deckId: e.target.value})}
+																		style={{ width: '100%', padding: '0.4rem', borderRadius: '0.3rem', border: '1px solid #ddd', fontSize: '0.85rem' }}
+																	>
+																		<option value="">-- Chọn bộ thẻ --</option>
+																		{availableDecks.map(deck => (
+																			<option key={deck.id} value={deck.id}>{deck.name}</option>
+																		))}
+																	</select>
+																</div>
+															)}
+														</div>
+													</div>
+													
+													<div className="dict-footer">
+														<button onClick={handleSaveWord} className="dict-save-btn">Lưu vào sổ tay</button>
+													</div>
+												</div>
+											</div>
+										)}
+									</div>
 								)
-							})}
+								: <span style={{ color: '#999' }}>Chưa có phụ đề</span>
+							}
 						</div>
 					</div>
 
+					{/* Cột phải: Danh sách phụ đề có thể click */}
 					<aside className="video-watch__subtitles">
-						<h2>Phụ đề ({subtitleRows.length})</h2>
+						<h2>Phụ đề ({segments.length})</h2>
 						<div className="video-watch__subtitle-list">
-							{subtitleRows && subtitleRows.length > 0 ? (
-								subtitleRows.map((line) => (
-								<button
-									key={line.id}
-									type="button"
-									onClick={() => setActiveSubtitleId(line.id)}
-									className={`video-watch__subtitle-item${activeSubtitleId === line.id ? ' is-active' : ''}`}
-								>
-									<span className="video-watch__subtitle-time">{line.time}</span>
-									<span>
-										{line.segments.map((segment, idx) => {
-											if (typeof segment === 'string') {
-												return <span key={idx}>{segment}</span>
-											}
-
-											const vocab = VOCABULARY[segment.word]
-											if (!vocab) {
-												return null
-											}
-
-											const isDimmed = selectedLevel !== 'ALL' && vocab.level !== selectedLevel
-											const isSelected = selectedWord?.word === vocab.word
-											return (
-												<span
-													key={idx}
-													onClick={(event) => {
-														event.stopPropagation()
-														setSelectedWord(vocab)
-													}}
-													className={`video-watch__word video-watch__word--inline${isDimmed ? ' is-dimmed' : ''}${isSelected ? ' is-selected' : ''}`}
-													style={{ cursor: 'pointer' }}
-													role="button"
-													tabIndex={0}
-												>
-													{vocab.word}
-												</span>
-											)
-										})}
-									</span>
-								</button>
-							))
-							) : (
-								<div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-									Không có phụ đề
-								</div>
-							)}
+							{segments.length === 0 ? (
+								<p style={{ color: '#999', padding: '16px', textAlign: 'center' }}>
+									Chưa có phụ đề.<br />
+									<small>Video có thể đang được xử lý.</small>
+								</p>
+							) : segments.map((seg) => {
+								// Format giờ phút giây: MM:SS
+								const mins = Math.floor(seg.startSec / 60)
+								const secs = String(Math.floor(seg.startSec % 60)).padStart(2, '0')
+								return (
+									<button
+										key={seg.id}
+										id={`subtitle-${seg.id}`}
+										type="button"
+										onClick={() => handleClickSubtitle(seg)}
+										className={`video-watch__subtitle-item${activeSubtitleId === seg.id ? ' is-active' : ''}`}
+									>
+										<span className="video-watch__subtitle-time">{mins}:{secs}</span>
+										<span className="video-watch__subtitle-text">{seg.text}</span>
+									</button>
+								)
+							})}
 						</div>
 					</aside>
 				</div>
 			</div>
 
-			{selectedWord ? (
-				<div className="dictionary-modal" role="dialog" aria-modal="true">
-					<button type="button" className="dictionary-modal__backdrop" onClick={() => setSelectedWord(null)} aria-label="Đóng từ điển" />
-					<div className="dictionary-modal__content">
-						<div className="dictionary-modal__header">
-							<div>
-								<h2>{selectedWord.word}</h2>
-								<span className="dict-pill">{selectedWord.level}</span>
-							</div>
-							<button type="button" className="dictionary-close" onClick={() => setSelectedWord(null)}>
-								Đóng
-							</button>
-						</div>
-
-						<div className="dict-pronunciation-list">
-							<div className="dict-pronunciation-row">
-								<strong>UK</strong>
-								<button type="button" className="dict-speak-btn" onClick={() => speakWord(selectedWord.word, 'en-GB')} aria-label="Phát âm UK">
-									{speakerIcon}
-								</button>
-								<span>{selectedWord.uk}</span>
-							</div>
-							<div className="dict-pronunciation-row">
-								<strong>US</strong>
-								<button type="button" className="dict-speak-btn" onClick={() => speakWord(selectedWord.word, 'en-US')} aria-label="Phát âm US">
-									{speakerIcon}
-								</button>
-								<span>{selectedWord.us}</span>
-							</div>
-						</div>
-
-						<div className="dict-meanings-block">
-							{selectedWord.meanings.map((meaning, index) => (
-								<article key={meaning.id} className="dict-meaning-row" style={{ '--stagger-index': index }}>
-									<div className="dict-meaning-row__title">
-										<div className="dict-meaning-row__head">
-											<span className="dict-pill">{selectedWord.level}</span>
-											<strong>{meaning.definitionEn}</strong>
-										</div>
-										<button type="button" className="dict-save-icon" aria-label="Lưu từ" onClick={() => handleOpenSaveModal(meaning)}>
-											{bookmarkIcon}
-										</button>
-									</div>
-									{meaning.explanationVi && <p className="dict-meaning-vi">{meaning.explanationVi}</p>}
-									{meaning.examples.length > 0 && (
-										<ul className="dict-examples">
-											{meaning.examples.map((example, i) => (
-												<li key={i}>{example}</li>
-											))}
-										</ul>
-									)}
-								</article>
-							))}
-						</div>
-					</div>
-				</div>
-			) : null}
-
-			{showSaveModal && (
-				<div className="video-save-modal-overlay" onClick={handleCloseSaveModal}>
-					<div className="video-save-modal" onClick={(event) => event.stopPropagation()}>
-						<h2 className="video-save-modal__title">Lưu từ vựng</h2>
-
-						<div className="video-save-modal__form">
-							<div className="video-save-form__group">
-								<label>Từ tiếng Anh</label>
-								<input type="text" value={saveFormData.word} onChange={(e) => handleSaveFormChange('word', e.target.value)} placeholder="Từ tiếng Anh" />
-							</div>
-
-							<div className="video-save-form__group">
-								<label>Phiên âm</label>
-								<input type="text" value={saveFormData.phonetic} onChange={(e) => handleSaveFormChange('phonetic', e.target.value)} placeholder="e.g., /əˈkiːt/" />
-							</div>
-
-							<div className="video-save-form__group">
-								<label>Định nghĩa (Tiếng Anh)</label>
-								<textarea value={saveFormData.definitionEng} onChange={(e) => handleSaveFormChange('definitionEng', e.target.value)} placeholder="Định nghĩa tiếng Anh" rows="3" />
-							</div>
-
-							<div className="video-save-form__group">
-								<label>Định nghĩa (Tiếng Việt)</label>
-								<textarea value={saveFormData.definitionVi} onChange={(e) => handleSaveFormChange('definitionVi', e.target.value)} placeholder="Định nghĩa tiếng Việt" rows="3" />
-							</div>
-
-							<div className="video-save-form__group">
-								<label>Ví dụ (Tiếng Anh)</label>
-								<textarea value={saveFormData.exampleEng} onChange={(e) => handleSaveFormChange('exampleEng', e.target.value)} placeholder="Ví dụ tiếng Anh" rows="2" />
-							</div>
-
-							<div className="video-save-form__group">
-								<label>Ví dụ (Tiếng Việt)</label>
-								<textarea value={saveFormData.exampleVi} onChange={(e) => handleSaveFormChange('exampleVi', e.target.value)} placeholder="Ví dụ tiếng Việt" rows="2" />
-							</div>
-						</div>
-
-						<div className="video-save-modal__actions">
-							<button type="button" className="video-save-modal__btn video-save-modal__btn--cancel" onClick={handleCloseSaveModal}>
-								Hủy
-							</button>
-							<button type="button" className="video-save-modal__btn video-save-modal__btn--save" onClick={handleSaveWord} disabled={saveLoading}>
-								{saveLoading ? 'Đang lưu...' : 'Lưu'}
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+			{/* Modal cũ đã được thay thế bằng Quick Dictionary Panel ở trên */}
 		</section>
 	)
+}
+
+// Helper: Format giây thành mm:ss
+function formatTime(seconds) {
+	if (!seconds || isNaN(seconds)) return '0:00'
+	const m = Math.floor(seconds / 60)
+	const s = Math.floor(seconds % 60)
+	return `${m}:${String(s).padStart(2, '0')}`
 }

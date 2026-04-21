@@ -11,19 +11,24 @@ public class Segment {
     public Long id;
 
     @Column(name = "segment_order")
+    @com.fasterxml.jackson.annotation.JsonProperty("segmentOrder")
     public Long segmentOrder;
 
     @Column(name = "start_sec")
+    @com.fasterxml.jackson.annotation.JsonProperty("startSec")
     public Double startSec;
 
     @Column(name = "end_sec")
+    @com.fasterxml.jackson.annotation.JsonProperty("endSec")
     public Double endSec;
 
     @Column(name = "text", columnDefinition = "TEXT")
+    @com.fasterxml.jackson.annotation.JsonProperty("text")
     public String text;
 
     @ManyToOne
     @JoinColumn(name = "video_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Video video;
 
     public Segment() {}

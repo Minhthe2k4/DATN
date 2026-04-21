@@ -1,852 +1,483 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+/* VideoWatch - Light Mode & Fixed Layout (Fixed UI) */
+:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg-main: #ffffff;
+  --bg-sub: #f8fafc;
+  --border-color: #e2e8f0;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --card-bg: #ffffff;
+}
 
 .video-watch-page {
-	width: 100%;
-	min-height: calc(100vh - 54px);
-	background: var(--app-page-background);
-	font-family: 'Manrope', sans-serif;
+  height: calc(100vh - 80px); /* Trừ đi header nếu có */
+  overflow: hidden;
+  background: var(--bg-main);
+  color: var(--text-main);
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
 }
 
 .video-watch-page__container {
-	max-width: 1160px;
-	margin: 0 auto;
-	padding: 20px 22px 28px;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.video-watch__sticky-head {
-	position: relative;
-	top: auto;
-	z-index: 1;
-	padding: 10px 12px 12px;
-	margin: 0 0 14px;
-	border-radius: 14px;
-	background: rgba(243, 247, 254, 0.92);
-	backdrop-filter: blur(8px);
-	border: 1px solid rgba(216, 226, 239, 0.92);
-	box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
-}
-
+/* Header & Breadcrumb Minimalist */
 .video-watch__breadcrumb {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	font-size: 13px;
-	color: #64748b;
-	margin-bottom: 12px;
-	flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
 }
 
 .video-watch__breadcrumb a {
-	text-decoration: none;
-	color: #64748b;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.video-watch__breadcrumb a:hover {
+  color: var(--text-main);
+}
+
+.video-watch__breadcrumb span {
+  opacity: 0.3;
+  font-weight: 300;
 }
 
 .video-watch__breadcrumb strong {
-	color: #0f172a;
+  color: var(--text-main);
+  font-weight: 500;
 }
 
 .video-watch__header h1 {
-	margin: 0;
-	font-size: 24px;
-	line-height: 1.32;
-	color: #0f172a;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-main);
 }
 
 .video-watch__meta-row {
-	margin-top: 10px;
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 7px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 15px;
 }
 
-.video-watch__dot {
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	background: #f43f5e;
-}
-
-.video-watch__meta-row > span {
-	font-size: 15px;
-	color: #334155;
-	margin-right: 4px;
-}
-
-.video-watch__level {
-	border: 1px solid #bfdbfe;
-	background: #eaf3ff;
-	color: #2563eb;
-	font-size: 13px;
-	padding: 4px 10px;
-	border-radius: 999px;
-	cursor: pointer;
-}
-
-.video-watch__level.is-active {
-	background: #2563eb;
-	border-color: #2563eb;
-	color: #ffffff;
-}
-
-.video-watch__download-btn {
-	border: 1px solid #3b82f6;
-	background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-	color: #ffffff;
-	font-size: 13px;
-	padding: 6px 12px;
-	border-radius: 10px;
-	cursor: pointer;
-	font-weight: 600;
-	transition: all 0.3s ease;
-	box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.video-watch__download-btn:hover {
-	background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-	box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-	transform: translateY(-1px);
-}
-
-.video-watch__toolbar {
-	margin-top: 14px;
-	padding: 12px 14px;
-	border: 1px solid #dce2ec;
-	border-radius: 14px;
-	background: #ffffff;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
-}
-
-.video-watch__action {
-	border: 1px solid #d8e0ef;
-	background: #f8fafc;
-	border-radius: 12px;
-	padding: 8px 14px;
-	font-size: 15px;
-	font-weight: 700;
-	color: #334155;
-	cursor: pointer;
-}
-
-.video-watch__action--primary {
-	background: #2563eb;
-	border-color: #2563eb;
-	color: #ffffff;
-}
-
+/* Main Layout - Video nhỏ hơn, Phụ đề rộng hơn */
 .video-watch__layout {
-	margin-top: 14px;
-	display: grid;
-	grid-template-columns: 1fr 360px;
-	gap: 14px;
+  display: grid;
+  grid-template-columns: 1fr 450px; /* Tăng chiều rộng sidebar */
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
 }
 
-.video-watch__player-side {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
+.video-watch__player-container {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  width: 90%; /* Thu nhỏ video */
+  margin: 0 auto;
+  aspect-ratio: 16/9;
+  border: 1px solid var(--border-color);
 }
 
-.video-watch__player {
-	position: relative;
-	border-radius: 16px;
-	overflow: hidden;
-	border: 1px solid #d8e1ee;
+.video-watch__video-element {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-.video-watch__poster {
-	display: block;
-	width: 100%;
-	height: 380px;
-	object-fit: cover;
+/* Custom Controls Overlay */
+.video-watch__controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  padding: 15px 20px;
+  transition: opacity 0.3s;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
 }
 
-.video-watch__play {
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-	width: 80px;
-	height: 56px;
-	border-radius: 18px;
-	background: rgba(239, 68, 68, 0.94);
-	color: #ffffff;
-	display: grid;
-	place-items: center;
-	font-size: 28px;
+.video-watch__controls.is-hidden { opacity: 0; pointer-events: none; }
+.video-watch__controls.is-visible { opacity: 1; }
+
+.video-watch__progress-container {
+  width: 100%;
+  margin-bottom: 10px;
 }
 
+.video-watch__progress-bar {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.video-watch__controls-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.video-watch__controls-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.video-watch__controls-left button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+}
+
+.video-watch__play-btn {
+  background: #fff !important;
+  color: #000 !important;
+  width: 36px;
+  height: 36px;
+  border-radius: 50% !important;
+  justify-content: center;
+}
+
+.video-watch__time-display {
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: monospace;
+  margin-left: 5px;
+}
+
+.video-watch__controls-right {
+  display: flex;
+  align-items: center;
+}
+
+.video-watch__speed-selector {
+  position: relative;
+}
+
+.video-watch__speed-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.video-watch__speed-options {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 5px;
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  margin-bottom: 10px;
+}
+
+.video-watch__speed-selector:hover .video-watch__speed-options {
+  display: flex;
+}
+
+.video-watch__speed-options button {
+  background: transparent;
+  border: none;
+  padding: 6px 15px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.video-watch__speed-options button:hover {
+  background: #f1f5f9;
+}
+
+.video-watch__speed-options button.is-active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Subtitle Preview Box */
 .video-watch__line-preview {
-	background: #1f2937;
-	color: #ffffff;
-	border-radius: 12px;
-	padding: 10px 14px;
-	font-size: 20px;
-	line-height: 1.45;
-	font-weight: 600;
-	text-align: center;
+  margin-top: 15px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.video-watch__subtitles {
-	border: 1px solid #dbe2ef;
-	border-radius: 14px;
-	background: #ffffff;
-	padding: 10px;
-	height: 520px;
-	display: flex;
-	flex-direction: column;
+/* Quick Dictionary Panel */
+.video-watch__clickable-text-wrapper {
+  position: relative;
+  width: 100%;
 }
 
-.video-watch__subtitles h2 {
-	margin: 0;
-	font-size: 13px;
-	letter-spacing: 0.03em;
-	text-transform: uppercase;
-	color: #94a3b8;
-	padding: 2px 6px 8px;
-}
-
-.video-watch__subtitle-list {
-	overflow: auto;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	padding-right: 3px;
-}
-
-.video-watch__subtitle-item {
-	border: 0;
-	text-align: left;
-	background: transparent;
-	border-radius: 10px;
-	padding: 8px 8px;
-	cursor: pointer;
-	line-height: 1.55;
-	color: #334155;
-}
-
-.video-watch__subtitle-item.is-active {
-	background: #dbeafe;
-}
-
-.video-watch__subtitle-time {
-	display: inline-block;
-	font-size: 11px;
-	font-weight: 700;
-	color: #94a3b8;
-	margin-right: 8px;
+.video-watch__clickable-text {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1px; /* Chỉnh cho sát vào nhau hơn */
 }
 
 .video-watch__word {
-	border: 0;
-	background: rgba(37, 99, 235, 0.16);
-	color: #1d4ed8;
-	padding: 1px 5px;
-	border-radius: 6px;
-	font-weight: 700;
-	font-size: inherit;
-	line-height: inherit;
-	cursor: pointer;
-	transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 2px 4px;
+  border-radius: 4px;
 }
 
 .video-watch__word:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  background: rgba(79, 70, 229, 0.1);
+  text-decoration: underline;
 }
 
-.video-watch__word.is-selected {
-	background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
-	color: #ffffff;
-	box-shadow: 0 8px 16px rgba(37, 99, 235, 0.32);
-}
-
-.video-watch__word--inline {
-	font-size: inherit;
-}
-
-.video-watch__word.is-dimmed {
-	opacity: 0.35;
-}
-
-.dictionary-modal {
-	position: fixed;
-	inset: 0;
-	z-index: 120;
-	display: grid;
-	place-items: center;
-	padding: 8px;
-}
-
-.dictionary-modal__backdrop {
-	position: absolute;
-	inset: 0;
-	background: rgba(15, 23, 42, 0.45);
-	border: 0;
-	animation: modalBackdropIn 0.22s ease-out;
-}
-
-.dictionary-modal__content {
-	position: relative;
-	z-index: 1;
-	width: min(760px, calc(100vw - 24px));
-	max-height: calc(100vh - 40px);
-	overflow: auto;
-	padding: 24px;
-	border-radius: 14px;
-	border: 1px solid #e0e9ff;
-	background: linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%);
-	box-shadow: 0 24px 70px rgba(12, 24, 52, 0.36);
-	animation: modalCardIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.dictionary-modal__header {
-	display: flex;
-	justify-content: space-between;
-	gap: 10px;
-	align-items: start;
-}
-
-.dictionary-modal__header h2 {
-	margin: 0 0 10px 0;
-	font-size: 26px;
-	font-weight: 800;
-	color: #0f2e67;
-	letter-spacing: -0.5px;
-}
-
-.dict-pill {
-	display: inline-flex;
-	align-items: center;
-	padding: 5px 12px;
-	font-size: 12px;
-	font-weight: 700;
-	color: #1d4ed8;
-	border: 1px solid #c2d5ff;
-	background: #eff5ff;
-	border-radius: 6px;
-	margin-right: 6px;
-	text-transform: uppercase;
-	letter-spacing: 0.3px;
-}
-
-.dict-pronunciation-list {
-	margin-top: 16px;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.dict-pronunciation-row {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	font-size: 15px;
-	color: #334155;
-}
-
-.dict-pronunciation-row strong {
-	width: 28px;
-	font-size: 14px;
-	font-weight: 700;
-	color: #0f172a;
-	flex-shrink: 0;
-}
-
-.dict-speak-btn {
-	border: 1px solid #d1d5db;
-	background: #f3f4f6;
-	border-radius: 6px;
-	padding: 5px 7px;
-	cursor: pointer;
-	color: #6b7280;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.2s ease-out;
-	flex-shrink: 0;
-}
-
-.dict-speak-btn:hover {
-	background: #e5e7eb;
-	border-color: #9ca3af;
-	color: #374151;
-}
-
-.dict-meanings-block {
-	margin-top: 22px;
-	display: flex;
-	flex-direction: column;
-	gap: 0;
-}
-
-.dict-meaning-row {
-	border-top: 1px solid #e5e9f0;
-	padding: 16px 0;
-	opacity: 0;
-	transform: translateY(10px);
-	animation: meaningStaggerIn 0.35s ease forwards;
-	animation-delay: calc(var(--stagger-index, 0) * 70ms + 80ms);
-}
-
-.dict-meaning-row:first-child {
-	border-top: 0;
-	padding-top: 0;
-}
-
-.dict-meaning-row__title {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	gap: 12px;
-}
-
-.dict-meaning-row__head {
-	display: flex;
-	align-items: baseline;
-	flex-wrap: wrap;
-	gap: 6px;
-	flex: 1;
-}
-
-.dict-meaning-row__head strong {
-	font-size: 15px;
-	font-weight: 700;
-	color: #1f2937;
-	line-height: 1.5;
-}
-
-.dict-save-icon {
-	border: 1px solid #d1d5db;
-	background: #f9fafb;
-	border-radius: 6px;
-	width: 32px;
-	height: 32px;
-	display: grid;
-	place-items: center;
-	color: #6b7280;
-	cursor: pointer;
-	flex-shrink: 0;
-	transition: all 0.2s ease-out;
-}
-
-.dict-save-icon:hover {
-	background: #eff5ff;
-	border-color: #a8c0ff;
-	color: #1d4ed8;
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(29, 78, 216, 0.15);
-}
-
-.dict-meaning-vi {
-	margin: 8px 0 0;
-	font-size: 13px;
-	color: #64748b;
-	font-style: italic;
-	line-height: 1.5;
-}
-
-.dict-examples {
-	margin: 10px 0 0 0;
-	padding-left: 20px;
-	font-size: 14px;
-	color: #374151;
-	line-height: 1.7;
-}
-
-.dict-examples li {
-	margin-bottom: 5px;
-}
-
-.dictionary-close {
-	border: 1px solid #d1d5db;
-	background: #f3f4f6;
-	color: #374151;
-	padding: 8px 14px;
-	border-radius: 6px;
-	cursor: pointer;
-	font-weight: 700;
-	font-size: 13px;
-	transition: all 0.2s ease-out;
-}
-
-.dictionary-close:hover {
-	background: #e5e7eb;
-	transform: translateY(-1px);
-}
-
-.video-save-modal-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: rgba(0, 0, 0, 0.5);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 1000;
-	animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-
-	to {
-		opacity: 1;
-	}
-}
-
-.video-save-modal {
-	background: #ffffff;
-	border-radius: 12px;
-	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-	max-width: 500px;
-	width: 90%;
-	max-height: 80vh;
-	overflow-y: auto;
-	padding: 28px;
-	animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.video-watch__quick-dict {
+  position: absolute;
+  top: calc(100% + 15px); /* Hiện dưới khung phụ đề */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e2e8f0;
+  z-index: 100;
+  text-align: left;
 }
 
 @keyframes slideUp {
-	from {
-		transform: translateY(20px);
-		opacity: 0;
-	}
-
-	to {
-		transform: translateY(0);
-		opacity: 1;
-	}
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-.video-save-modal__title {
-	margin: 0 0 20px 0;
-	font-size: 22px;
-	font-weight: 700;
-	color: #0f172a;
-	line-height: 1;
+.video-watch__dict-arrow {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid #ffffff;
 }
 
-.video-save-modal__form {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	margin-bottom: 20px;
+.video-watch__dict-content {
+  padding: 20px;
 }
 
-.video-save-form__group {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+.video-watch__dict-content header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
 }
 
-.video-save-form__group label {
-	font-size: 13px;
-	font-weight: 700;
-	color: #475569;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+.video-watch__dict-content h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin: 0;
+  text-transform: capitalize;
 }
 
-.video-save-form__group input,
-.video-save-form__group textarea {
-	padding: 10px 12px;
-	border: 1px solid #d1d5db;
-	border-radius: 8px;
-	font-size: 14px;
-	font-family: 'Manrope', sans-serif;
-	color: #1f2937;
-	background: #f9fafb;
-	resize: vertical;
+.dict-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.video-save-form__group input:focus,
-.video-save-form__group textarea:focus {
-	outline: 0;
-	border-color: #3b82f6;
-	background: #ffffff;
-	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.dict-level {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
 }
 
-.video-save-form__group textarea {
-	line-height: 1.5;
-	min-height: auto;
+.dict-phonetic {
+  color: #6366f1;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
 }
 
-.video-save-modal__actions {
-	display: flex;
-	gap: 10px;
-	justify-content: flex-end;
+.dict-text-en {
+  font-weight: 500;
+  color: #1e293b;
 }
 
-.video-save-modal__btn {
-	padding: 10px 24px;
-	border-radius: 8px;
-	font-size: 14px;
-	font-weight: 700;
-	cursor: pointer;
-	border: 0;
-	transition: all 0.2s ease-out;
+.dict-text-vi {
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
-.video-save-modal__btn--cancel {
-	background: #e5e7eb;
-	color: #374151;
+.dict-example-section {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 10px;
+  border-left: 4px solid #cbd5e1;
 }
 
-.video-save-modal__btn--cancel:hover {
-	background: #d1d5db;
-	transform: translateY(-1px);
+.dict-example-en {
+  font-style: italic;
+  color: #334155;
+  margin-bottom: 4px !important;
 }
 
-.video-save-modal__btn--save {
-	background: #3b82f6;
-	color: #ffffff;
+.dict-example-vi {
+  font-size: 0.85rem !important;
+  color: #64748b;
 }
 
-.video-save-modal__btn--save:hover {
-	background: #2563eb;
-	transform: translateY(-1px);
-	box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+.dict-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  cursor: pointer;
 }
 
-.video-dictionary {
-	position: fixed;
-	inset: 0;
-	z-index: 120;
-	display: grid;
-	place-items: center;
-	padding: 8px;
+.dict-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.video-dictionary__backdrop {
-	position: absolute;
-	inset: 0;
-	border: 0;
-	background: rgba(15, 23, 42, 0.48);
-	animation: modalBackdropIn 0.22s ease-out;
+.dict-section label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
 }
 
-.video-dictionary__content {
-	position: relative;
-	z-index: 1;
-	width: min(760px, calc(100vw - 20px));
-	max-height: calc(100vh - 24px);
-	overflow: auto;
-	border-radius: 16px;
-	border: 1px solid #dce4f2;
-	background: #ffffff;
-	padding: 14px;
-	animation: modalCardIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+.dict-section p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #1e293b;
+  margin: 0;
 }
 
-.video-dictionary__head {
-	display: flex;
-	justify-content: space-between;
-	align-items: start;
-	gap: 8px;
+.dict-footer {
+  margin-top: 20px;
+  display: flex;
 }
 
-.video-dictionary__head p {
-	margin: 0;
-	font-size: 12px;
-	font-weight: 700;
-	color: #64748b;
+.dict-save-btn {
+  width: 100%;
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.video-dictionary__head h3 {
-	margin: 3px 0 0;
-	font-size: 34px;
-	line-height: 1;
-	color: #0f172a;
+.dict-save-btn:hover {
+  background: var(--primary-hover);
 }
 
-.video-dictionary__head button {
-	border: 1px solid #d6deeb;
-	background: #f8fafc;
-	padding: 7px 10px;
-	border-radius: 10px;
-	font-weight: 700;
-	cursor: pointer;
+/* Sidebar Subtitles (Adjusted to be higher and shorter) */
+.video-watch__subtitles {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 250px); /* Thu ngắn thêm để đảm bảo không cuộn trang */
+  margin-top: -10px; /* Đẩy lên cao một chút */
 }
 
-.video-dictionary__pronounce {
-	margin-top: 10px;
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 8px;
+.video-watch__subtitles h2 {
+  padding: 15px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  margin: 0;
 }
 
-.video-dictionary__pronounce div {
-	border: 1px solid #dce4f2;
-	border-radius: 10px;
-	padding: 10px;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 8px;
+.video-watch__subtitle-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
 }
 
-.video-dictionary__pronounce button {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	border: 1px solid #c7d6ff;
-	background: #eaf2ff;
-	color: #1d4ed8;
-	padding: 6px 10px;
-	border-radius: 10px;
-	font-weight: 700;
-	cursor: pointer;
+.video-watch__subtitle-item {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  text-align: left;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+  line-height: 1.4;
 }
 
-.video-dictionary__meanings {
-	margin-top: 10px;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+.video-watch__subtitle-item:hover {
+  background: #f8fafc;
+  color: var(--text-main);
 }
 
-.video-dictionary__meaning-item {
-	border: 1px solid #dbe4f3;
-	border-radius: 12px;
-	padding: 10px;
-	background: #fafcff;
-	opacity: 0;
-	transform: translateY(12px);
-	animation: meaningStaggerIn 0.38s ease forwards;
-	animation-delay: calc(var(--stagger-index, 0) * 70ms + 100ms);
+.video-watch__subtitle-item.is-active {
+  background: #f0f7ff;
+  color: var(--primary-color);
+  font-weight: 500;
+  border-left: 3px solid var(--primary-color);
+  padding-left: 9px;
 }
 
-.video-dictionary__meaning-item p {
-	margin: 0 0 6px;
-}
-
-.video-dictionary__meaning-item ul {
-	margin: 0 0 8px 16px;
-	padding: 0;
-}
-
-.video-dictionary__meaning-item button {
-	border: 0;
-	background: #2563eb;
-	color: #ffffff;
-	padding: 7px 12px;
-	border-radius: 9px;
-	font-weight: 700;
-	cursor: pointer;
-}
-
-.video-dictionary__meaning-item button:disabled {
-	background: #9fb7ec;
-	cursor: not-allowed;
-}
-
-@keyframes modalBackdropIn {
-	from {
-		opacity: 0;
-	}
-
-	to {
-		opacity: 1;
-	}
-}
-
-@keyframes modalCardIn {
-	from {
-		opacity: 0;
-		transform: translateY(14px) scale(0.98);
-	}
-
-	to {
-		opacity: 1;
-		transform: translateY(0) scale(1);
-	}
-}
-
-@keyframes meaningStaggerIn {
-	from {
-		opacity: 0;
-		transform: translateY(12px);
-	}
-
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-.video-watch__back {
-	display: inline-block;
-	padding: 9px 12px;
-	border-radius: 10px;
-	background: #e2e8f0;
-	text-decoration: none;
-	color: #0f172a;
-	font-weight: 700;
-}
-
-@media (max-width: 1020px) {
-	.video-watch-page__container {
-		padding: 14px;
-	}
-
-	.video-watch__sticky-head {
-		margin: 0 0 10px;
-		top: auto;
-	}
-
-	.video-watch__layout {
-		grid-template-columns: 1fr;
-	}
-
-	.video-watch__poster {
-		height: 300px;
-	}
-
-	.video-watch__subtitles {
-		height: 340px;
-	}
-
-	.video-watch__line-preview {
-		font-size: 18px;
-	}
-}
-
-@media (max-width: 680px) {
-	.video-watch__header h1 {
-		font-size: 20px;
-	}
-
-	.video-watch__meta-row > span {
-		font-size: 13px;
-	}
-
-	.video-watch__level {
-		font-size: 12px;
-	}
-
-	.video-watch__line-preview {
-		font-size: 16px;
-	}
-
-	.video-dictionary__pronounce {
-		grid-template-columns: 1fr;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.video-watch__word,
-	.video-dictionary__backdrop,
-	.video-dictionary__content,
-	.video-dictionary__meaning-item {
-		animation: none !important;
-		transition: none !important;
-	}
+.video-watch__subtitle-time {
+  font-family: monospace;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  min-width: 40px;
 }

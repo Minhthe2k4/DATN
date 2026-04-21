@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface UserVocabularyCustomRepository extends JpaRepository<UserVocabularyCustom, Long> {
     boolean existsByUser_IdAndWordIgnoreCase(Long userId, String word);
+    java.util.Optional<UserVocabularyCustom> findByUser_IdAndWordIgnoreCase(Long userId, String word);
     List<UserVocabularyCustom> findByUser_IdOrderByCreatedAtDesc(Long userId);
     long countByUser_Id(Long userId);
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserSession } from '../../utils/authSession'
+import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
 import './vocabulary.css'
 
 function QuestionCircleIcon() {
@@ -15,6 +16,7 @@ function QuestionCircleIcon() {
 export function Vocabulary() {
 	const navigate = useNavigate()
 	const session = getUserSession()
+	const userId = session?.userId ? Number(session.userId) : null
 	const isLoggedIn = !!session
 
 	const [dashboard, setDashboard] = useState({
@@ -72,8 +74,24 @@ export function Vocabulary() {
 		return () => window.clearInterval(timerId)
 	}, [remainingSeconds])
 
+	const premiumStatus = usePremiumStatus(userId)
+
 	const handleReviewClick = () => {
 		if (isReviewLoading) return
+
+		// Kiểm tra quyền truy cập tính năng Ôn tập (SRS)
+		const reviewLimit = premiumStatus?.featureLimits?.VOCABULARY_REVIEW
+		if (reviewLimit?.IS_LOCKED) {
+			alert(`🔒 Tính năng Ôn tập từ vựng thời điểm vàng hiện đang bị khóa cho gói cước của bạn.\nHãy nâng cấp gói cước để sử dụng tính năng này!`)
+			return
+		}
+
+		// Fallback nếu không có dữ liệu limit (ví dụ: Free chưa cấu hình)
+		if (!premiumStatus?.isPremium && !reviewLimit) {
+			alert('✨ Tính năng ôn tập từ vựng (SRS) chỉ dành cho thành viên Premium. Hãy nâng cấp ngay để sử dụng!')
+			return
+		}
+
 		if (dashboard.reviewCount === 0) {
 			alert('Hiện tại bạn không có từ nào cần ôn tập.')
 			return
@@ -174,7 +192,23 @@ export function Vocabulary() {
 										</div>
 									</div>
 
-									<div className="stats-breakdown">
+									<div className={`stats-breakdown ${!premiumStatus?.isPremium ? 'is-locked' : ''}`}>
+										{!premiumStatus?.isPremium && (
+											<div className="stats-lock-overlay">
+												<div className="stats-lock-content">
+													<div className="stats-lock-icon">🔒</div>
+													<h3>Phân tích chuyên sâu</h3>
+													<p>Nâng cấp Premium để xem biểu đồ chi tiết, phân tích mức độ thành thạo và ôn tập theo thời điểm vàng.</p>
+													<button
+														type="button"
+														className="stats-upgrade-btn"
+														onClick={() => navigate('/subscription')}
+													>
+														Nâng cấp ngay
+													</button>
+												</div>
+											</div>
+										)}
 										<div className="stats-breakdown__top">
 											{/* Column Chart */}
 											<div className="stats-breakdown__chart-container">
@@ -253,35 +287,6 @@ export function Vocabulary() {
 										</div>
 									</div>
 
-
-
-									{/* Golden Time Learning List */}
-									{isLoggedIn && (
-										<div className="golden-time-section">
-											<div className="golden-time-header">
-												<h2 className="golden-time-title">Danh sách học thời điểm vàng</h2>
-												<p className="golden-time-subtitle">Dựa trên thuật toán SRS, đây là những từ bạn cần ôn tập ngay bây giờ.</p>
-											</div>
-											<div className="golden-time-list">
-												{dashboard.reviewWords && dashboard.reviewWords.length > 0 ? (
-													dashboard.reviewWords.map((item, idx) => (
-														<div key={idx} className="golden-word-card">
-															<div className="golden-word-card__top">
-																<span className="golden-word">{item.word}</span>
-																<span className={`golden-level golden-level--${item.level}`}>Lv.{item.level}</span>
-															</div>
-															<p className="golden-phonetic">{item.phonetic || '/.../'}</p>
-															<p className="golden-meaning">{item.meaning || 'Chưa có nghĩa'}</p>
-														</div>
-													))
-												) : (
-													<div className="golden-empty">
-														<p>Tuyệt vời! Bạn đã hoàn thành hết các từ cần ôn tập.</p>
-													</div>
-												)}
-											</div>
-										</div>
-									)}
 								</>
 							) : (
 								<div className="stats-login-prompt">

@@ -1,5 +1,6 @@
 package com.example.DATN.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.Date;
 
@@ -11,6 +12,7 @@ public class UserVocabularyCustom {
     @Column(name = "id")
     public Long id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_id")
     public User user;

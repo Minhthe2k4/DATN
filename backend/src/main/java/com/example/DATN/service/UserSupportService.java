@@ -26,12 +26,21 @@ public class UserSupportService {
     private UserRepository userRepository;
 
     /**
-     * Create a new support ticket for user
+     * Create a new support ticket (for both registered users and guests)
      */
-    public SupportTicket createTicket(Long userId, String title, String message) {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+    public SupportTicket createTicket(Long userId, String email, String title, String message) {
+        SupportTicket ticket = new SupportTicket();
+        
+        if (userId != null) {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                ticket.user = userOpt.get();
+                ticket.email = userOpt.get().email; // Use user's email if logged in
+            }
+        } else if (email != null && !email.isBlank()) {
+            ticket.email = email.trim();
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email or Login is required to submit a ticket");
         }
 
         if (title == null || title.isBlank()) {
@@ -42,8 +51,6 @@ public class UserSupportService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message is required");
         }
 
-        SupportTicket ticket = new SupportTicket();
-        ticket.user = userOpt.get();
         ticket.title = title.trim();
         ticket.message = message.trim();
         ticket.status = "open";

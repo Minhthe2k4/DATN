@@ -36,10 +36,11 @@ backend/target/
 Thumbs.db
 desktop.ini
 
-# ========================
 # Environment / Secrets
 # ========================
 .env
 .env.local
 .env.*.local
 *.env
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application.properties

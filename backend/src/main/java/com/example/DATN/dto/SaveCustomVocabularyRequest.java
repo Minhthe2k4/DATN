@@ -7,6 +7,9 @@ public class SaveCustomVocabularyRequest {
     @JsonProperty("vocabularies")
     public List<CustomVocabularyItem> vocabularies;
 
+    @JsonProperty("addToSRS")
+    public boolean addToSRS = true;
+
     public SaveCustomVocabularyRequest() {}
 
     public static class CustomVocabularyItem {

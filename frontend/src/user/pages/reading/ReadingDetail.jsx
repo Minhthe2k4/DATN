@@ -183,6 +183,7 @@ export function ReadingDetail() {
         normalizedWord: '',
         sentence: '',
         response: null,
+        availableDecks: [],
     })
 
     useEffect(() => {
@@ -235,25 +236,33 @@ export function ReadingDetail() {
         })
     }
 
-    const handleDownloadArticle = () => {
-        if (!article) return
+    const handleDownloadArticle = async () => {
+        if (!article || !userId) return
 
-        // Check if user is premium
-        if (!premiumStatus?.isPremium) {
-            alert('📥 Tải bài viết yêu cầu đăng ký Premium. Nâng cấp ngay để tải và học offline!')
+        const downloadLimit = premiumStatus?.featureLimits?.ARTICLE_DOWNLOADS
+        const canDownload = premiumStatus?.isPremium || (downloadLimit && !downloadLimit.IS_LOCKED)
+
+        if (!canDownload) {
+            alert('🔒 Tính năng tải bài báo yêu cầu gói Premium.')
             return
         }
 
-        // Create text content
-        const content = `${article.title}\n${'='.repeat(article.title.length)}\n\nTác giả: ${article.source}\nKhó độ: ${article.difficulty}\nThời gian đọc: ${estimateMinutes(article.content)} phút\n\n${article.content.replace(/<[^>]+>/g, '')}`
-
-        // Create blob and download
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(blob)
-        link.download = `${article.title.slice(0, 50).replace(/[^a-z0-9]/gi, '_')}.txt`
-        link.click()
-        URL.revokeObjectURL(link.href)
+        try {
+            // 1. Call backend to verify and increment limit
+            await axios.post(`/api/article/${articleId}/check-download-limit?userId=${userId}`)
+            
+            // 2. If backend allows (doesn't throw error), proceed with download
+            const content = `${article.title}\n${'='.repeat(article.title.length)}\n\nTác giả: ${article.source}\nKhó độ: ${article.difficulty}\nThời gian đọc: ${estimateMinutes(article.content)} phút\n\n${article.content.replace(/<[^>]+>/g, '')}`
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+            const link = document.createElement('a')
+            link.href = URL.createObjectURL(blob)
+            link.download = `${article.title.slice(0, 50).replace(/[^a-z0-9]/gi, '_')}.txt`
+            link.click()
+            URL.revokeObjectURL(link.href)
+        } catch (error) {
+            const errorMsg = error?.response?.data?.message || 'Không thể tải bài báo lúc này.'
+            alert('📥 ' + errorMsg)
+        }
     }
 
     const pickPronunciation = (label) => {
@@ -316,11 +325,15 @@ export function ReadingDetail() {
                 contextTranslation: response.data?.contextTranslation || '',
             }))
         } catch (error) {
+            const errorMsg = error?.response?.data?.message || 'Khong the tra tu luc nay. Vui long thu lai.'
+            if (error?.response?.status === 403 && errorMsg.includes('Premium')) {
+                alert('🔒 ' + errorMsg)
+            }
             setLookupState((prev) => ({
                 ...prev,
                 loading: false,
                 response: null,
-                error: error?.response?.data?.message || 'Khong the tra tu luc nay. Vui long thu lai.',
+                error: errorMsg,
             }))
         }
     }
@@ -350,6 +363,14 @@ export function ReadingDetail() {
     }
 
     const handleOpenSaveMeaningModal = (meaning) => {
+        const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
+        const canSave = premiumStatus?.isPremium || (vocabLimit && !vocabLimit.IS_LOCKED)
+
+        if (!canSave) {
+            alert('✨ Tính năng lưu từ vựng yêu cầu gói Premium hoặc đã bị khóa.');
+            return
+        }
+
         const defaultPhonetic = pronunciationUk?.ipa || pronunciationUs?.ipa || ''
         setLookupState((prev) => ({
             ...prev,
@@ -365,8 +386,23 @@ export function ReadingDetail() {
                 definitionVi: meaning?.definitionVi || '',
                 exampleEng: meaning?.example || prev.sentence || '',
                 exampleVi: prev.response?.contextTranslation || '',
+                saveType: 'SRS',
+                deckId: '',
             },
         }))
+        fetchDecks()
+    }
+
+    const fetchDecks = async () => {
+        try {
+            const authToken = localStorage.getItem('token') || session?.userId
+            const response = await axios.get('/api/user/flashcards/decks', {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            })
+            setLookupState(prev => ({ ...prev, availableDecks: response.data }))
+        } catch (err) {
+            console.error('Failed to fetch decks:', err)
+        }
     }
 
     const handleCloseSaveMeaningModal = () => {
@@ -400,6 +436,15 @@ export function ReadingDetail() {
             return
         }
 
+        if (lookupState.saveDraft?.saveType === 'FLASHCARD' && !lookupState.saveDraft?.deckId) {
+            setLookupState((prev) => ({
+                ...prev,
+                saveError: 'Vui lòng chọn bộ thẻ để lưu!',
+                saveMessage: '',
+            }))
+            return
+        }
+
         setLookupState((prev) => ({
             ...prev,
             saving: true,
@@ -411,7 +456,7 @@ export function ReadingDetail() {
         const ipa = lookupState.saveDraft?.phonetic || firstPronunciation?.ipa || ''
 
         try {
-            await axios.post('/api/article/save-word', {
+            const saveRes = await axios.post('/api/article/save-word', {
                 userId,
                 articleId: Number(articleId),
                 word: lookupState.saveDraft?.word || lookupState.response?.normalizedWord || lookupState.normalizedWord,
@@ -421,7 +466,21 @@ export function ReadingDetail() {
                 meaningVi: lookupState.saveDraft?.definitionVi || '',
                 example: lookupState.saveDraft?.exampleEng || '',
                 exampleVi: lookupState.saveDraft?.exampleVi || '',
+                addToSRS: lookupState.saveDraft?.saveType === 'SRS'
             })
+
+            if (lookupState.saveDraft?.saveType === 'FLASHCARD' && lookupState.saveDraft?.deckId) {
+                const authToken = localStorage.getItem('token') || session?.userId
+                const savedVocabId = saveRes.data?.id;
+                
+                await axios.post(`/api/user/flashcards/decks/${lookupState.saveDraft.deckId}/cards`, {
+                    frontText: lookupState.saveDraft.word,
+                    backText: lookupState.saveDraft.definitionVi,
+                    customVocab: savedVocabId ? { id: savedVocabId } : null
+                }, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                })
+            }
 
             setLookupState((prev) => ({
                 ...prev,
@@ -429,8 +488,11 @@ export function ReadingDetail() {
                 saveModalOpen: false,
                 saveDraft: null,
                 saveError: '',
-                saveMessage: 'Da luu vao kho tu vung cua ban.',
+                saveMessage: 'Đã lưu từ vựng thành công!',
             }))
+            setTimeout(() => {
+                setLookupState(prev => ({ ...prev, saveMessage: '' }))
+            }, 3000)
         } catch (error) {
             setLookupState((prev) => ({
                 ...prev,
@@ -518,7 +580,14 @@ export function ReadingDetail() {
                             ) : null}
 
                             {!lookupState.loading && lookupState.error ? (
-                                <p className="reading-vocab-empty">{lookupState.error}</p>
+                                <div className="reading-vocab-empty reading-vocab-error-box">
+                                    <span>{lookupState.error}</span>
+                                    {lookupState.error.includes('Premium') && (
+                                        <Link to="/subscription" className="reading-error-upgrade-link">
+                                            Nâng cấp Premium ngay →
+                                        </Link>
+                                    )}
+                                </div>
                             ) : null}
 
                             {!lookupState.loading && !lookupState.error && lookupState.response ? (
@@ -608,7 +677,14 @@ export function ReadingDetail() {
                                     ) : null}
 
                                     {lookupState.saveError ? (
-                                        <p className="reading-vocab-empty">{lookupState.saveError}</p>
+                                        <div className="reading-vocab-empty reading-vocab-error-box">
+                                            <span>{lookupState.saveError}</span>
+                                            {lookupState.saveError.includes('Premium') && (
+                                                <Link to="/subscription" className="reading-error-upgrade-link">
+                                                    Nâng cấp Premium ngay →
+                                                </Link>
+                                            )}
+                                        </div>
                                     ) : null}
                                 </>
                             ) : null}
@@ -687,6 +763,45 @@ export function ReadingDetail() {
                                     <label>Dich vi du (ngu canh)</label>
                                     <textarea rows="2" value={lookupState.saveDraft.exampleVi || ''} onChange={(event) => handleSaveFormChange('exampleVi', event.target.value)} />
                                 </div>
+
+                                <div className="dictionary-save-type-selector" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                    <label className="save-option-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                        <input 
+                                            type="radio" 
+                                            name="saveType" 
+                                            value="SRS" 
+                                            checked={lookupState.saveDraft.saveType === 'SRS'} 
+                                            onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
+                                        />
+                                        <span>Học thời điểm vàng (SRS)</span>
+                                    </label>
+                                    <label className="save-option-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                        <input 
+                                            type="radio" 
+                                            name="saveType" 
+                                            value="FLASHCARD" 
+                                            checked={lookupState.saveDraft.saveType === 'FLASHCARD'} 
+                                            onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
+                                        />
+                                        <span>Lưu vào Flashcard</span>
+                                    </label>
+                                </div>
+
+                                {lookupState.saveDraft.saveType === 'FLASHCARD' && (
+                                    <div className="reading-save-form__group" style={{ marginTop: '1rem' }}>
+                                        <label>Chọn bộ thẻ</label>
+                                        <select 
+                                            value={lookupState.saveDraft.deckId} 
+                                            onChange={(e) => handleSaveFormChange('deckId', e.target.value)}
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid #ddd' }}
+                                        >
+                                            <option value="">-- Chọn bộ thẻ --</option>
+                                            {lookupState.availableDecks.map(deck => (
+                                                <option key={deck.id} value={deck.id}>{deck.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="reading-save-modal__actions">
