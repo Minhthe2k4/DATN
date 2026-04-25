@@ -233,6 +233,40 @@
 	color: var(--vl-primary);
 }
 
+.vlesson-lesson.is-locked {
+	opacity: 0.85;
+	border-color: #e2e8f0;
+	background: #f8fafc;
+}
+
+.vlesson-lesson__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.vlesson-premium-badge {
+	font-size: 16px;
+	flex-shrink: 0;
+}
+
+.vlesson-lesson__footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: auto;
+}
+
+.vlesson-lock-icon {
+	font-size: 12px;
+	font-weight: 700;
+	color: #64748b;
+	background: #f1f5f9;
+	padding: 4px 8px;
+	border-radius: 6px;
+}
+
 .vlesson-ghost,
 .vlesson-primary {
 	border: 0;

@@ -65,3 +65,15 @@ export async function fetchNewsFeed() {
         return [];
     }
 }
+
+export async function fetchActivityCalendar() {
+    try {
+        const res = await fetch('/api/user/learning/activity-calendar', {
+            headers: getAuthHeader()
+        });
+        if (!res.ok) return [];
+        return res.json();
+    } catch {
+        return [];
+    }
+}

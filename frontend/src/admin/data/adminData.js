@@ -675,7 +675,6 @@ export const adminNavGroups = [
       { to: '/admin/premium', label: 'Tài khoản Premium', icon: 'iconoir-star' },
       { to: '/admin/revenue', label: 'Quản lý doanh thu', icon: 'iconoir-wallet-solid' },
       { to: '/admin/spaced-repetition', label: 'Cấu hình Spaced Repetition', icon: 'iconoir-refresh-double' },
-      { to: '/admin/roles', label: 'Phân quyền hệ thống', icon: 'iconoir-shield-check' },
       { to: '/admin/support', label: 'Hỗ trợ người dùng', icon: 'iconoir-chat-lines' },
     ],
   },

@@ -33,5 +33,8 @@ public class UserStats {
 	@Column(name = "streak_days")
 	public Integer streakDays;
 
+	@Column(name = "total_study_time")
+	public Double totalStudyTime;
+
 	public UserStats() {}
 }

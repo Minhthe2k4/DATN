@@ -68,6 +68,7 @@ export function ReadingManagement() {
   const [draft, setDraft] = useState(emptyDraft())
   const [modalError, setModalError] = useState('')
   const [isCrawlingArticle, setIsCrawlingArticle] = useState(false)
+  const [isArticlePreviewMode, setIsArticlePreviewMode] = useState(false)
 
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false)
   const [editingTopicId, setEditingTopicId] = useState(null)
@@ -165,6 +166,7 @@ export function ReadingManagement() {
     setEditingArticleId(null)
     setDraft(emptyDraft())
     setModalError('')
+    setIsArticlePreviewMode(false)
     setIsModalOpen(true)
   }
 
@@ -182,6 +184,7 @@ export function ReadingManagement() {
       status: article.status || 'Chờ biên tập',
     })
     setModalError('')
+    setIsArticlePreviewMode(false)
     setIsModalOpen(true)
   }
 
@@ -446,13 +449,13 @@ export function ReadingManagement() {
 
         <div className="row g-3 mt-1">
           <div className="col-12">
-            <AdminSectionCard 
-              title="Kho bài đọc" 
+            <AdminSectionCard
+              title="Kho bài đọc"
               description="Theo dõi trạng thái biên tập, độ khó và mức độ phủ từ nổi bật của từng bài."
               actions={
                 <div className="d-flex gap-2">
-                  <select 
-                    className="form-select form-select-sm" 
+                  <select
+                    className="form-select form-select-sm"
                     style={{ width: '180px' }}
                     value={filterTopicId}
                     onChange={(e) => setFilterTopicId(e.target.value)}
@@ -475,32 +478,32 @@ export function ReadingManagement() {
                 </div>
               }
             >
-                <SimpleTable
-                  columns={[
-                    { key: 'title', label: 'Tiêu đề' },
-                    { key: 'topic', label: 'Chủ đề' },
-                    { key: 'difficulty', label: 'Độ khó' },
-                    { key: 'wordsHighlighted', label: 'Từ nổi bật' },
-                    {
-                      key: 'status',
-                      label: 'Trạng thái',
-                      render: (row) => (
-                        <Badge tone={row.status === 'Đã xuất bản' ? 'success' : row.status === 'Chờ biên tập' ? 'warning' : 'neutral'}>{row.status}</Badge>
-                      ),
-                    },
-                    {
-                      key: 'actions',
-                      label: 'Hành động',
-                      render: (row) => (
-                        <div className="d-flex flex-wrap gap-2">
-                          <button type="button" className="btn btn-sm btn-soft-primary" onClick={() => openEditArticleModal(row)}>Sửa</button>
-                          <button type="button" className="btn btn-sm btn-soft-danger" onClick={() => handleDeleteArticle(row)}>Xóa</button>
-                        </div>
-                      ),
-                    },
-                  ]}
-                  rows={filteredArticles}
-                />
+              <SimpleTable
+                columns={[
+                  { key: 'title', label: 'Tiêu đề' },
+                  { key: 'topic', label: 'Chủ đề' },
+                  { key: 'difficulty', label: 'Độ khó' },
+                  { key: 'wordsHighlighted', label: 'Từ nổi bật' },
+                  {
+                    key: 'status',
+                    label: 'Trạng thái',
+                    render: (row) => (
+                      <Badge tone={row.status === 'Đã xuất bản' ? 'success' : row.status === 'Chờ biên tập' ? 'warning' : 'neutral'}>{row.status}</Badge>
+                    ),
+                  },
+                  {
+                    key: 'actions',
+                    label: 'Hành động',
+                    render: (row) => (
+                      <div className="d-flex flex-wrap gap-2">
+                        <button type="button" className="btn btn-sm btn-soft-primary" onClick={() => openEditArticleModal(row)}>Sửa</button>
+                        <button type="button" className="btn btn-sm btn-soft-danger" onClick={() => handleDeleteArticle(row)}>Xóa</button>
+                      </div>
+                    ),
+                  },
+                ]}
+                rows={filteredArticles}
+              />
             </AdminSectionCard>
           </div>
           <div className="col-12">
@@ -568,213 +571,268 @@ export function ReadingManagement() {
                   </div>
                   <button type="button" className="btn-close" aria-label="Đóng" onClick={closeModal}></button>
                 </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Tiêu đề bài báo <span className="text-danger">*</span></label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="Ví dụ: How Remote Teams Communicate Effectively"
-                      value={draft.title}
-                      onChange={(e) => setField('title', e.target.value)}
-                    />
-                  </div>
-                  <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Chủ đề <span className="text-danger">*</span></label>
-                      <select
-                        className="form-select"
-                        value={draft.topicId}
-                        onChange={(e) => setField('topicId', e.target.value)}
-                      >
-                        <option value=""> Chọn chủ đề </option>
-                        {topicRows.map((t) => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Độ khó</label>
-                      <select
-                        className="form-select"
-                        value={draft.difficulty}
-                        onChange={(e) => setField('difficulty', e.target.value)}
-                      >
-                        {DIFFICULTY_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Nội dung bài đọc</label>
-                    <textarea
-                      className="form-control"
-                      rows={6}
-                      placeholder="Nội dung sẽ được điền sau khi crawl từ URL nguồn (vẫn có thể chỉnh tay nếu cần)."
-                      value={draft.content}
-                      onChange={(e) => setField('content', e.target.value)}
-                    ></textarea>
-                  </div>
-                  <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Ảnh bài viết <span className="text-muted fw-normal">(URL)</span></label>
-                      <input
-                        className="form-control"
-                        type="url"
-                        placeholder="https://..."
-                        value={draft.articleImage}
-                        onChange={(e) => setField('articleImage', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Ngày tạo</label>
-                      <div className="form-control bg-light">
-                        {editingArticleId
-                          ? (draft.createdAt ? new Date(draft.createdAt).toLocaleString('vi-VN') : 'Sẽ tự động gán theo thời gian thực khi lưu')
-                          : 'Tự động gán theo thời gian thực khi tạo bài'}
+                <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+                  {isArticlePreviewMode ? (
+                    <div className="article-preview-container">
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h6 className="text-primary fw-bold mb-0">CHẾ ĐỘ XEM TRƯỚC</h6>
+                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setIsArticlePreviewMode(false)}>
+                          <i className="iconoir-edit-pencil me-1"></i> Quay lại chỉnh sửa
+                        </button>
+                      </div>
+
+                      <div className="preview-article-header mb-4">
+                        {draft.articleImage && (
+                          <img
+                            src={draft.articleImage}
+                            alt="Preview"
+                            className="img-fluid rounded-3 mb-3"
+                            style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }}
+                          />
+                        )}
+                        <div className="badge bg-soft-primary text-primary mb-2">
+                          {topicRows.find(t => String(t.id) === String(draft.topicId))?.name || 'Chủ đề'}
+                        </div>
+                        <h2 className="fw-bold">{draft.title || 'Tiêu đề bài báo'}</h2>
+                        <div className="d-flex gap-3 text-muted small">
+                          <span><i className="iconoir-nav-arrow-right me-1"></i> {draft.difficulty}</span>
+                          <span><i className="iconoir-list me-1"></i> {draft.wordsHighlighted} từ nổi bật</span>
+                          {draft.sourceUrl && <span><i className="iconoir-link me-1"></i> {new URL(draft.sourceUrl).hostname}</span>}
+                        </div>
+                      </div>
+
+                      <div className="preview-article-content border-top pt-4">
+                        {draft.content ? (
+                          <div
+                            className="article-body-render"
+                            style={{ fontSize: '1.1rem', lineHeight: '1.7', color: '#334155' }}
+                            dangerouslySetInnerHTML={{
+                              __html: draft.content
+                                .split('\n\n')
+                                .map(p => `<p class="mb-3">${p.replace(/\n/g, '<br/>')}</p>`)
+                                .join('')
+                            }}
+                          />
+                        ) : (
+                          <p className="text-muted italic">Chưa có nội dung để hiển thị.</p>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Số từ nổi bật</label>
-                    <input
-                      className="form-control"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={draft.wordsHighlighted}
-                      onChange={(e) => setField('wordsHighlighted', e.target.value)}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Trạng thái</label>
-                    <select
-                      className="form-select"
-                      value={draft.status}
-                      onChange={(e) => setField('status', e.target.value)}
-                    >
-                      {ARTICLE_STATUS_OPTIONS.map((status) => <option key={status}>{status}</option>)}
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">URL nguồn <span className="text-muted fw-normal">(tùy chọn)</span></label>
-                    <div className="d-flex gap-2">
-                      <input
-                        className="form-control"
-                        type="url"
-                        placeholder="https://..."
-                        value={draft.sourceUrl}
-                        onChange={(e) => setField('sourceUrl', e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary"
-                        onClick={handleCrawlFromSource}
-                        disabled={isCrawlingArticle}
-                      >
-                        {isCrawlingArticle ? 'Đang crawl...' : 'Crawl nội dung'}
-                      </button>
-                    </div>
-                    <small className="text-muted">Hệ thống sẽ tự điền tiêu đề, nội dung, ảnh và số từ nổi bật từ link bài báo.</small>
-                  </div>
-                  <div className="topic-secondary-panel">
-                    <i className="iconoir-info-circle me-1"></i>
-                    Bài báo sau khi thêm sẽ có trạng thái <strong>Chờ biên tập</strong>. Nội dung ưu tiên lấy từ URL nguồn bằng chức năng crawl.
-                  </div>
+                  ) : (
+                    <>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Tiêu đề bài báo <span className="text-danger">*</span></label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="Ví dụ: How Remote Teams Communicate Effectively"
+                          value={draft.title}
+                          onChange={(e) => setField('title', e.target.value)}
+                        />
+                      </div>
+                      <div className="row g-3 mb-3">
+                        <div className="col-12 col-md-6">
+                          <label className="form-label fw-semibold">Chủ đề <span className="text-danger">*</span></label>
+                          <select
+                            className="form-select"
+                            value={draft.topicId}
+                            onChange={(e) => setField('topicId', e.target.value)}
+                          >
+                            <option value=""> Chọn chủ đề </option>
+                            {topicRows.map((t) => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-12 col-md-6">
+                          <label className="form-label fw-semibold">Độ khó</label>
+                          <select
+                            className="form-select"
+                            value={draft.difficulty}
+                            onChange={(e) => setField('difficulty', e.target.value)}
+                          >
+                            {DIFFICULTY_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Nội dung bài đọc</label>
+                        <textarea
+                          className="form-control"
+                          rows={6}
+                          placeholder="Nội dung sẽ được điền sau khi crawl từ URL nguồn (vẫn có thể chỉnh tay nếu cần)."
+                          value={draft.content}
+                          onChange={(e) => setField('content', e.target.value)}
+                        ></textarea>
+                      </div>
+                      <div className="row g-3 mb-3">
+                        <div className="col-12 col-md-6">
+                          <label className="form-label fw-semibold">Ảnh bài viết <span className="text-muted fw-normal">(URL)</span></label>
+                          <input
+                            className="form-control"
+                            type="url"
+                            placeholder="https://..."
+                            value={draft.articleImage}
+                            onChange={(e) => setField('articleImage', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-12 col-md-6">
+                          <label className="form-label fw-semibold">Ngày tạo</label>
+                          <div className="form-control bg-light">
+                            {editingArticleId
+                              ? (draft.createdAt ? new Date(draft.createdAt).toLocaleString('vi-VN') : 'Sẽ tự động gán theo thời gian thực khi lưu')
+                              : 'Tự động gán theo thời gian thực khi tạo bài'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Số từ nổi bật</label>
+                        <input
+                          className="form-control"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={draft.wordsHighlighted}
+                          onChange={(e) => setField('wordsHighlighted', e.target.value)}
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Trạng thái</label>
+                        <select
+                          className="form-select"
+                          value={draft.status}
+                          onChange={(e) => setField('status', e.target.value)}
+                        >
+                          {ARTICLE_STATUS_OPTIONS.map((status) => <option key={status}>{status}</option>)}
+                        </select>
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">URL nguồn <span className="text-muted fw-normal">(tùy chọn)</span></label>
+                        <div className="d-flex gap-2">
+                          <input
+                            className="form-control"
+                            type="url"
+                            placeholder="https://..."
+                            value={draft.sourceUrl}
+                            onChange={(e) => setField('sourceUrl', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary"
+                            onClick={handleCrawlFromSource}
+                            disabled={isCrawlingArticle}
+                          >
+                            {isCrawlingArticle ? 'Đang crawl...' : 'Crawl nội dung'}
+                          </button>
+                        </div>
+                        <small className="text-muted">Hệ thống sẽ tự điền tiêu đề, nội dung, ảnh và số từ nổi bật từ link bài báo.</small>
+                      </div>
+                      <div className="topic-secondary-panel">
+                        <i className="iconoir-info-circle me-1"></i>
+                        Bài báo sau khi thêm sẽ có trạng thái <strong>Chờ biên tập</strong>. Nội dung ưu tiên lấy từ URL nguồn bằng chức năng crawl.
+                      </div>
+                    </>
+                  )}
                   {modalError ? <div className="text-danger mt-3">{modalError}</div> : null}
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={closeModal}>Hủy</button>
-                  <button type="button" className="btn btn-primary" onClick={handleSaveArticle}>
-                    {editingArticleId ? 'Lưu cập nhật' : 'Thêm vào hàng chờ biên tập'}
-                  </button>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-outline-secondary" onClick={closeModal}>Hủy</button>
+                    {!isArticlePreviewMode && (
+                      <button type="button" className="btn btn-outline-primary" onClick={() => setIsArticlePreviewMode(true)}>
+                        <i className="iconoir-eye me-1"></i> Xem trước
+                      </button>
+                    )}
+                    <button type="button" className="btn btn-primary" onClick={handleSaveArticle}>
+                      {editingArticleId ? 'Lưu cập nhật' : 'Thêm vào hàng chờ biên tập'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="modal-backdrop fade show"></div>
-        </>
+            <div className="modal-backdrop fade show"></div>
+          </>
       ) : null}
 
-      {isTopicModalOpen ? (
-        <>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-              <div className="modal-content topic-bulk-modal">
-                <div className="modal-header">
-                  <div>
-                    <h5 className="modal-title mb-1">{editingTopicId ? 'Sửa article topic' : 'Thêm article topic'}</h5>
-                    <div className="topic-bulk-modal__subtitle">Thiết lập chủ đề để dùng ngay cho bộ lọc và phân loại bài đọc.</div>
-                  </div>
-                  <button type="button" className="btn-close" aria-label="Đóng" onClick={closeTopicModal}></button>
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Tên topic <span className="text-danger">*</span></label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="Ví dụ: Daily News"
-                      value={topicDraft.name}
-                      onChange={(event) => handleTopicField('name', event.target.value)}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Mô tả ngắn</label>
-                    <textarea
-                      className="form-control"
-                      rows={3}
-                      placeholder="Mô tả phạm vi nội dung của topic"
-                      value={topicDraft.description}
-                      onChange={(event) => handleTopicField('description', event.target.value)}
-                    ></textarea>
-                  </div>
-                  <div className="row g-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Độ khó mặc định</label>
-                      <select
-                        className="form-select"
-                        value={topicDraft.defaultDifficulty}
-                        onChange={(event) => handleTopicField('defaultDifficulty', event.target.value)}
-                      >
-                        {DIFFICULTY_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
-                      </select>
+          {isTopicModalOpen ? (
+            <>
+              <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+                <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
+                  <div className="modal-content topic-bulk-modal">
+                    <div className="modal-header">
+                      <div>
+                        <h5 className="modal-title mb-1">{editingTopicId ? 'Sửa article topic' : 'Thêm article topic'}</h5>
+                        <div className="topic-bulk-modal__subtitle">Thiết lập chủ đề để dùng ngay cho bộ lọc và phân loại bài đọc.</div>
+                      </div>
+                      <button type="button" className="btn-close" aria-label="Đóng" onClick={closeTopicModal}></button>
                     </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Trạng thái</label>
-                      <select
-                        className="form-select"
-                        value={topicDraft.status}
-                        onChange={(event) => handleTopicField('status', event.target.value)}
-                      >
-                        <option>Hoạt động</option>
-                        <option>Tạm dừng</option>
-                      </select>
+                    <div className="modal-body">
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Tên topic <span className="text-danger">*</span></label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="Ví dụ: Daily News"
+                          value={topicDraft.name}
+                          onChange={(event) => handleTopicField('name', event.target.value)}
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Mô tả ngắn</label>
+                        <textarea
+                          className="form-control"
+                          rows={3}
+                          placeholder="Mô tả phạm vi nội dung của topic"
+                          value={topicDraft.description}
+                          onChange={(event) => handleTopicField('description', event.target.value)}
+                        ></textarea>
+                      </div>
+                      <div className="row g-3">
+                        <div className="col-12 col-md-6">
+                          <label className="form-label fw-semibold">Độ khó mặc định</label>
+                          <select
+                            className="form-select"
+                            value={topicDraft.defaultDifficulty}
+                            onChange={(event) => handleTopicField('defaultDifficulty', event.target.value)}
+                          >
+                            {DIFFICULTY_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
+                          </select>
+                        </div>
+                        <div className="col-12 col-md-6">
+                          <label className="form-label fw-semibold">Trạng thái</label>
+                          <select
+                            className="form-select"
+                            value={topicDraft.status}
+                            onChange={(event) => handleTopicField('status', event.target.value)}
+                          >
+                            <option>Hoạt động</option>
+                            <option>Tạm dừng</option>
+                          </select>
+                        </div>
+                        <div className="col-12">
+                          <label className="form-label fw-semibold">Ảnh topic <span className="text-muted fw-normal">(URL)</span></label>
+                          <input
+                            className="form-control"
+                            type="url"
+                            placeholder="https://..."
+                            value={topicDraft.articleTopicImage}
+                            onChange={(event) => handleTopicField('articleTopicImage', event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      {topicError ? <div className="text-danger mt-3">{topicError}</div> : null}
                     </div>
-                    <div className="col-12">
-                      <label className="form-label fw-semibold">Ảnh topic <span className="text-muted fw-normal">(URL)</span></label>
-                      <input
-                        className="form-control"
-                        type="url"
-                        placeholder="https://..."
-                        value={topicDraft.articleTopicImage}
-                        onChange={(event) => handleTopicField('articleTopicImage', event.target.value)}
-                      />
+                    <div className="modal-footer">
+                      <button type="button" className="btn btn-outline-secondary" onClick={closeTopicModal}>Hủy</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveTopic}>
+                        {editingTopicId ? 'Lưu cập nhật' : 'Thêm topic'}
+                      </button>
                     </div>
                   </div>
-                  {topicError ? <div className="text-danger mt-3">{topicError}</div> : null}
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={closeTopicModal}>Hủy</button>
-                  <button type="button" className="btn btn-primary" onClick={handleSaveTopic}>
-                    {editingTopicId ? 'Lưu cập nhật' : 'Thêm topic'}
-                  </button>
                 </div>
               </div>
-            </div>
-          </div>
-          <div className="modal-backdrop fade show"></div>
-        </>
-      ) : null}
-    </div>
-  )
+              <div className="modal-backdrop fade show"></div>
+            </>
+          ) : null}
+        </div>
+      )
 }

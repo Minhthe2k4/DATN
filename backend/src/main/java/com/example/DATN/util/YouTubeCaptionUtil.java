@@ -17,12 +17,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-/**
- * Utility class để lấy transcript/captions từ YouTube video.
- * Sử dụng 2 tầng:
- * - Tầng 1: YouTube timedtext API với lang=ko (HTML/JSON3 format)
- * - Tầng 2: Fallback các ngôn ngữ khác nếu tầng 1 fail
- */
 public class YouTubeCaptionUtil {
 
     private static final String TIMEDTEXT_BASE = "https://www.youtube.com/api/timedtext";
@@ -78,14 +72,14 @@ public class YouTubeCaptionUtil {
             return null;
         }
 
-        // Thử lang=ko JSON3
-        TranscriptFetchResult result = fetchWithLanguage(videoId, "ko", "json3");
+        // Thử lang=en JSON3 (Ưu tiên tiếng Anh)
+        TranscriptFetchResult result = fetchWithLanguage(videoId, "en", "json3");
         if (result != null) {
             return result;
         }
 
-        // Thử lang=ko HTML
-        result = fetchWithLanguage(videoId, "ko", null);
+        // Thử lang=en HTML
+        result = fetchWithLanguage(videoId, "en", null);
         if (result != null) {
             return result;
         }
@@ -108,7 +102,7 @@ public class YouTubeCaptionUtil {
         }
 
         // Danh sách ngôn ngữ thay thế (ưu tiên tiếng phổ biến)
-        String[] fallbackLanguages = {"en", "ja", "zh-Hans", "fr", "es", "de", "ru", "pt", "ar"};
+        String[] fallbackLanguages = { "en", "ja", "zh-Hans", "fr", "es", "de", "ru", "pt", "ar" };
 
         for (String lang : fallbackLanguages) {
             if (lang.equals(primaryLanguage)) {
@@ -148,11 +142,11 @@ public class YouTubeCaptionUtil {
             }
 
             String urlStr = urlBuilder.toString();
-            String debugInfo = "lang=" + (language == null ? "default" : language) + 
-                             " fmt=" + (fmt == null ? "html" : fmt);
+            String debugInfo = "lang=" + (language == null ? "default" : language) +
+                    " fmt=" + (fmt == null ? "html" : fmt);
             System.err.println("[DEBUG] Trying to fetch: " + debugInfo);
             System.err.println("[DEBUG] URL: " + urlStr);
-            
+
             URL url = new URL(urlStr);
 
             java.net.URLConnection conn = url.openConnection();
@@ -168,15 +162,14 @@ public class YouTubeCaptionUtil {
 
             String contentType = conn.getContentType();
             System.err.println("[DEBUG] Content-Type: " + contentType);
-            
+
             String charset = "UTF-8";
             if (contentType != null && contentType.contains("charset=")) {
                 charset = contentType.split("charset=")[1].toUpperCase();
             }
 
             BufferedReader reader = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), charset)
-            );
+                    new InputStreamReader(conn.getInputStream(), charset));
 
             StringBuilder content = new StringBuilder();
             String line;
@@ -187,26 +180,33 @@ public class YouTubeCaptionUtil {
 
             String responseBody = content.toString().trim();
             System.err.println("[DEBUG] Response length: " + responseBody.length());
-            
+
             if (responseBody.isEmpty()) {
                 System.err.println("[DEBUG] Empty response for " + debugInfo);
-                System.err.println("[DEBUG] Response body sample (first 200 chars): [" + responseBody.substring(0, Math.min(200, responseBody.length())) + "]");
+                System.err.println("[DEBUG] Response body sample (first 200 chars): ["
+                        + responseBody.substring(0, Math.min(200, responseBody.length())) + "]");
                 return null;
             }
 
             System.err.println("[DEBUG] Got response (" + responseBody.length() + " chars) for " + debugInfo);
-            System.err.println("[DEBUG] Response sample: " + responseBody.substring(0, Math.min(300, responseBody.length())));
+            System.err.println(
+                    "[DEBUG] Response sample: " + responseBody.substring(0, Math.min(300, responseBody.length())));
 
             // Parse JSON3 format
             if (fmt != null && fmt.equals("json3")) {
-                return parseJson3Format(videoId, responseBody, language);
+                TranscriptFetchResult jsonResult = parseJson3Format(videoId, responseBody, language);
+                if (jsonResult != null)
+                    return jsonResult;
+                // If json3 fails, fall back to HTML parsing just in case
+                System.err.println("[DEBUG] JSON3 parsing failed for " + videoId + ", falling back to HTML parsing...");
             }
 
             // Parse HTML/XML format
             return parseHtmlFormat(videoId, responseBody, language);
 
         } catch (Exception e) {
-            System.err.println("[ERROR] Failed to fetch " + videoId + " (lang=" + language + "): " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            System.err.println("[ERROR] Failed to fetch " + videoId + " (lang=" + language + "): "
+                    + e.getClass().getSimpleName() + " - " + e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -216,8 +216,19 @@ public class YouTubeCaptionUtil {
      * Parse JSON3 format từ YouTube timedtext
      */
     private static TranscriptFetchResult parseJson3Format(String videoId, String json, String language) {
+        if (json == null || json.trim().isEmpty()) {
+            return null;
+        }
+
+        String trimmedJson = json.trim();
+        if (!trimmedJson.startsWith("{")) {
+            System.err.println("[DEBUG] Response for " + videoId + " is not a valid JSON3 object (starts with: " +
+                    trimmedJson.substring(0, Math.min(20, trimmedJson.length())) + ")");
+            return null;
+        }
+
         try {
-            JSONObject obj = new JSONObject(json);
+            JSONObject obj = new JSONObject(trimmedJson);
 
             // JSON3 format: events array với dur (duration) và tStartMs (start time in ms)
             JSONArray events = obj.optJSONArray("events");
@@ -231,7 +242,7 @@ public class YouTubeCaptionUtil {
 
             for (int i = 0; i < events.length(); i++) {
                 JSONObject event = events.getJSONObject(i);
-                
+
                 // Lấy text
                 String text = "";
                 if (event.has("segs")) {
@@ -256,11 +267,10 @@ public class YouTubeCaptionUtil {
                 double durationSec = durationMs / 1000.0;
 
                 TranscriptChunkDto chunk = new TranscriptChunkDto(
-                    text.trim(),
-                    startSec,
-                    durationSec,
-                    startSec + durationSec
-                );
+                        text.trim(),
+                        startSec,
+                        durationSec,
+                        startSec + durationSec);
 
                 chunks.add(chunk);
 
@@ -275,11 +285,10 @@ public class YouTubeCaptionUtil {
             }
 
             return new TranscriptFetchResult(
-                fullTranscript.toString(),
-                chunks,
-                language != null ? language : "unknown",
-                "json3"
-            );
+                    fullTranscript.toString(),
+                    chunks,
+                    language != null ? language : "unknown",
+                    "json3");
 
         } catch (JSONException e) {
             System.err.println("Error parsing JSON3: " + e.getMessage());
@@ -294,7 +303,7 @@ public class YouTubeCaptionUtil {
         try {
             // YouTube timedtext API trả HTML/XML dạng:
             // <transcript><text start="0.5" dur="1.5">Hello</text>...</transcript>
-            
+
             Document doc = Jsoup.parse(htmlContent);
             Elements textElements = doc.select("text");
 
@@ -336,11 +345,10 @@ public class YouTubeCaptionUtil {
                 }
 
                 TranscriptChunkDto chunk = new TranscriptChunkDto(
-                    text.trim(),
-                    startSec,
-                    durationSec,
-                    startSec + durationSec
-                );
+                        text.trim(),
+                        startSec,
+                        durationSec,
+                        startSec + durationSec);
 
                 chunks.add(chunk);
 
@@ -355,11 +363,10 @@ public class YouTubeCaptionUtil {
             }
 
             return new TranscriptFetchResult(
-                fullTranscript.toString(),
-                chunks,
-                language != null ? language : "unknown",
-                "html"
-            );
+                    fullTranscript.toString(),
+                    chunks,
+                    language != null ? language : "unknown",
+                    "html");
 
         } catch (Exception e) {
             System.err.println("Error parsing HTML: " + e.getMessage());
@@ -369,10 +376,12 @@ public class YouTubeCaptionUtil {
 
     /**
      * Fetch English transcripts specifically (for admin panel video uploads)
-     * Lấy từ ytInitialPlayerResponse trong mã HTML của YouTube để tránh lỗi 403 API.
+     * Lấy từ ytInitialPlayerResponse trong mã HTML của YouTube để tránh lỗi 403
+     * API.
      */
     public static TranscriptFetchResult fetchEnglishTranscript(String videoId) {
-        if (videoId == null || videoId.isEmpty()) return null;
+        if (videoId == null || videoId.isEmpty())
+            return null;
 
         System.err.println("\n[INFO] Starting English transcript fetch for video: " + videoId);
 
@@ -449,174 +458,26 @@ public class YouTubeCaptionUtil {
             String dlUrl = targetBaseUrl + "&fmt=json3";
             java.net.HttpURLConnection dlConn = (java.net.HttpURLConnection) new URL(dlUrl).openConnection();
             dlConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-            
+
             BufferedReader r = new BufferedReader(new InputStreamReader(dlConn.getInputStream(), "UTF-8"));
             StringBuilder json3Data = new StringBuilder();
             String l;
-            while ((l = r.readLine()) != null) json3Data.append(l);
+            while ((l = r.readLine()) != null)
+                json3Data.append(l);
             r.close();
 
-            System.err.println("[SUCCESS] Fetched json3 captions. Parsing...");
-            return parseJson3Format(videoId, json3Data.toString(), langCodeStr);
+            System.err.println("[SUCCESS] Fetched captions from baseUrl. Parsing...");
+            TranscriptFetchResult jsonResult = parseJson3Format(videoId, json3Data.toString(), langCodeStr);
+            if (jsonResult != null)
+                return jsonResult;
+
+            // Fallback to HTML if JSON3 parsing fails
+            return parseHtmlFormat(videoId, json3Data.toString(), langCodeStr);
 
         } catch (Exception e) {
             System.err.println("[ERROR] Failed to fetch transcript from HTML parser: " + e.getMessage());
             return null;
         }
-    }
-
-    /**
-     * Fetch with additional parameters for auto-generated captions
-     * kind=asr: Auto-generated Speech Recognition captions
-     */
-    private static TranscriptFetchResult fetchWithLanguageAndParams(String videoId, String language, String fmt, boolean includeAutoGenerated) {
-        try {
-            StringBuilder urlBuilder = new StringBuilder(TIMEDTEXT_BASE);
-            urlBuilder.append("?v=").append(videoId);
-
-            // Thêm kind=asr TRƯỚC để ưu tiên auto-generated
-            if (includeAutoGenerated) {
-                urlBuilder.append("&kind=asr");
-            }
-
-            if (language != null && !language.isEmpty()) {
-                urlBuilder.append("&lang=").append(language);
-            }
-
-            if (fmt != null && !fmt.isEmpty()) {
-                urlBuilder.append("&fmt=").append(fmt);
-            }
-
-            String urlStr = urlBuilder.toString();
-            String debugInfo = "lang=" + (language == null ? "default" : language) + 
-                             " fmt=" + (fmt == null ? "html" : fmt) +
-                             (includeAutoGenerated ? " kind=asr" : "");
-            System.err.println("[DEBUG] Fetch with params: " + debugInfo);
-            System.err.println("[DEBUG] URL: " + urlStr);
-            
-            URL url = new URL(urlStr);
-            java.net.URLConnection conn = url.openConnection();
-            conn.setRequestProperty("User-Agent", USER_AGENT);
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), "UTF-8")
-            );
-
-            StringBuilder content = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-            reader.close();
-
-            String responseBody = content.toString().trim();
-            System.err.println("[DEBUG] Response length: " + responseBody.length());
-            
-            if (responseBody.isEmpty()) {
-                System.err.println("[DEBUG] Empty response for " + debugInfo);
-                return null;
-            }
-
-            System.err.println("[DEBUG] Got response for " + debugInfo);
-
-            // Parse VTT format
-            if (fmt != null && fmt.equals("vtt")) {
-                return parseVttFormat(videoId, responseBody, language);
-            }
-
-            // Parse XML/HTML format
-            return parseHtmlFormat(videoId, responseBody, language);
-
-        } catch (Exception e) {
-            System.err.println("[ERROR] fetch with params failed: " + e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Parse VTT (WebVTT) format captions
-     */
-    private static TranscriptFetchResult parseVttFormat(String videoId, String vttContent, String language) {
-        try {
-            List<TranscriptChunkDto> chunks = new ArrayList<>();
-            StringBuilder fullTranscript = new StringBuilder();
-
-            String[] lines = vttContent.split("\n");
-            for (int i = 0; i < lines.length; i++) {
-                String line = lines[i].trim();
-
-                // Skip header and empty lines
-                if (line.startsWith("WEBVTT") || line.isEmpty() || line.startsWith("NOTE")) {
-                    continue;
-                }
-
-                // Look for timestamp lines (00:00:00.000 --> 00:00:05.000)
-                if (line.contains("-->")) {
-                    String[] timeparts = line.split(" --> ");
-                    if (timeparts.length == 2) {
-                        try {
-                            double startMs = timeToMs(timeparts[0].trim());
-                            double endMs = timeToMs(timeparts[1].trim());
-                            double startSec = startMs / 1000.0;
-                            double durationSec = (endMs - startMs) / 1000.0;
-
-                            // Get text from next line
-                            if (i + 1 < lines.length) {
-                                String text = lines[i + 1].trim();
-                                if (!text.isEmpty() && !text.contains("-->")) {
-                                    fullTranscript.append(text).append(" ");
-
-                                    TranscriptChunkDto chunk = new TranscriptChunkDto(
-                                        text,
-                                        startSec,
-                                        durationSec,
-                                        startSec + durationSec
-                                    );
-                                    chunks.add(chunk);
-                                }
-                            }
-                        } catch (Exception e) {
-                            System.err.println("[WARN] Error parsing timestamp: " + line);
-                        }
-                    }
-                }
-            }
-
-            if (fullTranscript.length() == 0) {
-                System.err.println("[DEBUG] No text extracted from VTT");
-                return null;
-            }
-
-            TranscriptFetchResult result = new TranscriptFetchResult(
-                fullTranscript.toString().trim(),
-                chunks,
-                language != null ? language : "en",
-                "vtt"
-            );
-            return result;
-
-        } catch (Exception e) {
-            System.err.println("[ERROR] Error parsing VTT: " + e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Convert VTT time format (00:00:00.000) to milliseconds
-     */
-    private static double timeToMs(String timeStr) throws Exception {
-        String[] parts = timeStr.split(":");
-        if (parts.length < 3) {
-            return 0;
-        }
-        
-        long hours = Long.parseLong(parts[0].trim());
-        long minutes = Long.parseLong(parts[1].trim());
-        double seconds = Double.parseDouble(parts[2].trim());
-
-        return (hours * 3600 + minutes * 60 + seconds) * 1000;
     }
 
     /**
@@ -633,20 +494,14 @@ public class YouTubeCaptionUtil {
                 return null;
             }
 
-            // Tầng 0: Lấy tiếng Anh (ưu tiên)
-            TranscriptFetchResult result = fetchEnglishTranscript(videoId);
+            // Tầng 1: Lấy tiếng Anh
+            TranscriptFetchResult result = fetchTranscriptPrimary(videoId);
             if (result != null && !result.transcript.isEmpty()) {
                 return result;
             }
 
-            // Tầng 1: Lấy tiếng Hàn
-            result = fetchTranscriptPrimary(videoId);
-            if (result != null && !result.transcript.isEmpty()) {
-                return result;
-            }
-
-            // Tầng 2: Fallback
-            result = fetchTranscriptFallback(videoId, "ko");
+            // Tầng 2: Fallback (thử bất kỳ ngôn ngữ nào có sẵn)
+            result = fetchTranscriptFallback(videoId, "en");
             if (result != null && !result.transcript.isEmpty()) {
                 return result;
             }
@@ -667,8 +522,8 @@ public class YouTubeCaptionUtil {
      */
     public static String fetchVideoTitle(String youtubeUrl) {
         try {
-            String oembedUrl = "https://www.youtube.com/oembed?url=" + 
-                urlEncode(youtubeUrl) + "&format=json";
+            String oembedUrl = "https://www.youtube.com/oembed?url=" +
+                    urlEncode(youtubeUrl) + "&format=json";
 
             URL url = new URL(oembedUrl);
             java.net.URLConnection conn = url.openConnection();
@@ -676,8 +531,7 @@ public class YouTubeCaptionUtil {
             conn.setConnectTimeout(TIMEOUT_MS);
 
             BufferedReader reader = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)
-            );
+                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
 
             StringBuilder content = new StringBuilder();
             String line;
@@ -712,7 +566,7 @@ public class YouTubeCaptionUtil {
 
             // Chỉ fetch tiếng Anh (English only)
             System.err.println("[FETCH] Trying to fetch English captions...");
-            
+
             TranscriptFetchResult result = fetchWithLanguage(videoId, "en", "json3");
             if (result != null && !result.transcript.isEmpty()) {
                 System.err.println("[SUCCESS] Got English captions (JSON3 format)");

@@ -11,4 +11,8 @@ public interface YouTubeChannelManagementProjection {
     String getUrl();
 
     Long getVideoCount();
+    
+    String getDescription();
+    
+    String getStatus();
 }

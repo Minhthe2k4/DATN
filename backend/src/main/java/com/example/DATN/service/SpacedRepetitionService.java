@@ -40,10 +40,7 @@ public class SpacedRepetitionService {
     private com.example.DATN.repository.ReviewSessionRepository reviewSessionRepository;
 
     @Autowired
-    private com.example.DATN.repository.VocabularyRepository vocabularyRepository;
-
-    @Autowired
-    private com.example.DATN.repository.UserVocabularyCustomRepository userVocabularyCustomRepository;
+    private UserStatsService userStatsService;
 
     private static final double TARGET_RECALL_PROB = 0.9;
     private static final double Z_TARGET = Math.log(TARGET_RECALL_PROB / (1 - TARGET_RECALL_PROB)); // approx 2.197
@@ -89,6 +86,7 @@ public class SpacedRepetitionService {
         learning.nextReview = new Date();
 
         userVocabularyLearningRepository.save(learning);
+        userStatsService.syncStats(user.id);
     }
 
     /**
@@ -196,6 +194,10 @@ public class SpacedRepetitionService {
         session.accuracy = total > 0 ? (correct * 100.0) / total : 0.0;
         session.createdAt = new Date();
         reviewSessionRepository.save(session);
+
+        userStatsService.updateStreak(userId);
+        userStatsService.syncStats(userId);
+        userStatsService.recalculateRanks();
     }
 
     /**

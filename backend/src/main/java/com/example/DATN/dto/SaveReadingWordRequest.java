@@ -9,6 +9,7 @@ public record SaveReadingWordRequest(
         String meaningEn,
         String meaningVi,
         String example,
-        String exampleVi
+        String exampleVi,
+        Boolean addToSRS
 ) {
 }

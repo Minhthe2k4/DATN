@@ -27,3 +27,11 @@ export function setUserSession(session) {
 export function clearUserSession() {
   window.localStorage.removeItem(USER_SESSION_KEY)
 }
+
+export function getAuthHeader() {
+    const session = getUserSession();
+    if (session && session.userId) {
+        return { Authorization: `Bearer ${session.userId}` };
+    }
+    return {};
+}

@@ -1,7 +1,6 @@
 package com.example.DATN.repository;
 
 import com.example.DATN.entity.Transaction;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
@@ -33,10 +32,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             """)
     List<PendingPremiumRequestProjection> findPendingRequests(
             @Param("statuses") Collection<String> statuses,
-            Pageable pageable
-    );
+            Pageable pageable);
 
-        @Query("""
+    @Query("""
             select t.id as id,
                u.id as userId,
                s.id as subscriptionId,
@@ -51,22 +49,22 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             left join s.plan sp
             order by t.createdAt desc
             """)
-        List<PendingPremiumRequestProjection> findAllRequestRows(Pageable pageable);
+    List<PendingPremiumRequestProjection> findAllRequestRows(Pageable pageable);
 
-            @Query("""
-                select t.id as id,
-                   u.email as email,
-                   coalesce(tp.name, sp.name) as planName,
-                   t.amount as amount,
-                   t.paymentMethod as paymentMethod,
-                   t.status as status,
-                   t.createdAt as createdAt
-                from Transaction t
-                left join t.user u
-                left join t.plan tp
-                left join t.subscription s
-                left join s.plan sp
-                order by t.createdAt desc
-                """)
-            List<RevenueTransactionProjection> findRevenueRows(Pageable pageable);
+    @Query("""
+            select t.id as id,
+               u.email as email,
+               coalesce(tp.name, sp.name) as planName,
+               t.amount as amount,
+               t.paymentMethod as paymentMethod,
+               t.status as status,
+               t.createdAt as createdAt
+            from Transaction t
+            left join t.user u
+            left join t.plan tp
+            left join t.subscription s
+            left join s.plan sp
+            order by t.createdAt desc
+            """)
+    List<RevenueTransactionProjection> findRevenueRows(Pageable pageable);
 }

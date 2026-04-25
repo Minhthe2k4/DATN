@@ -145,11 +145,14 @@ export default function FlashcardManager() {
   if (isLoading) return <div className="flashcard-manager">Đang tải...</div>
 
   return (
-    <div className="flashcard-manager fade-in">
-      <header className="flashcard-header">
+    <div className="flashcard-page">
+      <div className="flashcard-page__container">
+        <header className="flashcard-header">
         <div className="header-title-group">
           <div className="breadcrumb">
-            <span onClick={() => setCurrentFolderId(null)} className={currentFolderId === null ? 'active' : ''}>Tất cả</span>
+            <span onClick={() => setCurrentFolderId(null)} className={currentFolderId === null ? 'active' : ''}>
+              🏠 Trang chủ
+            </span>
             {currentFolderName && (
               <>
                 <span className="separator">/</span>
@@ -158,11 +161,15 @@ export default function FlashcardManager() {
             )}
           </div>
           <h1>{currentFolderName || 'Bộ thẻ Flashcard'}</h1>
-          <p>{currentFolderId ? `Bên trong thư mục ${currentFolderName}` : 'Quản lý và ôn tập từ vựng của bạn'}</p>
+          <p>{currentFolderId ? `Khám phá các bộ thẻ trong thư mục "${currentFolderName}"` : 'Hệ thống quản lý và ôn tập từ vựng thông minh'}</p>
         </div>
         <div className="flashcard-header-actions">
-          <button className="btn-secondary" onClick={() => openCreateModal('FOLDER')}>+ Thư mục</button>
-          <button className="btn-primary" onClick={() => openCreateModal('DECK')}>+ Bộ thẻ mới</button>
+          <button className="btn-secondary" onClick={() => openCreateModal('FOLDER')}>
+            <span>📁</span> + Thư mục
+          </button>
+          <button className="btn-primary" onClick={() => openCreateModal('DECK')}>
+            <span>🗂️</span> + Tạo bộ thẻ mới
+          </button>
         </div>
       </header>
 
@@ -268,6 +275,7 @@ export default function FlashcardManager() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

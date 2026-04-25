@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserProfileService {
@@ -33,6 +32,12 @@ public class UserProfileService {
     @Autowired
     private UserSubscriptionRepository userSubscriptionRepository;
 
+    @Autowired
+    private com.example.DATN.repository.LeaderboardRepository leaderboardRepository;
+
+    @Autowired
+    private UserStatsService userStatsService;
+
     public UserProfileDto getProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -44,20 +49,18 @@ public class UserProfileService {
                     return newProfile;
                 });
 
-        UserStats stats = userStatsRepository.findByUser_Id(userId)
-                .orElseGet(() -> {
-                    UserStats newStats = new UserStats();
-                    newStats.user = user;
-                    newStats.learnedWords = 0;
-                    newStats.totalWords = 0;
-                    newStats.streakDays = 0;
-                    newStats.accuracy = 0.0f;
-                    return newStats;
-                });
+        // Đảm bảo có UserStats và đồng bộ dữ liệu
+        userStatsService.syncStats(userId);
+        UserStats stats = userStatsRepository.findByUser_Id(userId).orElseThrow();
 
-        List<UserSubscription> subscriptions = userSubscriptionRepository.findActiveSubscriptionsByUserId(userId, new Date());
+        List<UserSubscription> subscriptions = userSubscriptionRepository.findActiveSubscriptionsByUserId(userId,
+                new Date());
         boolean isPremium = !subscriptions.isEmpty();
         Date premiumUntil = isPremium ? subscriptions.get(0).endDate : null;
+
+        Integer rank = leaderboardRepository.findByUser_Id(userId)
+                .map(lb -> lb.rank)
+                .orElse(null);
 
         return new UserProfileDto(
                 user.id,
@@ -72,8 +75,9 @@ public class UserProfileService {
                 stats.streakDays,
                 stats.accuracy,
                 isPremium,
-                premiumUntil
-        );
+                premiumUntil,
+                stats.totalStudyTime != null ? stats.totalStudyTime : 0.0,
+                rank);
     }
 
     public UserProfileDto updateProfile(Long userId, String fullName, String avatar) {

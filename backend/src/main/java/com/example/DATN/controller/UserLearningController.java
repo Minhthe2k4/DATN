@@ -6,7 +6,6 @@ import com.example.DATN.dto.ReviewQueueItemDto;
 import com.example.DATN.dto.BulkSubmitReviewResultRequest;
 import com.example.DATN.dto.SubmitReviewResultRequest;
 import com.example.DATN.entity.UserVocabularyLearning;
-import com.example.DATN.entity.Vocabulary;
 import com.example.DATN.repository.LessonVocabularyRepository;
 import com.example.DATN.repository.UserRepository;
 import com.example.DATN.repository.UserVocabularyLearningRepository;
@@ -33,15 +32,18 @@ public class UserLearningController {
 
     @Autowired
     private SpacedRepetitionService spacedRepetitionService;
-    
+
     @Autowired
     private VocabularyRepository vocabularyRepository;
-    
+
     @Autowired
     private LessonVocabularyRepository lessonVocabularyRepository;
-    
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private com.example.DATN.repository.ReviewSessionRepository reviewSessionRepository;
 
     @Autowired
     private com.example.DATN.service.PremiumService premiumService;
@@ -51,18 +53,20 @@ public class UserLearningController {
         if (auth != null && !auth.getName().equals("anonymousUser")) {
             try {
                 return Long.parseLong(auth.getName());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
-        
+
         // 2. Fallback: Parse Bearer token manually from header
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             try {
                 String token = bearerToken.substring(7);
                 return Long.parseLong(token);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
-        
+
         return null;
     }
 
@@ -74,39 +78,40 @@ public class UserLearningController {
     @GetMapping("/review-queue")
     public ResponseEntity<?> getReviewQueue(Authentication auth, HttpServletRequest request) {
         Long userId = getUserIdFromAuth(auth, request);
-        if (userId == null) return ResponseEntity.status(401).body("Vui lòng đăng nhập để xem từ vựng cần ôn.");
-        
+        if (userId == null)
+            return ResponseEntity.status(401).body("Vui lòng đăng nhập để xem từ vựng cần ôn.");
+
         // Kiểm tra quyền truy cập tính năng Ôn tập
         premiumService.checkFeatureAccess(userId, "VOCABULARY_REVIEW", "Ôn tập từ vựng thời điểm vàng (SRS)");
-        
-        List<UserVocabularyLearning> dueReviews = userVocabularyLearningRepository.findDueReviewsByUserId(userId, new Date());
-        
+
+        List<UserVocabularyLearning> dueReviews = userVocabularyLearningRepository.findDueReviewsByUserId(userId,
+                new Date());
+
         List<ReviewQueueItemDto> dtos = dueReviews.stream().map(r -> {
             boolean isCustom = r.customVocab != null;
             Long vocabId = isCustom ? r.customVocab.id : r.vocabulary.id;
             String word = isCustom ? r.customVocab.word : r.vocabulary.word;
-            String phonetic = isCustom ? r.customVocab.phonetic : r.vocabulary.pronunciation;
+            String pronunciation = isCustom ? r.customVocab.pronunciation : r.vocabulary.pronunciation;
             String meaningEn = isCustom ? r.customVocab.meaningEn : r.vocabulary.meaningEn;
             String meaningVi = isCustom ? r.customVocab.meaningVi : r.vocabulary.meaningVi;
             String example = isCustom ? r.customVocab.example : r.vocabulary.example;
             String exampleVi = isCustom ? r.customVocab.exampleVi : r.vocabulary.exampleVi;
-            String level = isCustom 
-                ? (r.customVocab.level != null ? String.valueOf(r.customVocab.level) : "") 
-                : r.vocabulary.level;
+            String level = isCustom
+                    ? (r.customVocab.level != null ? String.valueOf(r.customVocab.level) : "")
+                    : r.vocabulary.level;
 
             return new ReviewQueueItemDto(
-                r.id,
-                vocabId,
-                word,
-                phonetic,
-                meaningEn,
-                meaningVi,
-                example,
-                exampleVi,
-                level,
-                isCustom,
-                r.nextReview
-            );
+                    r.id,
+                    vocabId,
+                    word,
+                    pronunciation,
+                    meaningEn,
+                    meaningVi,
+                    example,
+                    exampleVi,
+                    level,
+                    isCustom,
+                    r.nextReview);
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
@@ -114,50 +119,51 @@ public class UserLearningController {
 
     /**
      * Sub-UC: Lấy toàn bộ từ vựng đang học (UC_LayTatCaTuVungHoc)
-     * Trả về danh sách tất cả các từ mà người dùng đang theo dõi trong hệ thống SRS.
+     * Trả về danh sách tất cả các từ mà người dùng đang theo dõi trong hệ thống
+     * SRS.
      */
     @GetMapping("/all-vocab")
     public ResponseEntity<?> getAllLearningVocab(Authentication auth, HttpServletRequest request) {
         Long userId = getUserIdFromAuth(auth, request);
-        if (userId == null) return ResponseEntity.status(401).body("Unauthorized");
+        if (userId == null)
+            return ResponseEntity.status(401).body("Unauthorized");
 
         List<UserVocabularyLearning> records = userVocabularyLearningRepository.findByUser_Id(userId);
         System.out.println("DEBUG: getAllLearningVocab found " + records.size() + " records for user " + userId);
-        
+
         List<UserLearningVocabDto> dtos = records.stream()
-            .filter(r -> r.vocabulary != null || r.customVocab != null) // Safety filter
-            .map(r -> {
-                boolean isCustom = r.customVocab != null;
-                Long vocabId = isCustom ? r.customVocab.id : r.vocabulary.id;
-                String word = isCustom ? r.customVocab.word : r.vocabulary.word;
-                String phonetic = isCustom ? r.customVocab.phonetic : r.vocabulary.pronunciation;
-                String meaningEn = isCustom ? r.customVocab.meaningEn : r.vocabulary.meaningEn;
-                String meaningVi = isCustom ? r.customVocab.meaningVi : r.vocabulary.meaningVi;
-                String example = isCustom ? r.customVocab.example : r.vocabulary.example;
-                String exampleVi = isCustom ? r.customVocab.exampleVi : r.vocabulary.exampleVi;
-                String level = isCustom 
-                    ? (r.customVocab.level != null ? String.valueOf(r.customVocab.level) : "A1") 
-                    : (r.vocabulary.level != null ? r.vocabulary.level : "A1");
+                .filter(r -> r.vocabulary != null || r.customVocab != null) // Safety filter
+                .map(r -> {
+                    boolean isCustom = r.customVocab != null;
+                    Long vocabId = isCustom ? r.customVocab.id : r.vocabulary.id;
+                    String word = isCustom ? r.customVocab.word : r.vocabulary.word;
+                    String pronunciation = isCustom ? r.customVocab.pronunciation : r.vocabulary.pronunciation;
+                    String meaningEn = isCustom ? r.customVocab.meaningEn : r.vocabulary.meaningEn;
+                    String meaningVi = isCustom ? r.customVocab.meaningVi : r.vocabulary.meaningVi;
+                    String example = isCustom ? r.customVocab.example : r.vocabulary.example;
+                    String exampleVi = isCustom ? r.customVocab.exampleVi : r.vocabulary.exampleVi;
+                    String level = isCustom
+                            ? (r.customVocab.level != null ? String.valueOf(r.customVocab.level) : "A1")
+                            : (r.vocabulary.level != null ? r.vocabulary.level : "A1");
 
-                // Sync level calculation with stats (getDifficultyLevel from Entity)
-                Integer mastery = r.getDifficultyLevel();
+                    // Sync level calculation with stats (getDifficultyLevel from Entity)
+                    Integer mastery = r.getDifficultyLevel();
 
-                return new UserLearningVocabDto(
-                    r.id,
-                    vocabId,
-                    word,
-                    phonetic,
-                    meaningEn,
-                    meaningVi,
-                    example,
-                    exampleVi,
-                    level,
-                    mastery,
-                    r.streakCorrect != null ? r.streakCorrect : 0,
-                    r.nextReview,
-                    isCustom
-                );
-            }).collect(Collectors.toList());
+                    return new UserLearningVocabDto(
+                            r.id,
+                            vocabId,
+                            word,
+                            pronunciation,
+                            meaningEn,
+                            meaningVi,
+                            example,
+                            exampleVi,
+                            level,
+                            mastery,
+                            r.streakCorrect != null ? r.streakCorrect : 0,
+                            r.nextReview,
+                            isCustom);
+                }).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
     }
@@ -166,9 +172,11 @@ public class UserLearningController {
      * Xóa một từ khỏi lộ trình học tập
      */
     @DeleteMapping("/vocab/{id}")
-    public ResponseEntity<?> deleteLearningVocab(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
+    public ResponseEntity<?> deleteLearningVocab(@PathVariable Long id, Authentication auth,
+            HttpServletRequest request) {
         Long userId = getUserIdFromAuth(auth, request);
-        if (userId == null) return ResponseEntity.status(401).body("Unauthorized");
+        if (userId == null)
+            return ResponseEntity.status(401).body("Unauthorized");
 
         Optional<UserVocabularyLearning> recordOpt = userVocabularyLearningRepository.findById(id);
         if (recordOpt.isEmpty()) {
@@ -190,16 +198,16 @@ public class UserLearningController {
             Authentication auth,
             HttpServletRequest httpRequest) {
         Long userId = getUserIdFromAuth(auth, httpRequest);
-        if (userId == null) return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
-        
+        if (userId == null)
+            return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
+
         spacedRepetitionService.updateProgress(
-                userId, 
-                request.vocabId(), 
-                request.isCustom(), 
+                userId,
+                request.vocabId(),
+                request.isCustom(),
                 request.isCorrect(),
-                request.responseTimeMs()
-        );
-        
+                request.responseTimeMs());
+
         return ResponseEntity.ok().build();
     }
 
@@ -214,25 +222,26 @@ public class UserLearningController {
             Authentication auth,
             HttpServletRequest httpRequest) {
         Long userId = getUserIdFromAuth(auth, httpRequest);
-        if (userId == null) return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
-        
+        if (userId == null)
+            return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
+
         if (request.results() != null) {
             int total = request.results().size();
             int correct = 0;
             for (SubmitReviewResultRequest r : request.results()) {
-                if (r.isCorrect()) correct++;
+                if (r.isCorrect())
+                    correct++;
                 spacedRepetitionService.updateProgress(
-                    userId, 
-                    r.vocabId(), 
-                    r.isCustom(), 
-                    r.isCorrect(),
-                    r.responseTimeMs()
-                );
+                        userId,
+                        r.vocabId(),
+                        r.isCustom(),
+                        r.isCorrect(),
+                        r.responseTimeMs());
             }
             // Save the session summary
             spacedRepetitionService.createReviewSession(userId, total, correct);
         }
-        
+
         return ResponseEntity.ok().build();
     }
 
@@ -242,29 +251,31 @@ public class UserLearningController {
      * và khởi tạo lộ trình SRS (UC_KhoiTaoHoc) cho từng từ.
      */
     @PostMapping("/complete-lesson/{lessonId}")
-    public ResponseEntity<?> completeLesson(@PathVariable Long lessonId, Authentication auth, HttpServletRequest httpRequest) {
+    public ResponseEntity<?> completeLesson(@PathVariable Long lessonId, Authentication auth,
+            HttpServletRequest httpRequest) {
         Long userId = getUserIdFromAuth(auth, httpRequest);
-        if (userId == null) return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
-        
+        if (userId == null)
+            return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
+
         com.example.DATN.entity.User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             return ResponseEntity.status(401).body("User not found");
         }
-        
+
         // Find all vocabulary IDs in this lesson
         List<Long> vocabIds = lessonVocabularyRepository.findVocabIdsByLessonId(lessonId);
         if (vocabIds.isEmpty()) {
             return ResponseEntity.ok("No vocabulary found in this lesson to track");
         }
-        
+
         // Load actual vocab entities
         List<com.example.DATN.entity.Vocabulary> vocabs = vocabularyRepository.findAllById(vocabIds);
-        
+
         // Initialize learning for each
         for (com.example.DATN.entity.Vocabulary v : vocabs) {
             spacedRepetitionService.initializeLearning(user, v);
         }
-        
+
         return ResponseEntity.ok("Đã bắt đầu theo dõi " + vocabs.size() + " từ vựng từ bài học này!");
     }
 
@@ -273,23 +284,25 @@ public class UserLearningController {
         Long userId = getUserIdFromAuth(auth, httpRequest);
         if (userId == null) {
             // Return empty stats for guests
-            return ResponseEntity.ok(new UserLearningStatsDto(0L, vocabularyRepository.count(), 0L, null, new HashMap<>()));
+            return ResponseEntity
+                    .ok(new UserLearningStatsDto(0L, vocabularyRepository.count(), 0L, null, new HashMap<>()));
         }
         List<UserVocabularyLearning> records = userVocabularyLearningRepository.findByUser_Id(userId);
         long totalPossible = vocabularyRepository.count();
-        
+
         // 1. Level Distribution
         Map<Integer, Long> distribution = new HashMap<>();
-        for (int i = 1; i <= 6; i++) distribution.put(i, 0L);
-        
+        for (int i = 1; i <= 6; i++)
+            distribution.put(i, 0L);
+
         long dueCount = 0;
         Date nextReview = null;
         Date now = new Date();
-        
+
         for (UserVocabularyLearning r : records) {
             int level = r.getDifficultyLevel();
             distribution.put(level, distribution.get(level) + 1);
-            
+
             if (r.nextReview != null) {
                 if (r.nextReview.before(now) || r.nextReview.equals(now)) {
                     dueCount++;
@@ -300,22 +313,28 @@ public class UserLearningController {
                 }
             }
         }
-        
+
         return ResponseEntity.ok(new UserLearningStatsDto(
-            (long) records.size(),
-            totalPossible,
-            dueCount,
-            nextReview,
-            distribution
-        ));
+                (long) records.size(),
+                totalPossible,
+                dueCount,
+                nextReview,
+                distribution));
     }
 
-    private int mapStreakToLevel(Integer streak) {
-        if (streak == null || streak == 0) return 1;
-        if (streak <= 2) return 2;
-        if (streak <= 4) return 3;
-        if (streak <= 7) return 4;
-        if (streak <= 10) return 5;
-        return 6;
+    @GetMapping("/activity-calendar")
+    public ResponseEntity<?> getActivityCalendar(Authentication auth, HttpServletRequest httpRequest) {
+        Long userId = getUserIdFromAuth(auth, httpRequest);
+        if (userId == null) return ResponseEntity.ok(Collections.emptyList());
+
+        List<com.example.DATN.entity.ReviewSession> sessions = reviewSessionRepository.findByUser_Id(userId);
+        
+        // Extract unique dates in YYYY-MM-DD format
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        Set<String> dates = sessions.stream()
+                .map(s -> sdf.format(s.createdAt))
+                .collect(Collectors.toSet());
+
+        return ResponseEntity.ok(new ArrayList<>(dates));
     }
 }

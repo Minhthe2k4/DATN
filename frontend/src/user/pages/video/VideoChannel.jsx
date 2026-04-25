@@ -1,6 +1,10 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { fetchChannelWithVideos, fetchAllVideoChannels } from '../../utils/videoApi'
+import { getUserSession, getAuthHeader } from '../../utils/authSession'
+import ProgressBar from '../../components/interaction/ProgressBar';
+import '../../components/interaction/interaction.css';
 
 import './videoChannel.css'
 
@@ -9,6 +13,8 @@ export function VideoChannel() {
 	const [channel, setChannel] = useState(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState(null)
+    const [interactionStats, setInteractionStats] = useState({}); // { videoId: { isFavorite, progressPercent } }
+    const userId = getUserSession()?.userId
 
 	useEffect(() => {
 		loadChannel()
@@ -66,6 +72,38 @@ export function VideoChannel() {
 			setIsLoading(false)
 		}
 	}
+
+    useEffect(() => {
+        if (channel?.videoList?.length > 0 && userId) {
+            axios.post('/api/user/interaction/bulk-stats', {
+                targetIds: channel.videoList.map(v => v.id),
+                targetType: 'VIDEO'
+            }, { headers: getAuthHeader() })
+            .then(res => setInteractionStats(res.data))
+            .catch(err => console.error('Failed to fetch bulk stats', err));
+        }
+    }, [channel, userId]);
+
+    const handleToggleFavorite = async (e, videoId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!userId) {
+            alert('Vui lòng đăng nhập!');
+            return;
+        }
+        try {
+            const res = await axios.post('/api/user/interaction/favorite/toggle', null, {
+                params: { targetId: videoId, targetType: 'VIDEO' },
+                headers: getAuthHeader()
+            });
+            setInteractionStats(prev => ({
+                ...prev,
+                [videoId]: { ...prev[videoId], isFavorite: res.data.isFavorite }
+            }));
+        } catch (err) {
+            console.error('Failed to toggle favorite', err);
+        }
+    };
 
 	const makeChannelAvatar = (label) => {
 		const colors = ['#0ea5e9', '#ef4444', '#16a34a', '#f59e0b']
@@ -217,7 +255,19 @@ export function VideoChannel() {
 								</div>
 								<div className="channel-video-card__body">
 									<h2>{item.title}</h2>
-									<p>{item.age}</p>
+									{userId && (
+                                        <div className="video-card__interaction">
+                                            <button 
+                                                className={`list-favorite-btn ${interactionStats[item.id]?.isFavorite ? 'active' : ''}`}
+                                                onClick={(e) => handleToggleFavorite(e, item.id)}
+                                            >
+                                                {interactionStats[item.id]?.isFavorite ? '❤️' : '🤍'}
+                                            </button>
+                                            <div className="list-progress-container">
+                                                <ProgressBar percent={interactionStats[item.id]?.progressPercent || 0} />
+                                            </div>
+                                        </div>
+                                    )}
 								</div>
 							</article>
 						</Link>

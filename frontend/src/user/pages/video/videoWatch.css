@@ -11,8 +11,8 @@
 }
 
 .video-watch-page {
-  height: calc(100vh - 80px); /* Trừ đi header nếu có */
-  overflow: hidden;
+  min-height: calc(100vh - 80px);
+  overflow-y: auto;
   background: var(--bg-main);
   color: var(--text-main);
   padding: 20px;
@@ -420,6 +420,57 @@
 
 .dict-save-btn:hover {
   background: var(--primary-hover);
+}
+
+.dict-save-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dict-save-option:hover {
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+.dict-save-option input[type="radio"] {
+    margin-top: 4px;
+}
+
+.save-option-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.save-option-text strong {
+    font-size: 0.9rem;
+    color: #1e293b;
+}
+
+.save-option-text small {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.dict-deck-select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    background-color: #fff;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.dict-deck-select:focus {
+    border-color: var(--primary-color);
 }
 
 /* Sidebar Subtitles (Adjusted to be higher and shorter) */

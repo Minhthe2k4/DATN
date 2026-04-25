@@ -17,6 +17,7 @@ const ENTITY_CONFIG = {
       { key: 'description', label: 'Mô tả', required: true },
       { key: 'defaultDifficulty', label: 'Độ khó mặc định', required: true },
       { key: 'status', label: 'Trạng thái', required: true },
+      { key: 'topicImage', label: 'Ảnh chủ đề (URL)', required: false },
     ],
   },
   lessons: {
@@ -129,6 +130,7 @@ export function AdminCrudPage({ entity, mode }) {
           description: payload.description,
           defaultDifficulty: payload.defaultDifficulty,
           status: payload.status,
+          topicImage: payload.topicImage,
         }, mode))
         setError('')
       } catch (loadError) {
@@ -218,6 +220,7 @@ export function AdminCrudPage({ entity, mode }) {
               description: formValues.description,
               defaultDifficulty: formValues.defaultDifficulty,
               status: formValues.status,
+              topicImage: formValues.topicImage,
             }),
           })
           if (!response.ok) {
@@ -236,6 +239,7 @@ export function AdminCrudPage({ entity, mode }) {
               description: formValues.description,
               defaultDifficulty: formValues.defaultDifficulty,
               status: formValues.status,
+              topicImage: formValues.topicImage,
             }),
           })
           if (!response.ok) {
@@ -295,7 +299,7 @@ export function AdminCrudPage({ entity, mode }) {
         {isLoading ? <div className="alert alert-light border">Đang tải dữ liệu...</div> : null}
 
         <div className="row g-3">
-          <div className="col-12 col-xl-8">
+          <div className="col-12">
             <AdminSectionCard
               title={toTitle(mode, config.singular)}
               description={mode === 'delete' ? 'Xác nhận thao tác xóa trước khi thực hiện.' : 'Điền thông tin theo biểu mẫu bên dưới.'}
@@ -311,7 +315,7 @@ export function AdminCrudPage({ entity, mode }) {
                 <form onSubmit={(event) => { event.preventDefault(); submit() }}>
                   <div className="row g-3">
                     {config.fields.map((field) => (
-                      <div className="col-12" key={field.key}>
+                      <div className="col-12 col-md-6" key={field.key}>
                         <label className="form-label fw-semibold">
                           {field.label}
                           {field.required ? <span className="text-danger ms-1">*</span> : null}
@@ -337,20 +341,6 @@ export function AdminCrudPage({ entity, mode }) {
 
               {error ? <div className="text-danger mt-3">{error}</div> : null}
               {success ? <div className="text-success mt-3">{success}</div> : null}
-            </AdminSectionCard>
-          </div>
-
-          <div className="col-12 col-xl-4">
-            <AdminSectionCard
-              title="Thông tin nhanh"
-              description="Gợi ý thao tác cho trang quản trị"
-            >
-              <ul className="mb-0 ps-3 d-grid gap-2">
-                <li>Luôn kiểm tra dữ liệu bắt buộc trước khi lưu.</li>
-                <li>Dùng trang Sửa khi cần cập nhật nội dung hiện có.</li>
-                <li>Dùng trang Xóa để xác nhận trước khi loại bỏ dữ liệu.</li>
-                <li>Trang này đang ở chế độ demo UI, chưa kết nối API.</li>
-              </ul>
             </AdminSectionCard>
           </div>
         </div>

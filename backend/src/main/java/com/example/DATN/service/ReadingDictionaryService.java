@@ -9,10 +9,7 @@ import com.example.DATN.repository.ArticleRepository;
 import com.example.DATN.repository.LookupHistoryRepository;
 import com.example.DATN.repository.UserRepository;
 import com.example.DATN.repository.UserVocabularyCustomRepository;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.http.HttpClient;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -34,17 +31,14 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ReadingDictionaryService {
     private static final Pattern WORD_PATTERN = Pattern.compile("[A-Za-z][A-Za-z'-]*");
-    private static final Pattern JSON_BLOCK_PATTERN = Pattern.compile("\\{[\\s\\S]*}\\s*$");
-    private static final int MAX_MEANINGS = 12;
-
     private final ObjectMapper objectMapper;
-    private final HttpClient httpClient;
     private final UserRepository userRepository;
     private final ArticleRepository articleRepository;
     private final LookupHistoryRepository lookupHistoryRepository;
     private final UserVocabularyCustomRepository userVocabularyCustomRepository;
     private final UserVocabularyCustomService userVocabularyCustomService;
     private final AiDictionaryService aiDictionaryService;
+    private final PremiumService premiumService;
 
     public ReadingDictionaryService(
             UserRepository userRepository,
@@ -52,7 +46,9 @@ public class ReadingDictionaryService {
             LookupHistoryRepository lookupHistoryRepository,
             UserVocabularyCustomRepository userVocabularyCustomRepository,
             UserVocabularyCustomService userVocabularyCustomService,
-            AiDictionaryService aiDictionaryService) {
+            AiDictionaryService aiDictionaryService,
+            PremiumService premiumService) {
+
         this.objectMapper = new ObjectMapper();
         this.userRepository = userRepository;
         this.articleRepository = articleRepository;
@@ -60,9 +56,7 @@ public class ReadingDictionaryService {
         this.userVocabularyCustomRepository = userVocabularyCustomRepository;
         this.userVocabularyCustomService = userVocabularyCustomService;
         this.aiDictionaryService = aiDictionaryService;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
+        this.premiumService = premiumService;
     }
 
     public ReadingWordLookupResponse lookupWord(String word, String contextSentence) {
@@ -104,8 +98,8 @@ public class ReadingDictionaryService {
             pronunciations.add(new ReadingWordLookupResponse.PronunciationItem("US", aiResult.ipaUs, ""));
 
         ReadingWordLookupResponse response = new ReadingWordLookupResponse(
-                word == null ? normalizedWord : word.trim(),
-                normalizedWord,
+                aiResult.rootWord, // Hiển thị từ nguyên thể làm tiêu đề chính
+                word == null ? normalizedWord : word.trim(), // Lưu lại từ gốc đã click
                 aiResult.level,
                 "AI-Generated",
                 sentence,
@@ -113,7 +107,8 @@ public class ReadingDictionaryService {
                 0,
                 pronunciations,
                 meaningItems,
-                aiResult.contextTranslation);
+                aiResult.contextTranslation,
+                aiResult.partOfSpeech);
 
         // Lưu lịch sử tra cứu thầm lặng (không làm gián đoạn việc đọc của người dùng)
         persistLookupHistorySilently(userId, articleId, response);
@@ -129,19 +124,21 @@ public class ReadingDictionaryService {
         try {
             Map<String, String> data = aiDictionaryService.lookupWord(word, sentence, userId);
             return new AiOnlyResult(
+                    data.get("word"),
                     data.get("phonetic"),
-                    data.get("phonetic"), // Dùng chung IPA
-                    "word", // POS mặc định
-                    "All", // Level mặc định
+                    data.get("phonetic"),
+                    data.get("partOfSpeech"),
+                    data.get("level"),
                     data.get("definitionEn"),
                     data.get("definitionVi"),
-                    data.get("example"));
+                    data.get("contextTranslation"));
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI Lookup failed: " + ex.getMessage());
         }
     }
 
     private record AiOnlyResult(
+            String rootWord,
             String ipaUk,
             String ipaUs,
             String partOfSpeech,
@@ -171,7 +168,8 @@ public class ReadingDictionaryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         // Kiểm tra xem từ này đã có trong sổ tay chưa để tránh trùng lặp
-        Optional<com.example.DATN.entity.UserVocabularyCustom> existing = userVocabularyCustomRepository.findByUser_IdAndWordIgnoreCase(user.id, normalizedWord);
+        Optional<com.example.DATN.entity.UserVocabularyCustom> existing = userVocabularyCustomRepository
+                .findByUser_IdAndWordIgnoreCase(user.id, normalizedWord);
         if (existing.isPresent()) {
             return existing.get();
         }
@@ -187,7 +185,13 @@ public class ReadingDictionaryService {
         vocab.exampleVi = trimToEmpty(request.exampleVi());
         vocab.createdAt = new Date();
 
-        return userVocabularyCustomService.save(vocab);
+        // 4. Kiểm tra Premium - CHỈ khi thêm vào SRS
+        boolean addToSRS = request.addToSRS() != null && request.addToSRS();
+        if (addToSRS && vocab.user != null) {
+            premiumService.checkAndIncrementActionLimit(vocab.user.id, "SAVED_VOCABULARY", "Lưu từ vựng");
+        }
+
+        return userVocabularyCustomService.save(vocab, addToSRS);
     }
 
     /**
@@ -211,7 +215,7 @@ public class ReadingDictionaryService {
             history.article = articleId == null
                     ? null
                     : articleRepository.findById(articleId).orElse(null);
-            history.word = truncate(response.normalizedWord(), 255);
+            history.word = truncate(response.word(), 255);
             history.sentence = trimToEmpty(response.contextSentence());
             history.definitionsJson = serializeDefinitions(response.meanings());
             history.selectedIndex = response.selectedMeaningIndex() == null
@@ -260,27 +264,6 @@ public class ReadingDictionaryService {
             return text;
         }
         return text.substring(0, maxLength);
-    }
-
-    private JsonNode parseAiJson(String content) {
-        String raw = trimToEmpty(content);
-        if (raw.isBlank()) {
-            return null;
-        }
-
-        try {
-            return objectMapper.readTree(raw);
-        } catch (Exception ignore) {
-            Matcher matcher = JSON_BLOCK_PATTERN.matcher(raw);
-            if (matcher.find()) {
-                try {
-                    return objectMapper.readTree(matcher.group());
-                } catch (Exception ignored) {
-                    return null;
-                }
-            }
-            return null;
-        }
     }
 
     /**

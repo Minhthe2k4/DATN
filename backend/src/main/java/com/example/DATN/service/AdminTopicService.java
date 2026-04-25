@@ -28,21 +28,21 @@ public class AdminTopicService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found"));
 
         return new AdminTopicDto(
-            toLong(Math.toIntExact(topic.id)),
+                topic.id,
                 defaultString(topic.name, ""),
                 defaultString(topic.description, ""),
                 normalizeDifficulty(topic.level),
-            0,
                 0,
-                toStatusLabel(topic.status)
-        );
+                0,
+                toStatusLabel(topic.status),
+                topic.topicImage);
     }
 
     public AdminTopicDto create(UpsertTopicRequest request) {
         Topic topic = new Topic();
         apply(topic, request);
         Topic saved = topicRepository.save(topic);
-        return findById(toLong(Math.toIntExact(saved.id)));
+        return findById(saved.id);
     }
 
     public AdminTopicDto update(Long id, UpsertTopicRequest request) {
@@ -69,6 +69,7 @@ public class AdminTopicService {
         topic.description = request == null ? "" : defaultString(request.description(), "").trim();
         topic.level = normalizeDifficulty(request == null ? null : request.defaultDifficulty());
         topic.status = toStatusValue(request == null ? null : request.status());
+        topic.topicImage = request == null ? null : request.topicImage();
     }
 
     private AdminTopicDto toDto(TopicManagementProjection row) {
@@ -79,8 +80,8 @@ public class AdminTopicService {
                 normalizeDifficulty(row.getLevel()),
                 safeLong(row.getLessonCount()),
                 safeLong(row.getWordCount()),
-                toStatusLabel(row.getStatus())
-        );
+                toStatusLabel(row.getStatus()),
+                row.getTopicImage());
     }
 
     private String normalizeDifficulty(String value) {
@@ -110,9 +111,5 @@ public class AdminTopicService {
             return fallback;
         }
         return value;
-    }
-
-    private Long toLong(Integer value) {
-        return value == null ? null : value.longValue();
     }
 }

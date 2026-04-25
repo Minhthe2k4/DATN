@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePremiumStatus, isPremiumValid } from '../../../hooks/usePremiumStatus'
 import { getUserSession } from '../../utils/authSession'
 import './vocabularyLesson.css'
 
@@ -117,8 +118,13 @@ export function VocabularyLesson() {
 	const [checkState, setCheckState] = useState('idle')
 	const [popupData, setPopupData] = useState(null)
 	const [completedLessonData, setCompletedLessonData] = useState(null)
+	const [failedLessonWords, setFailedLessonWords] = useState([])
+	const [reviewWords, setReviewWords] = useState([])
+	const [isReviewPhase, setIsReviewPhase] = useState(false)
 	const session = getUserSession()
 	const isLoggedIn = !!session
+	const premiumStatus = usePremiumStatus(session?.userId)
+	const isUserPremium = isPremiumValid(premiumStatus)
 	const [isLessonEntryLoading, setIsLessonEntryLoading] = useState(false)
 	const [lessonEntryProgress, setLessonEntryProgress] = useState(0)
 	const [isLoadingTopics, setIsLoadingTopics] = useState(false)
@@ -228,7 +234,12 @@ export function VocabularyLesson() {
 		[selectedTopic, selectedLessonId]
 	)
 
-	const currentWord = selectedLesson?.words[wordIndex] ?? null
+	const currentWordsSource = useMemo(() => {
+		if (isReviewPhase) return reviewWords
+		return selectedLesson?.words ?? []
+	}, [isReviewPhase, reviewWords, selectedLesson])
+
+	const currentWord = currentWordsSource[wordIndex] ?? null
 	const hintPositions = useMemo(() => (currentWord ? getHintPositions(currentWord.word) : []), [currentWord])
 
 	const createBaseLetters = (word, positions) => {
@@ -279,6 +290,12 @@ export function VocabularyLesson() {
 	const handlePickLesson = (lessonId) => {
 		if (!isLoggedIn) {
 			alert('Vui lòng đăng nhập để bắt đầu học từ vựng trong bài.')
+			return
+		}
+
+		const lesson = selectedTopic?.lessons.find(l => l.id === lessonId)
+		if (lesson?.isPremium && !isUserPremium) {
+			alert('Bài học này chỉ dành cho tài khoản Premium. Vui lòng nâng cấp để tiếp tục!')
 			return
 		}
 
@@ -388,8 +405,37 @@ export function VocabularyLesson() {
 			return
 		}
 
+		// Collect failed words for review at the end
+		const isCorrect = popupData?.isCorrect
+		if (popupData !== null && !isCorrect) {
+			const failedWord = currentWord
+			if (failedWord && !failedLessonWords.find(w => w.id === failedWord.id)) {
+				setFailedLessonWords(prev => [...prev, failedWord])
+			}
+		}
+
 		const isLastWord = wordIndex >= selectedLesson.words.length - 1
 		if (isLastWord) {
+			// If we have failed words, start a new review phase cycle
+			if (failedLessonWords.length > 0) {
+				setPopupData(null)
+				setIsReviewPhase(true)
+				// We keep the failed words but we need to reset the index and clear the list for the NEXT round of failures
+				// Actually, it's better to move them to a 'currentReview' state.
+				// For simplicity, we'll just use a trick:
+				const wordsToReview = [...failedLessonWords]
+				setFailedLessonWords([]) // Clear for the next failures during this review
+				setWordIndex(0)
+				setStudyStep('card')
+				setIsFlipped(false)
+				setCheckState('idle')
+				// We need a way to pass wordsToReview to currentWordsSource. 
+				// Let's use a separate state 'reviewWords'
+				setReviewWords(wordsToReview)
+				return
+			}
+
+			setPopupData(null)
 			setPopupData(null)
 			setCompletedLessonData({
 				topicTitle: selectedTopic?.title ?? '',
@@ -401,6 +447,9 @@ export function VocabularyLesson() {
 			setSelectedLessonId(null)
 			setStudyStep('card')
 			setWordIndex(0)
+			setIsReviewPhase(false)
+			setFailedLessonWords([])
+			setReviewWords([])
 
 			// Trigger backend track
 			if (isLoggedIn) {
@@ -530,10 +579,20 @@ export function VocabularyLesson() {
 					) : (
 						<div className="vlesson-grid vlesson-grid--lessons">
 							{selectedTopic.lessons.map((lesson) => (
-								<button key={lesson.id} type="button" className="vlesson-lesson" onClick={() => handlePickLesson(lesson.id)}>
-									<h3>{lesson.title}</h3>
+								<button key={lesson.id} type="button" className={`vlesson-lesson ${lesson.isPremium && !isUserPremium ? 'is-locked' : ''}`} onClick={() => handlePickLesson(lesson.id)}>
+									<div className="vlesson-lesson__header">
+										<h3>{lesson.title}</h3>
+										{lesson.isPremium && (
+											<span className="vlesson-premium-badge" title="Chỉ dành cho Premium">👑</span>
+										)}
+									</div>
 									<p>{lesson.description}</p>
-									<span>{lesson.words ? lesson.words.length : 0} từ vựng</span>
+									<div className="vlesson-lesson__footer">
+										<span>{lesson.words ? lesson.words.length : 0} từ vựng</span>
+										{lesson.isPremium && !isUserPremium && (
+											<span className="vlesson-lock-icon">🔒 Khóa</span>
+										)}
+									</div>
 								</button>
 							))}
 						</div>

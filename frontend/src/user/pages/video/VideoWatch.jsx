@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { getUserSession, getAuthHeader } from '../../utils/authSession'
+import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
+import FavoriteButton from '../../components/interaction/FavoriteButton'
+import ProgressBar from '../../components/interaction/ProgressBar'
+import HighlightWrapper from '../../components/interaction/HighlightWrapper'
+import axios from 'axios'
 import './videoWatch.css'
+import '../../components/interaction/interaction.css'
 
 // URL backend
 const API_BASE = 'http://localhost:8080'
@@ -31,12 +38,20 @@ export function VideoWatch() {
 	const [segments, setSegments] = useState([]) // Phụ đề từ Whisper
 	const [isLoading, setIsLoading] = useState(true)
 
+	// User interactions
+	const session = getUserSession()
+	const userId = session?.userId ? Number(session.userId) : null
+	const [isFavorite, setIsFavorite] = useState(false)
+	const [progressPercent, setProgressPercent] = useState(0)
+	const [savedVocab, setSavedVocab] = useState([])
+	const [interactionLoading, setInteractionLoading] = useState(false)
+
 	// Trạng thái giao diện
 	const [activeSubtitleId, setActiveSubtitleId] = useState(null) // Segment đang active (click hoặc theo giờ video)
 	const [selectedWord, setSelectedWord] = useState(null)          // Từ đang xem trong từ điển
 	const [showSaveModal, setShowSaveModal] = useState(false)
 	const [saveFormData, setSaveFormData] = useState({
-		word: '', phonetic: '', definitionEng: '', definitionVi: '',
+		word: '', pronunciation: '', definitionEng: '', definitionVi: '',
 		saveType: 'SRS',
 		deckId: '',
 	})
@@ -52,6 +67,15 @@ export function VideoWatch() {
 	const [playbackRate, setPlaybackRate] = useState(1)
 	const [volume, setVolume] = useState(1)
 	const [showControls, setShowControls] = useState(true)
+	const [isLookingUp, setIsLookingUp] = useState(false)
+	const premiumStatus = usePremiumStatus(userId)
+
+	// Segment đang active (hiển thị phía dưới player)
+	const activeSegment = useMemo(() => {
+		if (!segments || segments.length === 0) return null
+		return segments.find((s) => s.id === activeSubtitleId) 
+			|| segments.find(s => currentTime >= s.startSec && currentTime <= s.endSec)
+	}, [segments, activeSubtitleId, currentTime])
 
 	// ─── Load video + segments từ API ───────────────────────────────────────────
 	useEffect(() => {
@@ -72,6 +96,11 @@ export function VideoWatch() {
 					const data = await videoRes.json()
 					setVideo(data)
 					setChannelName(data.channelName ?? '')
+                    
+                    if (userId) {
+                        fetchInteractionStats()
+                        fetchSavedVocab()
+                    }
 				}
 
 				if (segmentsRes.ok) {
@@ -90,7 +119,63 @@ export function VideoWatch() {
 
 		loadVideo()
 		return () => { cancelled = true }
-	}, [videoId])
+	}, [videoId, userId])
+
+	const fetchInteractionStats = async () => {
+		try {
+			const res = await axios.get('/api/user/interaction/stats', {
+				params: { targetId: videoId, targetType: 'VIDEO' },
+				headers: getAuthHeader()
+			})
+			setIsFavorite(res.data.isFavorite)
+			setProgressPercent(res.data.progressPercent)
+		} catch (err) {
+			console.error('Failed to fetch stats:', err)
+		}
+	}
+
+	const fetchSavedVocab = async () => {
+		try {
+			const res = await axios.get('/api/user/vocab-custom/list', {
+				headers: getAuthHeader()
+			})
+			setSavedVocab(res.data || [])
+		} catch (err) {
+			console.error('Failed to fetch saved vocab:', err)
+		}
+	}
+
+	const handleToggleFavorite = async () => {
+		if (!userId) {
+			alert('Vui lòng đăng nhập để sử dụng tính năng này!')
+			return
+		}
+		setInteractionLoading(true)
+		try {
+			const res = await axios.post('/api/user/interaction/favorite/toggle', null, {
+				params: { targetId: videoId, targetType: 'VIDEO' },
+				headers: getAuthHeader()
+			})
+			setIsFavorite(res.data.isFavorite)
+		} catch (err) {
+			console.error('Failed to toggle favorite:', err)
+		} finally {
+			setInteractionLoading(false)
+		}
+	}
+
+	const handleUpdateProgress = async (percent) => {
+		if (!userId) return
+		try {
+			await axios.post('/api/user/interaction/progress', null, {
+				params: { targetId: videoId, targetType: 'VIDEO', percent },
+				headers: getAuthHeader()
+			})
+			setProgressPercent(percent)
+		} catch (err) {
+			console.error('Failed to update progress:', err)
+		}
+	}
 
 	// ─── Đồng bộ phụ đề theo thời gian phát video ───────────────────────────────
 	const handleTimeUpdate = () => {
@@ -157,65 +242,94 @@ export function VideoWatch() {
 	}
 
 	const handleVideoTimeUpdate = () => {
-		if (videoRef.current) setCurrentTime(videoRef.current.currentTime)
-		handleTimeUpdate() // Gọi logic đồng bộ phụ đề cũ
+		if (videoRef.current) {
+			const time = videoRef.current.currentTime
+			setCurrentTime(time)
+
+			// Đồng bộ phụ đề (Subtitle Sync)
+			if (segments.length > 0) {
+				const found = segments.find((s) => time >= s.startSec && time <= s.endSec)
+				if (found && found.id !== activeSubtitleId) {
+					setActiveSubtitleId(found.id)
+					// Tự động cuộn đến dòng phụ đề đang active trong danh sách bên phải
+					const activeEl = document.getElementById(`subtitle-${found.id}`)
+					if (activeEl) {
+						activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+					}
+				}
+			}
+
+			// Theo dõi tiến độ xem (Progress Tracking)
+			const duration = videoRef.current.duration
+			if (duration > 0) {
+				const percent = (time / duration) * 100
+				if (percent > progressPercent + 2 || percent >= 99) {
+					handleUpdateProgress(Math.min(percent, 100))
+				}
+			}
+		}
 	}
-    
-    const formatTime = (time) => {
-        const minutes = Math.floor(time / 60)
-        const seconds = Math.floor(time % 60)
-        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    }
 
 	// ─── Logic tra từ điển AI ────────────────────────────────────────────────────
-	const [isLookingUp, setIsLookingUp] = useState(false)
+    const handleWordClick = async (word, context) => {
+        if (videoRef.current) {
+            videoRef.current.pause();
+            setIsPlaying(false);
+        }
 
-	const handleWordClick = async (word, context) => {
-		// 1. Dừng video ngay lập tức
-		if (videoRef.current) {
-			videoRef.current.pause()
-			setIsPlaying(false)
-		}
+        setIsLookingUp(true);
+        setSaveFormData(prev => ({
+            ...prev,
+            word,
+            pronunciation: 'Dang tra cuu...',
+            definitionEng: '',
+            definitionVi: '',
+            contextTranslation: ''
+        }));
+        setShowSaveModal(true);
 
-		// 2. Hiển thị trạng thái đang tra cứu
-		setIsLookingUp(true)
-		setSaveFormData({ word, phonetic: 'Đang tra cứu...', definitionEng: '', definitionVi: '' })
-		setShowSaveModal(true)
-		
-		try {
-			const user = JSON.parse(localStorage.getItem('user'))
-			const userId = user ? user.id : ''
-			const res = await fetch(`${API_BASE}/api/dictionary/lookup?word=${word}&context=${context}&userId=${userId}`)
-			if (res.ok) {
-				const data = await res.json()
-				setSaveFormData({
-					word: data.word,
-					phonetic: data.phonetic,
-					level: data.level,
-					definitionEng: data.definitionEn,
-					definitionVi: data.definitionVi,
-					example: data.example,
-					exampleVi: data.exampleVi
-				})
-			} else {
-				const errText = await res.text()
-				alert(errText || 'Hết lượt tra cứu hoặc lỗi hệ thống')
-				setShowSaveModal(false)
-			}
-		} catch (err) {
-			console.error('Lỗi tra từ:', err)
-			alert('Không thể kết nối đến máy chủ tra từ')
-		} finally {
-			setIsLookingUp(false)
-		}
-		fetchDecks()
-	}
+        try {
+            const session = getUserSession();
+            const res = await axios.post(`${API_BASE}/api/videos/lookup-word`, {
+                userId: session?.userId ? Number(session.userId) : null,
+                videoId: Number(videoId),
+                word: word,
+                sentence: context
+            }, {
+                headers: getAuthHeader()
+            });
+
+            const data = res.data;
+            const firstPronunciation = (data.pronunciations || []).find((item) => item?.ipa || item?.audio);
+            const meanings = data.meanings || [];
+            const firstMeaning = meanings[0] || {};
+
+            setSaveFormData(prev => ({
+                ...prev,
+                word: data.word || word,
+                pronunciation: firstPronunciation?.ipa || '',
+                level: data.level,
+                definitionEng: firstMeaning.definitionEn || '',
+                definitionVi: firstMeaning.definitionVi || '',
+                example: firstMeaning.example || '',
+                exampleVi: data.contextTranslation || '',
+                contextTranslation: data.contextTranslation || ''
+            }));
+        } catch (err) {
+            console.error('Loi tra tu:', err);
+            const errorMsg = err?.response?.data?.message || 'Khong the ket noi den may chu tra tu';
+            alert(errorMsg);
+            setShowSaveModal(false);
+        } finally {
+            setIsLookingUp(false);
+        }
+        fetchDecks();
+    };
 
 	const fetchDecks = async () => {
 		try {
-			const authToken = localStorage.getItem('token') || JSON.parse(localStorage.getItem('user'))?.id
 			const res = await fetch(`${API_BASE}/api/user/flashcards/decks`, {
-				headers: { 'Authorization': `Bearer ${authToken}` }
+				headers: getAuthHeader()
 			})
 			if (res.ok) setAvailableDecks(await res.json())
 		} catch (err) {}
@@ -223,13 +337,13 @@ export function VideoWatch() {
 
 	// ─── Modal lưu từ vựng ────────────────────────────────────────────────────────
 	const handleOpenSaveModal = (word) => {
-		setSaveFormData({ word, phonetic: '', definitionEng: '', definitionVi: '' })
+		setSaveFormData({ word, pronunciation: '', definitionEng: '', definitionVi: '' })
 		setShowSaveModal(true)
 	}
 
 	const handleSaveWord = async () => {
-		const user = JSON.parse(localStorage.getItem('user'))
-		const userId = user ? user.id : null
+		const session = getUserSession()
+		const userId = Number(session?.userId)
 		if (!userId) {
 			alert('Vui lòng đăng nhập để lưu từ')
 			return
@@ -240,49 +354,45 @@ export function VideoWatch() {
 			return
 		}
 
+        // Kiểm tra Premium nếu lưu vào SRS
+        if (saveFormData.saveType === 'SRS') {
+            const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
+            const canSaveSRS = premiumStatus?.isPremium || (vocabLimit && !vocabLimit.IS_LOCKED)
+            
+            if (!canSaveSRS) {
+                alert('✨ Tính năng lưu vào lộ trình SRS yêu cầu gói Premium. Bạn có thể chọn lưu vào Flashcard để thay thế!')
+                return
+            }
+        }
+
 		try {
-			const authToken = localStorage.getItem('token') || userId
-			// 1. Save to custom vocab
-			const res = await fetch(`${API_BASE}/api/user/vocab-custom/save-multiple`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${authToken}`
-				},
-				body: JSON.stringify({
-					vocabularies: [{
-						word: saveFormData.word,
-						phonetic: saveFormData.phonetic,
-						meaningEn: saveFormData.definitionEng,
-						meaningVi: saveFormData.definitionVi,
-						example: saveFormData.example,
-						exampleVi: saveFormData.exampleVi
-					}],
-					addToSRS: saveFormData.saveType === 'SRS'
-				})
-			})
+			const payload = {
+                userId: userId,
+                word: saveFormData.word,
+                pronunciation: saveFormData.pronunciation,
+                partOfSpeech: saveFormData.partOfSpeech || 'noun',
+                meaningEn: saveFormData.definitionEng,
+                meaningVi: saveFormData.definitionVi,
+                example: saveFormData.example,
+                exampleVi: saveFormData.exampleVi,
+                addToSRS: saveFormData.saveType === 'SRS',
+                deckId: saveFormData.saveType === 'FLASHCARD' ? Number(saveFormData.deckId) : null
+            }
 
-			if (!res.ok) throw new Error('Lỗi khi lưu từ vựng')
+            const res = await axios.post(`${API_BASE}/api/videos/save-word`, payload, {
+                headers: getAuthHeader()
+            })
 
-			// 2. Save to Flashcard if selected
-			if (saveFormData.saveType === 'FLASHCARD' && saveFormData.deckId) {
-				await fetch(`${API_BASE}/api/user/flashcards/decks/${saveFormData.deckId}/cards`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${authToken}`
-					},
-					body: JSON.stringify({
-						frontText: saveFormData.word,
-						backText: saveFormData.definitionVi
-					})
-				})
-			}
-
-			alert('Đã lưu từ vựng thành công!')
-			setShowSaveModal(false)
+            if (res.status === 200 || res.status === 201) {
+                alert('Đã lưu từ vựng thành công!')
+                setShowSaveModal(false)
+                // Refresh vocab list to update highlights
+                if (typeof fetchSavedVocab === 'function') fetchSavedVocab()
+            }
 		} catch (err) {
-			alert('Lỗi: ' + err.message)
+			console.error('Lỗi lưu từ:', err)
+            const errorMsg = err?.response?.data?.message || 'Không thể lưu từ vựng'
+			alert(errorMsg)
 		}
 	}
 
@@ -309,11 +419,10 @@ export function VideoWatch() {
 		)
 	}
 
-	// URL để stream file video từ backend
-	const videoStreamUrl = `${API_BASE}/api/videos/${video.id}/stream`
 
-	// Segment đang active (hiển thị phía dưới player)
-	const activeSegment = segments.find((s) => s.id === activeSubtitleId)
+
+	// URL để stream file video từ backend
+	const videoStreamUrl = video ? `${API_BASE}/api/videos/${video.id}/stream` : ''
 
 	return (
 		<section className="video-watch-page">
@@ -335,7 +444,17 @@ export function VideoWatch() {
 						<div className="video-watch__meta-row">
 							<span className="video-watch__dot" aria-hidden="true" />
 							<span>{channelName}</span>
+                            <span> | </span>
+                            <span className="video-difficulty-badge">{video.difficulty}</span>
 						</div>
+                        <div className="video-watch__actions">
+                            <FavoriteButton 
+                                isFavorite={isFavorite} 
+                                onToggle={handleToggleFavorite} 
+                                loading={interactionLoading} 
+                            />
+                            <ProgressBar percent={progressPercent} label="Tiến độ xem" />
+                        </div>
 					</header>
 				</div>
 
@@ -413,15 +532,31 @@ export function VideoWatch() {
 								? (
 									<div className="video-watch__clickable-text-wrapper">
 										<div className="video-watch__clickable-text">
-											{activeSegment.text.split(' ').map((word, idx) => (
-												<span
-													key={idx}
-													className="video-watch__word"
-													onClick={() => handleWordClick(word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,""), activeSegment.text)}
-												>
-													{word}{' '}
-												</span>
-											))}
+                                            {(activeSegment.text || '').split(/(\s+)/).map((part, i) => {
+                                                const cleanWord = part.trim().replace(/[.,!?;:()"]/g, '');
+                                                if (cleanWord.length > 0) {
+                                                    const match = savedVocab.find(v => v.word.toLowerCase() === cleanWord.toLowerCase());
+                                                    return (
+                                                        <span 
+                                                            key={i} 
+                                                            className={`video-watch__word ${match ? 'highlighted-word' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleWordClick(cleanWord, activeSegment.text);
+                                                            }}
+                                                        >
+                                                            {part}
+                                                            {match && (
+                                                                <span className="vocab-tooltip">
+                                                                    <span className="tooltip-word">{match.word} {match.pronunciation ? `[${match.pronunciation}]` : ''}</span>
+                                                                    <span className="tooltip-meaning">{match.meaningVi || match.meaningEn}</span>
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    );
+                                                }
+                                                return <span key={i}>{part}</span>;
+                                            })}
 										</div>
 
 										{/* Quick Dictionary Panel hiện ngay bên dưới */}
@@ -432,79 +567,101 @@ export function VideoWatch() {
 													<header>
 														<div className="dict-title-row">
 															<h3>{saveFormData.word}</h3>
-															<span className="dict-level">{saveFormData.level}</span>
+															{saveFormData.level && <span className="dict-level">{saveFormData.level}</span>}
 														</div>
-														<span className="dict-phonetic">{saveFormData.phonetic}</span>
+														<span className="dict-phonetic">{saveFormData.pronunciation}</span>
 														<button className="dict-close" onClick={() => setShowSaveModal(false)}>×</button>
 													</header>
 													
 													<div className="dict-body">
-														<div className="dict-section">
-															<label>Nghĩa tiếng Anh</label>
-															<p className="dict-text-en">{saveFormData.definitionEng || '...'}</p>
-														</div>
-														<div className="dict-section">
-															<label>Nghĩa tiếng Việt</label>
-															<p className="dict-text-vi">{saveFormData.definitionVi || '...'}</p>
-														</div>
-														{saveFormData.example && (
-															<div className="dict-section dict-example-section">
-																<label>Ví dụ</label>
-																<p className="dict-example-en">"{saveFormData.example}"</p>
-																<p className="dict-example-vi">{saveFormData.exampleVi}</p>
-															</div>
-														)}
+                                                        {isLookingUp ? (
+                                                            <p style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>Đang tra cứu từ điển AI...</p>
+                                                        ) : (
+                                                            <>
+                                                                <div className="dict-section">
+                                                                    <label>Nghĩa tiếng Anh</label>
+                                                                    <p className="dict-text-en">{saveFormData.definitionEng || '...'}</p>
+                                                                </div>
+                                                                <div className="dict-section">
+                                                                    <label>Nghĩa tiếng Việt</label>
+                                                                    <p className="dict-text-vi">{saveFormData.definitionVi || '...'}</p>
+                                                                </div>
 
-														<div className="dict-save-type-selector" style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-															<div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-																<label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-																	<input 
-																		type="radio" 
-																		name="saveType" 
-																		value="SRS" 
-																		checked={saveFormData.saveType === 'SRS'} 
-																		onChange={(e) => setSaveFormData({...saveFormData, saveType: e.target.value})}
-																	/>
-																	<span>Học thời điểm vàng (SRS)</span>
-																</label>
-																<label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-																	<input 
-																		type="radio" 
-																		name="saveType" 
-																		value="FLASHCARD" 
-																		checked={saveFormData.saveType === 'FLASHCARD'} 
-																		onChange={(e) => setSaveFormData({...saveFormData, saveType: e.target.value})}
-																	/>
-																	<span>Lưu vào bộ Flashcard</span>
-																</label>
-															</div>
+                                                                {saveFormData.contextTranslation && (
+                                                                    <div className="dict-section dict-context-section" style={{ backgroundColor: '#f0f9ff', padding: '10px', borderRadius: '8px', borderLeft: '4px solid #0ea5e9' }}>
+                                                                        <label style={{ color: '#0369a1' }}>Dịch ngữ cảnh</label>
+                                                                        <p className="dict-context-text" style={{ fontSize: '0.9rem', color: '#0c4a6e' }}>{saveFormData.contextTranslation}</p>
+                                                                    </div>
+                                                                )}
 
-															{saveFormData.saveType === 'FLASHCARD' && (
-																<div style={{ marginTop: '0.75rem' }}>
-																	<select 
-																		value={saveFormData.deckId} 
-																		onChange={(e) => setSaveFormData({...saveFormData, deckId: e.target.value})}
-																		style={{ width: '100%', padding: '0.4rem', borderRadius: '0.3rem', border: '1px solid #ddd', fontSize: '0.85rem' }}
-																	>
-																		<option value="">-- Chọn bộ thẻ --</option>
-																		{availableDecks.map(deck => (
-																			<option key={deck.id} value={deck.id}>{deck.name}</option>
-																		))}
-																	</select>
-																</div>
-															)}
-														</div>
+                                                                {saveFormData.example && (
+                                                                    <div className="dict-section dict-example-section">
+                                                                        <label>Câu ví dụ (trong video)</label>
+                                                                        <p className="dict-example-en">"{saveFormData.example}"</p>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="dict-save-type-selector" style={{ marginTop: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                                                        <label className="dict-save-option">
+                                                                            <input 
+                                                                                type="radio" 
+                                                                                name="saveType" 
+                                                                                value="SRS" 
+                                                                                checked={saveFormData.saveType === 'SRS'} 
+                                                                                onChange={(e) => setSaveFormData({...saveFormData, saveType: e.target.value})}
+                                                                            />
+                                                                            <span className="save-option-text">
+                                                                                <strong>Học thông minh (SRS)</strong>
+                                                                                <small>Gợi ý ôn tập theo lộ trình trí nhớ</small>
+                                                                            </span>
+                                                                        </label>
+                                                                        <label className="dict-save-option">
+                                                                            <input 
+                                                                                type="radio" 
+                                                                                name="saveType" 
+                                                                                value="FLASHCARD" 
+                                                                                checked={saveFormData.saveType === 'FLASHCARD'} 
+                                                                                onChange={(e) => setSaveFormData({...saveFormData, saveType: e.target.value})}
+                                                                            />
+                                                                            <span className="save-option-text">
+                                                                                <strong>Lưu vào Flashcard</strong>
+                                                                                <small>Tự ôn tập trong bộ sưu tập cá nhân</small>
+                                                                            </span>
+                                                                        </label>
+                                                                    </div>
+
+                                                                    {saveFormData.saveType === 'FLASHCARD' && (
+                                                                        <div style={{ marginTop: '1rem' }}>
+                                                                            <select 
+                                                                                className="dict-deck-select"
+                                                                                value={saveFormData.deckId} 
+                                                                                onChange={(e) => setSaveFormData({...saveFormData, deckId: e.target.value})}
+                                                                                style={{ width: '100%', padding: '0.4rem', borderRadius: '0.3rem', border: '1px solid #ddd', fontSize: '0.85rem' }}
+                                                                            >
+                                                                                <option value="">-- Chọn bộ thẻ --</option>
+                                                                                {availableDecks.map(deck => (
+                                                                                    <option key={deck.id} value={deck.id}>{deck.name}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
 													</div>
 													
-													<div className="dict-footer">
-														<button onClick={handleSaveWord} className="dict-save-btn">Lưu vào sổ tay</button>
-													</div>
+													{!isLookingUp && (
+                                                        <div className="dict-footer">
+                                                            <button onClick={handleSaveWord} className="dict-save-btn">Lưu vào sổ tay cá nhân</button>
+                                                        </div>
+                                                    )}
 												</div>
 											</div>
 										)}
 									</div>
 								)
-								: <span style={{ color: '#999' }}>Chưa có phụ đề</span>
+								: <span style={{ color: '#999' }}>{segments.length > 0 ? 'Đang chờ đến đoạn có phụ đề...' : 'Video này chưa có phụ đề'}</span>
 							}
 						</div>
 					</div>

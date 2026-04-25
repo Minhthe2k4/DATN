@@ -9,7 +9,7 @@ const DIFFICULTY_OPTIONS = ['Cơ bản', 'Trung bình', 'Nâng cao']
 const STATUS_OPTIONS = ['Đang mở', 'Nháp']
 
 function createDraftRow(id) {
-  return { id, name: '', description: '', topic_id: '', difficulty: 'Trung bình', status: 'Đang mở' }
+  return { id, name: '', description: '', topic_id: '', difficulty: 'Trung bình', status: 'Đang mở', lessonImage: '', isPremium: false }
 }
 
 function normalizeLessonRow(row) {
@@ -19,7 +19,9 @@ function normalizeLessonRow(row) {
     description: row.description ?? '',
     topic_id: row.topicId ?? row.topic_id ?? '',
     difficulty: row.difficulty ?? 'Trung bình',
-    status: row.status ?? 'Nháp',
+    status: row.status ?? 'Đang mở',
+    lessonImage: row.lessonImage ?? '',
+    isPremium: !!row.isPremium,
   }
 }
 
@@ -139,6 +141,8 @@ export function LessonManagement() {
           topicId: item.topic_id || fallbackTopicId,
           difficulty: item.difficulty,
           status: item.status,
+          lessonImage: item.lessonImage.trim(),
+          isPremium: !!item.isPremium,
         }),
       }))
 
@@ -182,7 +186,7 @@ export function LessonManagement() {
       icon: 'iconoir-edit-pencil',
     },
     {
-      label: 'Khó trung bình',
+      label: 'Độ khó trung bình',
       value: lessonRows.filter((lesson) => lesson.difficulty === 'Trung bình').length.toString(),
       meta: 'Bài học ở mức trung bình',
       icon: 'iconoir-stats',
@@ -214,18 +218,18 @@ export function LessonManagement() {
   const filteredLessons = useMemo(() => {
     let result = lessonRows
     const term = searchTerm.toLowerCase().trim()
-    
+
     if (term) {
-      result = result.filter(lesson => 
-        lesson.name.toLowerCase().includes(term) || 
+      result = result.filter(lesson =>
+        lesson.name.toLowerCase().includes(term) ||
         lesson.description.toLowerCase().includes(term)
       )
     }
-    
+
     if (filterTopicId) {
       result = result.filter(lesson => String(lesson.topic_id) === String(filterTopicId))
     }
-    
+
     return result
   }, [lessonRows, searchTerm, filterTopicId])
 
@@ -233,7 +237,7 @@ export function LessonManagement() {
     <div className="page-content">
       <div className="container-fluid">
         <AdminPageHeader
-          eyebrow="Lesson Builder"
+          eyebrow="Lesson Management"
           title="Quản lý bài học"
           description="Thiết lập cấu trúc bài học theo chủ đề, độ khó và khối lượng từ vựng phù hợp."
           actions={
@@ -267,8 +271,8 @@ export function LessonManagement() {
                   </div>
                 </div>
                 <div className="col-12 col-md-5">
-                  <select 
-                    className="form-select" 
+                  <select
+                    className="form-select"
                     value={filterTopicId}
                     onChange={(e) => setFilterTopicId(e.target.value)}
                   >
@@ -291,6 +295,11 @@ export function LessonManagement() {
                     },
                   },
                   { key: 'difficulty', label: 'Độ khó' },
+                  {
+                    key: 'isPremium',
+                    label: 'Premium',
+                    render: (row) => row.isPremium ? <Badge tone="info">👑 Premium</Badge> : <Badge tone="neutral">Mọi người</Badge>
+                  },
                   {
                     key: 'status',
                     label: 'Trạng thái',
@@ -346,11 +355,11 @@ export function LessonManagement() {
                   <button type="button" className="btn-close" aria-label="Đóng" onClick={closeModal}></button>
                 </div>
                 <div className="modal-body">
-                  <div className="d-grid gap-2">
+                  <div className="lesson-bulk-form">
                     {draftLessons.map((item, index) => (
-                      <div className="topic-draft-row" key={item.id}>
-                        <div className="row g-2 align-items-end">
-                          <div className="col-12 col-md-3">
+                      <div className="lesson-bulk-row" key={item.id}>
+                        <div className="lesson-bulk-row__fields">
+                          <div className="lesson-bulk-field">
                             <label className="form-label small text-muted mb-1">Tên bài học #{index + 1}</label>
                             <input
                               className="form-control"
@@ -360,7 +369,7 @@ export function LessonManagement() {
                               onChange={(event) => updateDraftRow(item.id, 'name', event.target.value)}
                             />
                           </div>
-                          <div className="col-12 col-md-3">
+                          <div className="lesson-bulk-field">
                             <label className="form-label small text-muted mb-1">Mô tả</label>
                             <input
                               className="form-control"
@@ -370,7 +379,7 @@ export function LessonManagement() {
                               onChange={(event) => updateDraftRow(item.id, 'description', event.target.value)}
                             />
                           </div>
-                          <div className="col-12 col-md-3">
+                          <div className="lesson-bulk-field">
                             <label className="form-label small text-muted mb-1">Chủ đề</label>
                             <select
                               className="form-select"
@@ -383,7 +392,7 @@ export function LessonManagement() {
                               ))}
                             </select>
                           </div>
-                          <div className="col-6 col-md-2">
+                          <div className="lesson-bulk-field">
                             <label className="form-label small text-muted mb-1">Độ khó</label>
                             <select
                               className="form-select"
@@ -393,7 +402,7 @@ export function LessonManagement() {
                               {DIFFICULTY_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
                             </select>
                           </div>
-                          <div className="col-6 col-md-2">
+                          <div className="lesson-bulk-field">
                             <label className="form-label small text-muted mb-1">Trạng thái</label>
                             <select
                               className="form-select"
@@ -402,6 +411,28 @@ export function LessonManagement() {
                             >
                               {STATUS_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
                             </select>
+                          </div>
+                          <div className="lesson-bulk-field">
+                            <label className="form-label small text-muted mb-1">Ảnh bài học (URL)</label>
+                            <input
+                              className="form-control"
+                              type="text"
+                              placeholder="https://example.com/lesson.png"
+                              value={item.lessonImage}
+                              onChange={(event) => updateDraftRow(item.id, 'lessonImage', event.target.value)}
+                            />
+                          </div>
+                          <div className="col-12 col-md-2">
+                            <label className="form-label small text-muted mb-1">Loại bài</label>
+                            <div className="form-check form-switch pt-1">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={item.isPremium}
+                                onChange={(e) => updateDraftRow(item.id, 'isPremium', e.target.checked)}
+                              />
+                              <label className="form-check-label small">{item.isPremium ? '👑 Premium' : 'Mọi người'}</label>
+                            </div>
                           </div>
                           <div className="col-12 col-md-1">
                             <label className="form-label small text-muted mb-1">&nbsp;</label>

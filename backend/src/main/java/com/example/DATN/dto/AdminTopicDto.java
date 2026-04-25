@@ -7,6 +7,7 @@ public record AdminTopicDto(
         String defaultDifficulty,
         long lessons,
         long words,
-        String status
+        String status,
+        String topicImage
 ) {
 }

@@ -326,6 +326,11 @@ export function UserManagement() {
                   { key: 'learnedWords', label: 'Số từ đã học' },
                   { key: 'dailyLogin', label: 'Hoạt động gần đây' },
                   {
+                    key: 'role',
+                    label: 'Vai trò',
+                    render: (row) => <Badge tone={row.role === 'ADMIN' ? 'danger' : 'info'}>{row.role}</Badge>,
+                  },
+                  {
                     key: 'premium',
                     label: 'Gói',
                     render: (row) => <Badge tone={row.premium === 'Premium' ? 'info' : 'neutral'}>{row.premium}</Badge>,

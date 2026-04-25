@@ -16,11 +16,12 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
                    t.description as description,
                    t.level as level,
                    t.status as status,
+                   t.topicImage as topicImage,
                    count(distinct l.id) as lessonCount,
                      0L as wordCount
             from Topic t
                  left join Lesson l on l.topic.id = t.id
-            group by t.id, t.name, t.description, t.level, t.status
+            group by t.id, t.name, t.description, t.level, t.status, t.topicImage
             order by t.id desc
             """)
     List<TopicManagementProjection> findTopicManagementRows();

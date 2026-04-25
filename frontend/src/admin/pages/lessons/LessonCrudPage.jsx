@@ -13,8 +13,10 @@ function getInitialForm(row, mode) {
       name: '',
       description: '',
       difficulty: 'Trung bình',
-      status: 'Nháp',
+      status: 'Đang mở',
       topic_id: topics[0]?.id || '',
+      lessonImage: '',
+      isPremium: false,
     }
   }
 
@@ -22,8 +24,10 @@ function getInitialForm(row, mode) {
     name: row?.name || '',
     description: row?.description || '',
     difficulty: row?.difficulty || 'Trung bình',
-    status: row?.status || 'Nháp',
+    status: row?.status || 'Đang mở',
     topic_id: row?.topic_id || '',
+    lessonImage: row?.lessonImage || '',
+    isPremium: !!row?.isPremium,
   }
 }
 
@@ -74,6 +78,8 @@ export function LessonCrudPage({ mode }) {
           difficulty: lessonPayload.difficulty,
           status: lessonPayload.status,
           topic_id: lessonPayload.topicId,
+          lessonImage: lessonPayload.lessonImage,
+          isPremium: lessonPayload.isPremium,
         }, mode))
         setError('')
       } catch (loadDataError) {
@@ -132,6 +138,8 @@ export function LessonCrudPage({ mode }) {
             topicId: Number(form.topic_id),
             difficulty: form.difficulty,
             status: form.status,
+            lessonImage: form.lessonImage,
+            isPremium: !!form.isPremium,
           }),
         })
         if (!response.ok) {
@@ -152,6 +160,8 @@ export function LessonCrudPage({ mode }) {
             topicId: Number(form.topic_id),
             difficulty: form.difficulty,
             status: form.status,
+            lessonImage: form.lessonImage,
+            isPremium: !!form.isPremium,
           }),
         })
         if (!response.ok) {
@@ -184,7 +194,7 @@ export function LessonCrudPage({ mode }) {
     <div className="page-content">
       <div className="container-fluid">
         <AdminPageHeader
-          eyebrow="Lesson Builder"
+          eyebrow="Lesson Management"
           title={title}
           description={mode === 'delete' ? 'Xác nhận xóa bài học.' : 'Tạo bài học mới với mô tả chi tiết.'}
           actions={<Link to="/admin/lessons" className="btn btn-outline-secondary">Quay lại danh sách</Link>}
@@ -237,6 +247,27 @@ export function LessonCrudPage({ mode }) {
                       {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                     <small className="form-text text-muted">Đang mở: Xuất hiện trong hệ thống | Nháp: Chưa sẵn sàng</small>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Ảnh bài học (URL)</label>
+                    <input className="form-control" value={form.lessonImage} onChange={(e) => setField('lessonImage', e.target.value)} placeholder="https://example.com/lesson.png" />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Loại bài học</label>
+                    <div className="form-check form-switch">
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        id="isPremiumSwitch"
+                        checked={form.isPremium} 
+                        onChange={(e) => setField('isPremium', e.target.checked)}
+                      />
+                      <label className="form-check-label" htmlFor="isPremiumSwitch">
+                        {form.isPremium ? '👑 Chỉ dành cho Premium' : 'Mọi người (Miễn phí)'}
+                      </label>
+                    </div>
                   </div>
 
                   <div className="d-flex gap-2 mt-4">

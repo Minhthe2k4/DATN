@@ -63,6 +63,13 @@ public class UserDictionaryController {
                     String cefrLevel = openAIUtil.predictCEFRLevel(word, definition);
                     meaning.put("level", cefrLevel);
                 }
+
+                // Translate example to Vietnamese using AI
+                String example = (String) meaning.get("example");
+                if (example != null && !example.isEmpty()) {
+                    String vietnameseExample = openAIUtil.translateExample(example);
+                    meaning.put("exampleVi", vietnameseExample);
+                }
             }
         }
 

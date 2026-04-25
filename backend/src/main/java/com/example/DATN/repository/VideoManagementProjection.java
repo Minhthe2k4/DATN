@@ -15,4 +15,12 @@ public interface VideoManagementProjection {
     String getChannelName();
 
     Long getTopicId();
+    
+    String getDifficulty();
+    
+    String getDuration();
+    
+    Integer getWordsHighlighted();
+    
+    String getStatus();
 }

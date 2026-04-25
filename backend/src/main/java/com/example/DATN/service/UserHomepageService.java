@@ -5,7 +5,6 @@ import com.example.DATN.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,10 +31,16 @@ public class UserHomepageService {
     @Autowired
     private PremiumPlanRepository premiumPlanRepository;
 
+    @Autowired
+    private UserStatsService userStatsService;
 
     public Map<String, Object> getDashboard(Long userId) {
         Map<String, Object> dashboard = new HashMap<>();
-        if (userId == null) return dashboard;
+        if (userId == null)
+            return dashboard;
+
+        // Đồng bộ thống kê
+        userStatsService.syncStats(userId);
 
         // 1. Review Count
         Date now = new Date();
@@ -46,25 +51,28 @@ public class UserHomepageService {
         long totalWordsCount = vocabularyRepository.count();
         List<UserVocabularyLearning> userWords = userVocabularyLearningRepository.findByUser_Id(userId);
         System.out.println("DEBUG: Found " + userWords.size() + " learning records for user " + userId);
-        
+
         long newWordCount = Math.max(0, totalWordsCount - userWords.size());
         dashboard.put("newWordCount", newWordCount);
         dashboard.put("totalPossible", totalWordsCount);
 
         // 3. Level Distribution
         Map<Integer, Long> distribution = new HashMap<>();
-        for (int i = 1; i <= 6; i++) distribution.put(i, 0L);
-        
+        for (int i = 1; i <= 6; i++)
+            distribution.put(i, 0L);
+
         Date nextReview = null;
         for (UserVocabularyLearning uvl : userWords) {
             Integer lvl = uvl.getDifficultyLevel();
-            String wordStr = uvl.vocabulary != null ? uvl.vocabulary.word : (uvl.customVocab != null ? uvl.customVocab.word : "unknown");
-            System.out.println("DEBUG: Word=" + wordStr + ", Diff=" + uvl.difficulty + ", Level=" + lvl + ", NextReview=" + uvl.nextReview);
-            
+            String wordStr = uvl.vocabulary != null ? uvl.vocabulary.word
+                    : (uvl.customVocab != null ? uvl.customVocab.word : "unknown");
+            System.out.println("DEBUG: Word=" + wordStr + ", Diff=" + uvl.difficulty + ", Level=" + lvl
+                    + ", NextReview=" + uvl.nextReview);
+
             if (lvl != null && lvl >= 1 && lvl <= 6) {
                 distribution.put(lvl, distribution.get(lvl) + 1);
             }
-            
+
             if (uvl.nextReview != null) {
                 if (nextReview == null || uvl.nextReview.before(nextReview)) {
                     nextReview = uvl.nextReview;
@@ -81,12 +89,12 @@ public class UserHomepageService {
             Map<String, Object> wordMap = new HashMap<>();
             if (uvl.vocabulary != null) {
                 wordMap.put("word", uvl.vocabulary.word);
-                wordMap.put("phonetic", uvl.vocabulary.pronunciation);
+                wordMap.put("pronunciation", uvl.vocabulary.pronunciation);
                 wordMap.put("meaning", uvl.vocabulary.meaningVi);
                 wordMap.put("isCustom", false);
             } else if (uvl.customVocab != null) {
                 wordMap.put("word", uvl.customVocab.word);
-                wordMap.put("phonetic", uvl.customVocab.phonetic);
+                wordMap.put("pronunciation", uvl.customVocab.pronunciation);
                 wordMap.put("meaning", uvl.customVocab.meaningVi);
                 wordMap.put("isCustom", true);
             }
@@ -97,7 +105,7 @@ public class UserHomepageService {
 
         // 5. Stats from UserStats
         dashboard.put("totalLearned", (long) userWords.size()); // Use actual learning records count
-        
+
         Optional<UserStats> statsOpt = userStatsRepository.findByUser_Id(userId);
         if (statsOpt.isPresent()) {
             UserStats stats = statsOpt.get();
@@ -126,7 +134,7 @@ public class UserHomepageService {
         return suggestions.stream().map(v -> {
             Map<String, Object> map = new HashMap<>();
             map.put("word", v.word);
-            map.put("phonetic", v.pronunciation != null ? v.pronunciation : "/.../");
+            map.put("pronunciation", v.pronunciation != null ? v.pronunciation : "/.../");
             map.put("meaningEn", v.meaningEn);
             map.put("meaningVi", v.meaningVi);
             map.put("example", v.example);
@@ -216,7 +224,7 @@ public class UserHomepageService {
                 response.put("isPremium", true);
                 response.put("status", "active");
                 response.put("premiumUntil", subscription.endDate);
-                
+
                 if (subscription.plan != null) {
                     response.put("planId", subscription.plan.id);
                     response.put("planName", subscription.plan.name);
@@ -230,7 +238,7 @@ public class UserHomepageService {
                 response.put("isPremium", false);
                 response.put("status", "free");
                 response.put("premiumUntil", null);
-                
+
                 // Fetch limits from "Free" plan if it exists
                 Optional<PremiumPlan> freePlan = premiumPlanRepository.findByName("Free");
                 if (freePlan.isPresent()) {

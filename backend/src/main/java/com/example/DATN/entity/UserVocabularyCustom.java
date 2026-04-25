@@ -23,9 +23,6 @@ public class UserVocabularyCustom {
     @Column(name = "pronunciation", length = 100)
     public String pronunciation;
 
-    @Column(name = "phonetic", length = 100)
-    public String phonetic;
-
     @Column(name = "part_of_speech", length = 50)
     public String partOfSpeech;
 

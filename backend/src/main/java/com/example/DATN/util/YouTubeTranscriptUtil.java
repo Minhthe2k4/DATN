@@ -1,6 +1,5 @@
 package com.example.DATN.util;
 
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,7 +10,7 @@ public class YouTubeTranscriptUtil {
 
     /**
      * Extract YouTube video ID từ URL
-     * Support: 
+     * Support:
      * - https://www.youtube.com/watch?v=dQw4w9WgXcQ
      * - https://youtu.be/dQw4w9WgXcQ
      * - dQw4w9WgXcQ (direct ID)

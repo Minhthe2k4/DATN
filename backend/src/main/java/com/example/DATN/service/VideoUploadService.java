@@ -168,21 +168,13 @@ public class VideoUploadService {
         try {
             String duration = getDurationWithFfprobe(tempFile);
             String cloudinaryUrl = uploadToCloudinary(file.getBytes());
-            return saveVideoAndTriggerWhisper(title, channel, cloudinaryUrl, difficulty, duration, status, "File upload");
+            return saveVideoAndTriggerWhisper(title, channel, cloudinaryUrl, difficulty, duration, status,
+                    "File upload");
         } finally {
             Files.deleteIfExists(tempFile);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // HELPER METHODS dùng chung cho cả 2 luồng
-    // ══════════════════════════════════════════════════════════════════
-
-    /** Upload bytes lên Cloudinary, trả về secure_url */
-    @SuppressWarnings("unchecked")
-    /**
-     * Dùng ffprobe để lấy thời lượng video (định dạng HH:mm:ss hoặc mm:ss)
-     */
     private String getDurationWithFfprobe(Path videoPath) {
         try {
             // Lệnh lấy tổng số giây: ffprobe -v error -show_entries format=duration -of
@@ -215,6 +207,7 @@ public class VideoUploadService {
     }
 
     private String uploadToCloudinary(byte[] bytes) throws IOException {
+        @SuppressWarnings("unchecked")
         Map<String, Object> result = cloudinary.uploader().upload(bytes, Map.of(
                 "resource_type", "video",
                 "folder", "datn-videos"));

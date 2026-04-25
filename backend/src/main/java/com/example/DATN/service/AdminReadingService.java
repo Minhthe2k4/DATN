@@ -11,7 +11,6 @@ import com.example.DATN.entity.ArticleTopic;
 import com.example.DATN.repository.ArticleManagementProjection;
 import com.example.DATN.repository.ArticleRepository;
 import com.example.DATN.repository.ArticleTopicRepository;
-import com.example.DATN.repository.ArticleManagementProjection;
 import com.example.DATN.repository.ArticleTopicManagementProjection;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,27 +22,37 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AdminReadingService {
-    private static final Pattern META_CONTENT_PATTERN = Pattern.compile("(?is)<meta[^>]+(?:property|name)\\s*=\\s*['\"]%s['\"][^>]+content\\s*=\\s*['\"](.*?)['\"][^>]*>");
+    private static final Logger log = LoggerFactory.getLogger(AdminReadingService.class);
+    private static final Pattern META_CONTENT_PATTERN = Pattern
+            .compile("(?is)<meta[^>]+(?:property|name)\\s*=\\s*['\"]%s['\"][^>]+content\\s*=\\s*['\"](.*?)['\"][^>]*>");
     private static final Pattern TITLE_PATTERN = Pattern.compile("(?is)<title[^>]*>(.*?)</title>");
     private static final Pattern ARTICLE_PATTERN = Pattern.compile("(?is)<article[^>]*>(.*?)</article>");
     private static final Pattern MAIN_PATTERN = Pattern.compile("(?is)<main[^>]*>(.*?)</main>");
     private static final Pattern PARAGRAPH_PATTERN = Pattern.compile("(?is)<p[^>]*>(.*?)</p>");
-    private static final Pattern CONTENT_BLOCK_PATTERN = Pattern.compile("(?is)<(p|h2|h3|blockquote|ul|ol|figure)\\b[^>]*>.*?</\\1>|<img\\b[^>]*>");
+    private static final Pattern CONTENT_BLOCK_PATTERN = Pattern
+            .compile("(?is)<(p|h2|h3|blockquote|ul|ol|figure)\\b[^>]*>.*?</\\1>|<img\\b[^>]*>");
     private static final Pattern LIST_ITEM_PATTERN = Pattern.compile("(?is)<li[^>]*>(.*?)</li>");
     private static final Pattern FIGCAPTION_PATTERN = Pattern.compile("(?is)<figcaption[^>]*>(.*?)</figcaption>");
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)(<img\\b[^>]*>)");
     private static final Pattern IMAGE_PATTERN = Pattern.compile("(?is)<img[^>]+src\\s*=\\s*['\"](.*?)['\"][^>]*>");
-    private static final Pattern CAPTION_CLASS_PATTERN = Pattern.compile("(?is)<p[^>]+(?:class|id)\\s*=\\s*['\"][^'\"]*(caption|legend|photo-caption|image-caption|figcaption|credit)[^'\"]*['\"][^>]*>");
+    private static final Pattern CAPTION_CLASS_PATTERN = Pattern.compile(
+            "(?is)<p[^>]+(?:class|id)\\s*=\\s*['\"][^'\"]*(caption|legend|photo-caption|image-caption|figcaption|credit)[^'\"]*['\"][^>]*>");
     private static final int MAX_CONTENT_NODES = 140;
     private final ArticleRepository articleRepository;
     private final ArticleTopicRepository articleTopicRepository;
-    private final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(java.time.Duration.ofSeconds(10))
+            .build();
 
     public AdminReadingService(ArticleRepository articleRepository, ArticleTopicRepository articleTopicRepository) {
         this.articleRepository = articleRepository;
@@ -56,7 +65,7 @@ public class AdminReadingService {
 
     public AdminReadingArticleDto findArticleById(Long id) {
         Article article = articleRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Article not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Article not found"));
 
         Long topicId = null;
         String topicName = "Chưa gán chủ đề";
@@ -66,18 +75,17 @@ public class AdminReadingService {
         }
 
         return new AdminReadingArticleDto(
-            toLong(Math.toIntExact(article.id)),
-            defaultString(article.title, ""),
-            topicId,
-            topicName,
-            normalizeDifficulty(article.difficulty),
-            defaultString(article.content, ""),
-            defaultString(article.articleImage, ""),
-            article.createdAt,
-            normalizeWordsHighlighted(article.wordsHighlighted),
-            defaultString(article.source, ""),
-            normalizeArticleStatus(article.status)
-        );
+                toLong(Math.toIntExact(article.id)),
+                defaultString(article.title, ""),
+                topicId,
+                topicName,
+                normalizeDifficulty(article.difficulty),
+                defaultString(article.content, ""),
+                defaultString(article.articleImage, ""),
+                article.createdAt,
+                normalizeWordsHighlighted(article.wordsHighlighted),
+                defaultString(article.source, ""),
+                normalizeArticleStatus(article.status));
     }
 
     public AdminReadingArticleDto createArticle(UpsertReadingArticleRequest request) {
@@ -93,7 +101,7 @@ public class AdminReadingService {
 
     public AdminReadingArticleDto updateArticle(Long id, UpsertReadingArticleRequest request) {
         Article article = articleRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Article not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Article not found"));
         applyArticle(article, request);
         // Đảm bảo words_highlighted không null
         if (article.wordsHighlighted == null) {
@@ -116,50 +124,55 @@ public class AdminReadingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Source URL is invalid");
         }
 
-        if (uri.getScheme() == null || (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme()))) {
+        if (uri.getScheme() == null
+                || (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme()))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Source URL must use http or https");
         }
 
         try {
             HttpRequest httpRequest = HttpRequest.newBuilder(uri)
-                .GET()
-                .header("User-Agent", "Mozilla/5.0 DATN-AdminBot/1.0")
-                .header("Accept", "text/html,application/xhtml+xml")
-                .build();
-            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                    .GET()
+                    .header("User-Agent",
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .header("Accept",
+                            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+                    .build();
+            HttpResponse<String> response = httpClient.send(httpRequest,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Cannot fetch article content from source URL");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Cannot fetch article content from source URL");
             }
 
             String html = defaultString(response.body(), "");
             String title = firstNonBlank(
-                extractMetaContent(html, "og:title"),
-                extractMetaContent(html, "twitter:title"),
-                stripTags(extractFirstGroup(TITLE_PATTERN, html))
-            );
+                    extractMetaContent(html, "og:title"),
+                    extractMetaContent(html, "twitter:title"),
+                    stripTags(extractFirstGroup(TITLE_PATTERN, html)));
             String content = extractReadableContent(html, uri);
             String articleImage = normalizeImageUrl(firstNonBlank(
-                extractMetaContent(html, "og:image"),
-                extractMetaContent(html, "twitter:image"),
-                extractFirstGroup(IMAGE_PATTERN, html)
-            ), uri);
+                    extractMetaContent(html, "og:image"),
+                    extractMetaContent(html, "twitter:image"),
+                    extractFirstGroup(IMAGE_PATTERN, html)), uri);
 
             if (content.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Cannot extract article content from source URL");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Cannot extract article content from source URL");
             }
 
             return new CrawlReadingArticleResponse(
-                defaultString(title, ""),
-                content,
-                defaultString(articleImage, ""),
-                estimateWordsHighlighted(content),
-                new Date()
-            );
+                    defaultString(title, ""),
+                    content,
+                    defaultString(articleImage, ""),
+                    estimateWordsHighlighted(content),
+                    new Date());
         } catch (ResponseStatusException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Cannot crawl article from source URL");
+            log.error("Failed to crawl article from {}: {}", sourceUrl, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Cannot crawl article from source URL: " + ex.getMessage());
         }
     }
 
@@ -183,14 +196,13 @@ public class AdminReadingService {
                 .count();
 
         return new AdminReadingTopicDto(
-            toLong(Math.toIntExact(topic.id)),
-            defaultString(topic.name, ""),
-            defaultString(topic.description, ""),
-            normalizeDifficulty(topic.level),
-            normalizeTopicStatus(topic.status),
-            defaultString(topic.articleTopicImage, ""),
-            articleCount
-        );
+                toLong(Math.toIntExact(topic.id)),
+                defaultString(topic.name, ""),
+                defaultString(topic.description, ""),
+                normalizeDifficulty(topic.level),
+                normalizeTopicStatus(topic.status),
+                defaultString(topic.articleTopicImage, ""),
+                articleCount);
     }
 
     public AdminReadingTopicDto createTopic(UpsertReadingTopicRequest request) {
@@ -281,14 +293,13 @@ public class AdminReadingService {
                 defaultString(row.getTitle(), ""),
                 row.getTopicId(),
                 defaultString(row.getTopicName(), "Chưa gán chủ đề"),
-            normalizeDifficulty(row.getDifficulty()),
-            defaultString(row.getContent(), ""),
-            defaultString(row.getArticleImage(), ""),
-            row.getCreatedAt(),
-            normalizeWordsHighlighted(row.getWordsHighlighted()),
+                normalizeDifficulty(row.getDifficulty()),
+                defaultString(row.getContent(), ""),
+                defaultString(row.getArticleImage(), ""),
+                row.getCreatedAt(),
+                normalizeWordsHighlighted(row.getWordsHighlighted()),
                 defaultString(row.getSource(), ""),
-            normalizeArticleStatus(row.getStatus())
-        );
+                normalizeArticleStatus(row.getStatus()));
     }
 
     private AdminReadingTopicDto toTopicDto(ArticleTopicManagementProjection row) {
@@ -299,8 +310,7 @@ public class AdminReadingService {
                 normalizeDifficulty(row.getLevel()),
                 normalizeTopicStatus(row.getStatus()),
                 defaultString(row.getArticleTopicImage(), ""),
-                row.getArticleCount() == null ? 0 : row.getArticleCount()
-        );
+                row.getArticleCount() == null ? 0 : row.getArticleCount());
     }
 
     private String normalizeTopicStatus(Boolean value) {
@@ -310,10 +320,10 @@ public class AdminReadingService {
     private boolean normalizeTopicStatusValue(String value) {
         String normalized = defaultString(value, "Hoạt động").trim().toLowerCase(Locale.ROOT);
         return !normalized.equals("tam dung")
-            && !normalized.equals("tạm dừng")
-            && !normalized.equals("paused")
-            && !normalized.equals("false")
-            && !normalized.equals("0");
+                && !normalized.equals("tạm dừng")
+                && !normalized.equals("paused")
+                && !normalized.equals("false")
+                && !normalized.equals("0");
     }
 
     private String normalizeArticleStatus(String value) {
@@ -353,16 +363,16 @@ public class AdminReadingService {
     }
 
     private String extractMetaContent(String html, String key) {
-        Pattern pattern = Pattern.compile(String.format(META_CONTENT_PATTERN.pattern(), Pattern.quote(key)), Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Pattern pattern = Pattern.compile(String.format(META_CONTENT_PATTERN.pattern(), Pattern.quote(key)),
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
         return decodeHtml(extractFirstGroup(pattern, html));
     }
 
     private String extractReadableContent(String html, URI baseUri) {
         String mainBlock = firstNonBlank(
-            extractFirstGroup(ARTICLE_PATTERN, html),
-            extractFirstGroup(MAIN_PATTERN, html),
-            html
-        );
+                extractFirstGroup(ARTICLE_PATTERN, html),
+                extractFirstGroup(MAIN_PATTERN, html),
+                html);
 
         Matcher contentMatcher = CONTENT_BLOCK_PATTERN.matcher(defaultString(mainBlock, ""));
         StringBuilder htmlBuilder = new StringBuilder();
@@ -426,9 +436,8 @@ public class AdminReadingService {
         if (lower.startsWith("<figure")) {
             String imageTag = extractFirstGroup(IMG_TAG_PATTERN, node);
             String caption = firstNonBlank(
-                stripTags(extractFirstGroup(FIGCAPTION_PATTERN, node)),
-                extractInlineImageCaption(imageTag)
-            );
+                    stripTags(extractFirstGroup(FIGCAPTION_PATTERN, node)),
+                    extractInlineImageCaption(imageTag));
             return buildImageFigure(imageTag, baseUri, caption);
         }
 
@@ -440,8 +449,8 @@ public class AdminReadingService {
                 String itemText = stripTags(listMatcher.group(1));
                 if (!itemText.isBlank()) {
                     listBuilder.append("<li>")
-                        .append(escapeHtmlText(itemText))
-                        .append("</li>");
+                            .append(escapeHtmlText(itemText))
+                            .append("</li>");
                 }
             }
             if (listBuilder.length() == 0) {
@@ -467,8 +476,8 @@ public class AdminReadingService {
 
         if (lower.startsWith("<p") && looksLikeCaption(node, text)) {
             return "<figcaption class=\"article-inline-caption\">"
-                + escapeHtmlText(text)
-                + "</figcaption>";
+                    + escapeHtmlText(text)
+                    + "</figcaption>";
         }
         return "<" + tagName + ">" + escapeHtmlText(text) + "</" + tagName + ">";
     }
@@ -480,41 +489,38 @@ public class AdminReadingService {
         }
 
         String srcRaw = firstNonBlank(
-            extractAttribute(normalizedTag, "src"),
-            extractAttribute(normalizedTag, "data-src"),
-            extractAttribute(normalizedTag, "data-original"),
-            extractAttribute(normalizedTag, "data-lazy-src"),
-            extractAttribute(normalizedTag, "srcset"),
-            extractAttribute(normalizedTag, "data-srcset")
-        );
+                extractAttribute(normalizedTag, "src"),
+                extractAttribute(normalizedTag, "data-src"),
+                extractAttribute(normalizedTag, "data-original"),
+                extractAttribute(normalizedTag, "data-lazy-src"),
+                extractAttribute(normalizedTag, "srcset"),
+                extractAttribute(normalizedTag, "data-srcset"));
         String src = normalizeImageUrl(srcRaw, baseUri);
         if (src.isBlank()) {
             return "";
         }
 
         String caption = firstNonBlank(
-            defaultString(fallbackCaption, ""),
-            stripTags(extractAttribute(normalizedTag, "data-caption")),
-            stripTags(extractAttribute(normalizedTag, "title"))
-        );
+                defaultString(fallbackCaption, ""),
+                stripTags(extractAttribute(normalizedTag, "data-caption")),
+                stripTags(extractAttribute(normalizedTag, "title")));
 
         String alt = firstNonBlank(
-            stripTags(extractAttribute(normalizedTag, "alt")),
-            defaultString(caption, "")
-        );
+                stripTags(extractAttribute(normalizedTag, "alt")),
+                defaultString(caption, ""));
 
         StringBuilder builder = new StringBuilder();
         builder.append("<figure class=\"article-inline-image\">")
-            .append("<img src=\"")
-            .append(escapeHtmlAttribute(src))
-            .append("\" alt=\"")
-            .append(escapeHtmlAttribute(defaultString(alt, "Article image")))
-            .append("\" loading=\"lazy\" referrerpolicy=\"no-referrer\" />");
+                .append("<img src=\"")
+                .append(escapeHtmlAttribute(src))
+                .append("\" alt=\"")
+                .append(escapeHtmlAttribute(defaultString(alt, "Article image")))
+                .append("\" loading=\"lazy\" referrerpolicy=\"no-referrer\" />");
 
         if (!caption.isBlank()) {
             builder.append("<figcaption>")
-            .append(escapeHtmlText(caption))
-                .append("</figcaption>");
+                    .append(escapeHtmlText(caption))
+                    .append("</figcaption>");
         }
 
         builder.append("</figure>");
@@ -527,9 +533,8 @@ public class AdminReadingService {
             return "";
         }
         return firstNonBlank(
-            stripTags(extractAttribute(tag, "data-caption")),
-            stripTags(extractAttribute(tag, "title"))
-        );
+                stripTags(extractAttribute(tag, "data-caption")),
+                stripTags(extractAttribute(tag, "title")));
     }
 
     private boolean looksLikeCaption(String rawNode, String text) {
@@ -549,17 +554,18 @@ public class AdminReadingService {
             return true;
         }
 
-        if ((raw.toLowerCase(Locale.ROOT).contains("<em") || raw.toLowerCase(Locale.ROOT).contains("<i")) && wordCount <= 24) {
+        if ((raw.toLowerCase(Locale.ROOT).contains("<em") || raw.toLowerCase(Locale.ROOT).contains("<i"))
+                && wordCount <= 24) {
             return true;
         }
 
         return lowerText.startsWith("anh:")
-            || lowerText.startsWith("ảnh:")
-            || lowerText.startsWith("photo:")
-            || lowerText.startsWith("credit:")
-            || lowerText.startsWith("nguon:")
-            || lowerText.startsWith("nguồn:")
-            || lowerText.startsWith("source:");
+                || lowerText.startsWith("ảnh:")
+                || lowerText.startsWith("photo:")
+                || lowerText.startsWith("credit:")
+                || lowerText.startsWith("nguon:")
+                || lowerText.startsWith("nguồn:")
+                || lowerText.startsWith("source:");
     }
 
     private String extractAttribute(String tag, String attributeName) {
@@ -628,8 +634,8 @@ public class AdminReadingService {
             String normalized = defaultString(paragraph, "").trim();
             if (!normalized.isBlank()) {
                 builder.append("<p>")
-                    .append(escapeHtmlText(normalized))
-                    .append("</p>");
+                        .append(escapeHtmlText(normalized))
+                        .append("</p>");
             }
         }
         return builder.toString();
@@ -637,15 +643,15 @@ public class AdminReadingService {
 
     private String escapeHtmlText(String value) {
         return defaultString(value, "")
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;");
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     private String escapeHtmlAttribute(String value) {
         return escapeHtmlText(value)
-            .replace("\"", "&quot;")
-            .replace("'", "&#39;");
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private String extractFirstGroup(Pattern pattern, String input) {
@@ -658,25 +664,25 @@ public class AdminReadingService {
 
     private String stripTags(String value) {
         String normalized = defaultString(value, "")
-            .replaceAll("(?is)<script[^>]*>.*?</script>", " ")
-            .replaceAll("(?is)<style[^>]*>.*?</style>", " ")
-            .replaceAll("(?is)<br\\s*/?>", "\n")
-            .replaceAll("(?is)</p>", "\n")
-            .replaceAll("(?is)<[^>]+>", " ")
-            .replaceAll("[ \\t\\x0B\\f\\r]+", " ")
-            .replaceAll("\\n{3,}", "\n\n")
-            .trim();
+                .replaceAll("(?is)<script[^>]*>.*?</script>", " ")
+                .replaceAll("(?is)<style[^>]*>.*?</style>", " ")
+                .replaceAll("(?is)<br\\s*/?>", "\n")
+                .replaceAll("(?is)</p>", "\n")
+                .replaceAll("(?is)<[^>]+>", " ")
+                .replaceAll("[ \\t\\x0B\\f\\r]+", " ")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
         return decodeHtml(normalized);
     }
 
     private String decodeHtml(String value) {
         return defaultString(value, "")
-            .replace("&nbsp;", " ")
-            .replace("&amp;", "&")
-            .replace("&quot;", "\"")
-            .replace("&#39;", "'")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">");
+                .replace("&nbsp;", " ")
+                .replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">");
     }
 
     private String firstNonBlank(String... values) {

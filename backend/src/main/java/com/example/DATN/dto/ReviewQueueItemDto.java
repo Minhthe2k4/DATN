@@ -6,7 +6,7 @@ public record ReviewQueueItemDto(
     Long id,
     Long vocabId,
     String word,
-    String phonetic,
+    String pronunciation,
     String meaningEn,
     String meaningVi,
     String example,

@@ -74,4 +74,14 @@ public class UserVideoController {
         return segmentRepository.findByVideoIdOrderBySegmentOrderAsc(videoId);
     }
 
+    @org.springframework.web.bind.annotation.PostMapping("/lookup-word")
+    public com.example.DATN.dto.ReadingWordLookupResponse lookupWord(@org.springframework.web.bind.annotation.RequestBody com.example.DATN.dto.ReadingWordLookupRequest request) {
+        // reuse ReadingDictionaryService for video context
+        return videoService.lookupWordInVideo(request);
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/save-word")
+    public com.example.DATN.entity.UserVocabularyCustom saveWord(@org.springframework.web.bind.annotation.RequestBody com.example.DATN.dto.SaveReadingWordRequest request) {
+        return videoService.saveWordFromVideo(request);
+    }
 }

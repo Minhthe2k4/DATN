@@ -8,7 +8,6 @@ import com.example.DATN.entity.User;
 import com.example.DATN.repository.PremiumPlanRepository;
 import com.example.DATN.repository.TransactionRepository;
 import com.example.DATN.repository.UserRepository;
-import com.example.DATN.service.PremiumService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -43,17 +42,14 @@ public class PaymentController {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final PremiumPlanRepository premiumPlanRepository;
-    private final PremiumService premiumService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PaymentController(TransactionRepository transactionRepository,
-                             UserRepository userRepository,
-                             PremiumPlanRepository premiumPlanRepository,
-                             PremiumService premiumService) {
+            UserRepository userRepository,
+            PremiumPlanRepository premiumPlanRepository) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.premiumPlanRepository = premiumPlanRepository;
-        this.premiumService = premiumService;
     }
 
     @GetMapping("/plans")
@@ -68,14 +64,15 @@ public class PaymentController {
 
         try {
             User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-            PremiumPlan plan = premiumPlanRepository.findById(planId).orElseThrow(() -> new RuntimeException("Plan not found"));
+            PremiumPlan plan = premiumPlanRepository.findById(planId)
+                    .orElseThrow(() -> new RuntimeException("Plan not found"));
 
             Random rand = new Random();
             int res = rand.nextInt(1000000);
             long amount = plan.price.longValue();
             long app_time = System.currentTimeMillis();
             String app_user = user.username;
-            
+
             // Chuỗi dữ liệu để tạo MAC
             // app_trans_id định dạng: yyMMdd_random
             String app_trans_id = new SimpleDateFormat("yyMMdd").format(new Date()) + "_" + res;
@@ -84,10 +81,11 @@ public class PaymentController {
             Map<String, String> embedDataMap = new HashMap<>();
             embedDataMap.put("redirecturl", redirectUrl);
             String embed_data_str = objectMapper.writeValueAsString(embedDataMap);
-            
-            String item_str = "[]"; 
 
-            String data = appId + "|" + app_trans_id + "|" + app_user + "|" + amount + "|" + app_time + "|" + embed_data_str + "|" + item_str;
+            String item_str = "[]";
+
+            String data = appId + "|" + app_trans_id + "|" + app_user + "|" + amount + "|" + app_time + "|"
+                    + embed_data_str + "|" + item_str;
             String mac = ZaloPayUtils.hmacSHA256(key1, data);
 
             // Dùng Map để ObjectMapper tự động tạo JSON chuẩn
@@ -114,7 +112,7 @@ public class PaymentController {
             transaction.plan = plan;
             transaction.amount = plan.price;
             transaction.paymentMethod = "ZALOPAY";
-            transaction.status = "PENDING";
+            transaction.status = "INITIATED";
             transaction.paymentTransId = app_trans_id;
             transactionRepository.save(transaction);
 
@@ -128,6 +126,7 @@ public class PaymentController {
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("ZaloPay Raw Response: " + response.body());
+            @SuppressWarnings("unchecked")
             Map<String, Object> result = objectMapper.readValue(response.body(), Map.class);
 
             if (result.get("return_code").toString().equals("1")) {
@@ -156,24 +155,25 @@ public class PaymentController {
         // ZaloPay trả về apptransid trong params redirect
         String apptransid = params.get("apptransid");
         String statusStr = params.get("status");
-        
+
         if (statusStr == null) {
             return ResponseEntity.status(400).body(Map.of("status", "ERROR", "message", "Missing status parameter"));
         }
-        
+
         int status = Integer.parseInt(statusStr);
 
         if (status == 1) { // 1 là thành công tại ZaloPay
             Transaction transaction = transactionRepository.findByPaymentTransId(apptransid)
                     .orElseThrow(() -> new RuntimeException("Transaction not found"));
-            
+
             // Cập nhật trạng thái chờ duyệt thay vì tự động kích hoạt
-            if ("PENDING".equals(transaction.status)) {
+            if ("INITIATED".equals(transaction.status)) {
                 transaction.status = "AWAITING"; // Đã thanh toán, chờ duyệt
                 transactionRepository.save(transaction);
                 // Không gọi premiumService.upgradeUserAfterPayment ở đây nữa
             }
-            return ResponseEntity.ok(Map.of("status", "SUCCESS", "message", "Thanh toán thành công! Vui lòng chờ quản trị viên duyệt."));
+            return ResponseEntity.ok(
+                    Map.of("status", "SUCCESS", "message", "Thanh toán thành công! Vui lòng chờ quản trị viên duyệt."));
         }
         return ResponseEntity.ok(Map.of("status", "FAILED", "message", "Giao dịch không thành công hoặc đã bị hủy."));
     }

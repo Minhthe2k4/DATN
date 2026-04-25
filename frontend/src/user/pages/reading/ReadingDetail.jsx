@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import axios from 'axios'
-import { getUserSession } from '../../utils/authSession'
+import { getUserSession, getAuthHeader } from '../../utils/authSession'
 import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
+import FavoriteButton from '../../components/interaction/FavoriteButton'
+import ProgressBar from '../../components/interaction/ProgressBar'
+import HighlightWrapper from '../../components/interaction/HighlightWrapper'
 import './readingDetail.css'
+import '../../components/interaction/interaction.css'
 
 const FALLBACK_ARTICLE_IMAGE = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80'
 
@@ -83,7 +87,7 @@ function normalizeWordToken(value) {
         .trim()
 }
 
-function tokenizeContentHtml(html, activeWord) {
+function tokenizeContentHtml(html, activeWord, savedVocab = []) {
     if (!html) {
         return ''
     }
@@ -110,6 +114,9 @@ function tokenizeContentHtml(html, activeWord) {
         current = walker.nextNode()
     }
 
+    // Sort vocab by length descending for better matching
+    const sortedVocab = [...savedVocab].sort((a, b) => (b.word || '').length - (a.word || '').length)
+
     textNodes.forEach((node) => {
         const text = node.nodeValue || ''
         const fragment = doc.createDocumentFragment()
@@ -128,11 +135,33 @@ function tokenizeContentHtml(html, activeWord) {
                 }
 
                 const span = doc.createElement('span')
-                span.className = word === activeWord
-                    ? 'reading-inline-word is-context-word'
-                    : 'reading-inline-word'
+                const isSaved = sortedVocab.find(v => (v.word || '').toLowerCase() === word)
+                
+                let className = 'reading-inline-word'
+                if (word === activeWord) className += ' is-context-word'
+                if (isSaved) className += ' highlighted-word'
+                
+                span.className = className
                 span.setAttribute('data-word', word)
                 span.textContent = part
+
+                if (isSaved) {
+                    const tooltip = doc.createElement('span')
+                    tooltip.className = 'vocab-tooltip'
+                    
+                    const tWord = doc.createElement('span')
+                    tWord.className = 'tooltip-word'
+                    tWord.textContent = `${isSaved.word} ${isSaved.pronunciation ? `[${isSaved.pronunciation}]` : ''}`
+                    
+                    const tMeaning = doc.createElement('span')
+                    tMeaning.className = 'tooltip-meaning'
+                    tMeaning.textContent = isSaved.meaningVi || isSaved.meaningEn
+                    
+                    tooltip.appendChild(tWord)
+                    tooltip.appendChild(tMeaning)
+                    span.appendChild(tooltip)
+                }
+
                 fragment.appendChild(span)
             } else {
                 fragment.appendChild(doc.createTextNode(part))
@@ -161,6 +190,37 @@ function cleanContextSentence(value) {
         .slice(0, 420)
 }
 
+function extractSentence(text, word) {
+    if (!text || !word) return text;
+    const lowerText = text.toLowerCase();
+    const lowerWord = word.toLowerCase();
+    const wordIndex = lowerText.indexOf(lowerWord);
+    if (wordIndex === -1) return text;
+
+    // Find the start of the sentence
+    let start = wordIndex;
+    while (start > 0) {
+        const char = text[start - 1];
+        const prevChar = start > 1 ? text[start - 2] : '';
+        // Sentence boundaries: . ! ? followed by space or end of string
+        if (/[.!?]/.test(prevChar) && /\s/.test(char)) break;
+        start--;
+    }
+
+    // Find the end of the sentence
+    let end = wordIndex + word.length;
+    while (end < text.length) {
+        const char = text[end];
+        if (/[.!?]/.test(char)) {
+            end++; // include the punctuation
+            break;
+        }
+        end++;
+    }
+
+    return text.substring(start, end).trim();
+}
+
 export function ReadingDetail() {
     const { topicId, articleId } = useParams()
     const session = getUserSession()
@@ -170,6 +230,13 @@ export function ReadingDetail() {
     const [article, setArticle] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
     const [errorMessage, setErrorMessage] = useState('')
+    
+    // New interaction states
+    const [isFavorite, setIsFavorite] = useState(false)
+    const [progressPercent, setProgressPercent] = useState(0)
+    const [savedVocab, setSavedVocab] = useState([])
+    const [interactionLoading, setInteractionLoading] = useState(false)
+
     const [lookupState, setLookupState] = useState({
         open: false,
         loading: false,
@@ -205,6 +272,12 @@ export function ReadingDetail() {
                     return
                 }
                 setArticle(data)
+                
+                // Fetch stats and vocab if user is logged in
+                if (userId) {
+                    fetchInteractionStats()
+                    fetchSavedVocab()
+                }
             })
             .catch(() => {
                 if (!mounted) return
@@ -218,12 +291,87 @@ export function ReadingDetail() {
         return () => {
             mounted = false
         }
-    }, [articleId, topicId])
+    }, [articleId, topicId, userId])
+
+    // Interaction handlers
+    const fetchInteractionStats = async () => {
+        try {
+            const res = await axios.get('/api/user/interaction/stats', {
+                params: { targetId: articleId, targetType: 'ARTICLE' },
+                headers: getAuthHeader()
+            })
+            setIsFavorite(res.data.isFavorite)
+            setProgressPercent(res.data.progressPercent)
+        } catch (err) {
+            console.error('Failed to fetch stats:', err)
+        }
+    }
+
+    const fetchSavedVocab = async () => {
+        try {
+            const res = await axios.get('/api/user/vocab-custom/list', {
+                headers: getAuthHeader()
+            })
+            setSavedVocab(res.data || [])
+        } catch (err) {
+            console.error('Failed to fetch saved vocab:', err)
+        }
+    }
+
+    const handleToggleFavorite = async () => {
+        if (!userId) {
+            alert('Vui lòng đăng nhập để sử dụng tính năng này!')
+            return
+        }
+        setInteractionLoading(true)
+        try {
+            const res = await axios.post('/api/user/interaction/favorite/toggle', null, {
+                params: { targetId: articleId, targetType: 'ARTICLE' },
+                headers: getAuthHeader()
+            })
+            setIsFavorite(res.data.isFavorite)
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err)
+        } finally {
+            setInteractionLoading(false)
+        }
+    }
+
+    const handleUpdateProgress = async (percent) => {
+        if (!userId) return
+        try {
+            await axios.post('/api/user/interaction/progress', null, {
+                params: { targetId: articleId, targetType: 'ARTICLE', percent },
+                headers: getAuthHeader()
+            })
+            setProgressPercent(percent)
+        } catch (err) {
+            console.error('Failed to update progress:', err)
+        }
+    }
+
+    // Scroll tracking for progress
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!article || !userId) return
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
+            const scrolled = (winScroll / height) * 100
+            
+            // Debounce or only update if significantly increased
+            if (scrolled > progressPercent + 5 || scrolled >= 95) {
+                handleUpdateProgress(Math.min(scrolled, 100))
+            }
+        }
+
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [article, userId, progressPercent])
 
     const contentHtml = useMemo(() => normalizeContentHtml(article?.content), [article?.content])
     const interactiveHtml = useMemo(
-        () => tokenizeContentHtml(contentHtml, lookupState.normalizedWord),
-        [contentHtml, lookupState.normalizedWord],
+        () => tokenizeContentHtml(contentHtml, lookupState.normalizedWord, savedVocab),
+        [contentHtml, lookupState.normalizedWord, savedVocab],
     )
 
     const handleSpeak = (audioUrl) => {
@@ -344,9 +492,10 @@ export function ReadingDetail() {
             return
         }
 
-        const rawWord = token.textContent || ''
         const container = token.closest('p, li, blockquote, figcaption, h2, h3, h4')
-        const sentence = cleanContextSentence(container?.textContent || article?.title || '')
+        const fullText = container?.textContent || article?.title || ''
+        const rawWord = token.textContent || ''
+        const sentence = cleanContextSentence(extractSentence(fullText, rawWord))
         void openLookupModal(rawWord, sentence)
     }
 
@@ -363,14 +512,6 @@ export function ReadingDetail() {
     }
 
     const handleOpenSaveMeaningModal = (meaning) => {
-        const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
-        const canSave = premiumStatus?.isPremium || (vocabLimit && !vocabLimit.IS_LOCKED)
-
-        if (!canSave) {
-            alert('✨ Tính năng lưu từ vựng yêu cầu gói Premium hoặc đã bị khóa.');
-            return
-        }
-
         const defaultPhonetic = pronunciationUk?.ipa || pronunciationUs?.ipa || ''
         setLookupState((prev) => ({
             ...prev,
@@ -379,7 +520,7 @@ export function ReadingDetail() {
             saveMessage: '',
             saveDraft: {
                 word: prev.response?.normalizedWord || prev.normalizedWord,
-                phonetic: defaultPhonetic,
+                pronunciation: defaultPhonetic,
                 level: prev.response?.level || '',
                 partOfSpeech: meaning?.partOfSpeech || '',
                 definitionEng: meaning?.definitionEn || '',
@@ -445,6 +586,20 @@ export function ReadingDetail() {
             return
         }
 
+        if (lookupState.saveDraft?.saveType === 'SRS') {
+            const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
+            const canSaveSRS = premiumStatus?.isPremium || (vocabLimit && !vocabLimit.IS_LOCKED)
+            
+            if (!canSaveSRS) {
+                setLookupState((prev) => ({
+                    ...prev,
+                    saveError: '✨ Tính năng lưu vào lộ trình SRS yêu cầu gói Premium. Bạn có thể chọn lưu vào Flashcard để thay thế!',
+                    saveMessage: '',
+                }))
+                return
+            }
+        }
+
         setLookupState((prev) => ({
             ...prev,
             saving: true,
@@ -453,7 +608,7 @@ export function ReadingDetail() {
         }))
 
         const firstPronunciation = (lookupState.response?.pronunciations || []).find((item) => item?.ipa || item?.audio)
-        const ipa = lookupState.saveDraft?.phonetic || firstPronunciation?.ipa || ''
+        const ipa = lookupState.saveDraft?.pronunciation || firstPronunciation?.ipa || ''
 
         try {
             const saveRes = await axios.post('/api/article/save-word', {
@@ -545,6 +700,11 @@ export function ReadingDetail() {
                             <span>{formatDate(article.createdAt)}</span>
                         </div>
                         <div className="reading-detail-hero__actions">
+                            <FavoriteButton 
+                                isFavorite={isFavorite} 
+                                onToggle={handleToggleFavorite} 
+                                loading={interactionLoading} 
+                            />
                             <button
                                 type="button"
                                 className="reading-download-btn"
@@ -554,6 +714,7 @@ export function ReadingDetail() {
                                 {premiumStatus?.isPremium ? '📥 Tải bài viết' : '🔒 Tải (Premium)'}
                             </button>
                         </div>
+                        <ProgressBar percent={progressPercent} label="Tiến độ đọc" />
                     </div>
                 </header>
 
@@ -561,8 +722,8 @@ export function ReadingDetail() {
                     {interactiveHtml ? (
                         <div
                             className="reading-article-body__rich"
-                            dangerouslySetInnerHTML={{ __html: interactiveHtml }}
                             onClick={handleArticleWordClick}
+                            dangerouslySetInnerHTML={{ __html: interactiveHtml }}
                         />
                     ) : (
                         <p className="reading-article-body__paragraph">Bai viet nay chua co noi dung.</p>
@@ -705,7 +866,7 @@ export function ReadingDetail() {
 
                                 <div className="reading-save-form__group">
                                     <label>Phien am</label>
-                                    <input type="text" value={lookupState.saveDraft.phonetic || ''} onChange={(event) => handleSaveFormChange('phonetic', event.target.value)} />
+                                    <input type="text" value={lookupState.saveDraft.pronunciation || ''} onChange={(event) => handleSaveFormChange('pronunciation', event.target.value)} />
                                     <div className="reading-save-pronunciation-actions">
                                         {pronunciationUk?.audio ? (
                                             <button

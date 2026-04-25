@@ -14,6 +14,7 @@ function normalizeTopicRow(row) {
     lessons: row.lessons ?? 0,
     words: row.words ?? 0,
     status: row.status ?? 'Hoạt động',
+    topicImage: row.topicImage ?? '',
   }
 }
 
@@ -24,6 +25,7 @@ function createDraftRow(id) {
     description: '',
     defaultDifficulty: 'Trung bình',
     status: 'Hoạt động',
+    topicImage: '',
   }
 }
 
@@ -111,8 +113,8 @@ export function TopicManagement() {
   const filteredTopics = useMemo(() => {
     const term = searchTerm.toLowerCase().trim()
     if (!term) return topicRows
-    return topicRows.filter((topic) => 
-      topic.name.toLowerCase().includes(term) || 
+    return topicRows.filter((topic) =>
+      topic.name.toLowerCase().includes(term) ||
       topic.description.toLowerCase().includes(term)
     )
   }, [topicRows, searchTerm])
@@ -158,6 +160,7 @@ export function TopicManagement() {
         description: item.description.trim(),
         defaultDifficulty: item.defaultDifficulty,
         status: item.status,
+        topicImage: item.topicImage.trim(),
       }))
       .filter((item) => item.name)
 
@@ -183,6 +186,7 @@ export function TopicManagement() {
         description: parts[1] || '',
         defaultDifficulty: parts[2] || 'Trung bình',
         status: parts[3] || 'Hoạt động',
+        topicImage: parts[4] || '',
       })
     })
 
@@ -211,6 +215,7 @@ export function TopicManagement() {
           description: item.description || 'Chủ đề mới được thêm từ màn hình tạo hàng loạt.',
           defaultDifficulty: item.defaultDifficulty || 'Trung bình',
           status: item.status || 'Hoạt động',
+          topicImage: item.topicImage || '',
         }),
       }))
 
@@ -308,78 +313,95 @@ export function TopicManagement() {
 
       {isBulkModalOpen ? (
         <>
+          <div className="modal-backdrop fade show"></div>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div className="modal-dialog modal-xl modal-dialog-centered force-xl-modal" role="document">
               <div className="modal-content topic-bulk-modal">
                 <div className="modal-header">
                   <div>
-                    <h5 className="modal-title mb-1">Tạo hàng loạt chủ đề</h5>
+                    <h5 className="modal-title mb-1">Hệ thống tạo chủ đề hàng loạt</h5>
                     <div className="topic-bulk-modal__subtitle">Nhập nhanh như Quizlet: nhiều dòng, tập trung tốc độ tạo nội dung.</div>
                   </div>
                   <button type="button" className="btn-close" aria-label="Đóng" onClick={closeBulkModal}></button>
                 </div>
                 <div className="modal-body">
-                  <div className="d-grid gap-2">
-                    {draftTopics.map((item, index) => (
-                      <div className="topic-draft-row" key={item.id}>
-                        <div className="row g-2 align-items-start">
-                          <div className="col-12 col-md-3">
-                            <label className="form-label small text-muted mb-1">Chủ đề #{index + 1}</label>
-                            <input
-                              className="form-control"
-                              type="text"
-                              placeholder="Ví dụ: Business English"
-                              value={item.name}
-                              onChange={(event) => updateDraftRow(item.id, 'name', event.target.value)}
-                            />
-                          </div>
-                          <div className="col-12 col-md-4">
-                            <label className="form-label small text-muted mb-1">Mô tả ngắn</label>
-                            <input
-                              className="form-control"
-                              type="text"
-                              placeholder="Ngữ cảnh sử dụng và phạm vi nội dung"
-                              value={item.description}
-                              onChange={(event) => updateDraftRow(item.id, 'description', event.target.value)}
-                            />
-                          </div>
-                          <div className="col-6 col-md-2">
-                            <label className="form-label small text-muted mb-1">Độ khó</label>
-                            <select
-                              className="form-select"
-                              value={item.defaultDifficulty}
-                              onChange={(event) => updateDraftRow(item.id, 'defaultDifficulty', event.target.value)}
-                            >
-                              <option>Cơ bản</option>
-                              <option>Trung bình</option>
-                              <option>Nâng cao</option>
-                            </select>
-                          </div>
-                          <div className="col-6 col-md-2">
-                            <label className="form-label small text-muted mb-1">Trạng thái</label>
-                            <select
-                              className="form-select"
-                              value={item.status}
-                              onChange={(event) => updateDraftRow(item.id, 'status', event.target.value)}
-                            >
-                              <option>Hoạt động</option>
-                              <option>Tạm dừng</option>
-                            </select>
-                          </div>
-                          <div className="col-12 col-md-1 d-grid">
-                            <label className="form-label small text-muted mb-1">&nbsp;</label>
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger topic-draft-row__delete"
-                              onClick={() => removeDraftRow(item.id)}
-                              disabled={draftTopics.length <= 1}
-                            >
-                              <i className="iconoir-trash"></i>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="table-responsive">
+                    <table className="table table-borderless table-sm align-middle mb-0">
+                      <thead>
+                        <tr className="small text-muted text-uppercase fw-bold">
+                          <th style={{ width: '18%', paddingLeft: '12px' }}>Tên chủ đề</th>
+                          <th style={{ width: '28%' }}>Mô tả ngắn</th>
+                          <th style={{ width: '14%' }}>Độ khó</th>
+                          <th style={{ width: '14%' }}>Trạng thái</th>
+                          <th style={{ width: '22%' }}>Ảnh (URL)</th>
+                          <th style={{ width: '4%' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {draftTopics.map((item, index) => (
+                          <tr key={item.id} className="topic-draft-table-row">
+                            <td className="ps-2">
+                              <input
+                                className="form-control form-control-sm"
+                                type="text"
+                                placeholder="Ví dụ: Business English"
+                                value={item.name}
+                                onChange={(event) => updateDraftRow(item.id, 'name', event.target.value)}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                className="form-control form-control-sm"
+                                type="text"
+                                placeholder="Ngữ cảnh sử dụng..."
+                                value={item.description}
+                                onChange={(event) => updateDraftRow(item.id, 'description', event.target.value)}
+                              />
+                            </td>
+                            <td>
+                              <select
+                                className="form-select form-select-sm"
+                                value={item.defaultDifficulty}
+                                onChange={(event) => updateDraftRow(item.id, 'defaultDifficulty', event.target.value)}
+                              >
+                                <option>Cơ bản</option>
+                                <option>Trung bình</option>
+                                <option>Nâng cao</option>
+                              </select>
+                            </td>
+                            <td>
+                              <select
+                                className="form-select form-select-sm"
+                                value={item.status}
+                                onChange={(event) => updateDraftRow(item.id, 'status', event.target.value)}
+                              >
+                                <option>Hoạt động</option>
+                                <option>Tạm dừng</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                className="form-control form-control-sm"
+                                type="text"
+                                placeholder="URL ảnh..."
+                                value={item.topicImage}
+                                onChange={(event) => updateDraftRow(item.id, 'topicImage', event.target.value)}
+                              />
+                            </td>
+                            <td className="text-end pe-2">
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger border-0"
+                                onClick={() => removeDraftRow(item.id)}
+                                disabled={draftTopics.length <= 1}
+                              >
+                                <i className="iconoir-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
                   <button type="button" className="btn btn-outline-primary mt-3" onClick={addDraftRow}>
@@ -406,7 +428,6 @@ export function TopicManagement() {
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show"></div>
         </>
       ) : null}
     </div>

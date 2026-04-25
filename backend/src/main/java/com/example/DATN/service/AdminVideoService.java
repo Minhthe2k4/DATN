@@ -7,7 +7,6 @@ import com.example.DATN.dto.TranscriptSegmentDto;
 import com.example.DATN.dto.UpsertVideoChannelRequest;
 import com.example.DATN.dto.UpsertVideoRequest;
 import com.example.DATN.entity.Segment;
-import com.example.DATN.entity.Topic;
 import com.example.DATN.entity.Video;
 import com.example.DATN.entity.YouTubeChannel;
 import com.example.DATN.repository.SegmentRepository;
@@ -28,19 +27,15 @@ import org.springframework.web.server.ResponseStatusException;
 public class AdminVideoService {
     private final VideoRepository videoRepository;
     private final YouTubeChannelRepository youTubeChannelRepository;
-    private final TopicRepository topicRepository;
-    private final SegmentRepository segmentRepository;
 
     public AdminVideoService(
             VideoRepository videoRepository,
             YouTubeChannelRepository youTubeChannelRepository,
             TopicRepository topicRepository,
-            SegmentRepository segmentRepository
-    ) {
+            SegmentRepository segmentRepository) {
         this.videoRepository = videoRepository;
         this.youTubeChannelRepository = youTubeChannelRepository;
-        this.topicRepository = topicRepository;
-        this.segmentRepository = segmentRepository;
+        // this.topicRepository = topicRepository;
     }
 
     public List<AdminVideoChannelDto> findAllChannels() {
@@ -56,13 +51,12 @@ public class AdminVideoService {
                 .count();
 
         return new AdminVideoChannelDto(
-            toLong(Math.toIntExact(channel.id)),
+                toLong(Math.toIntExact(channel.id)),
                 defaultString(channel.name, ""),
-            extractHandle(channel.url),
-            "General",
+                extractHandle(channel.url),
+                channel.description != null ? channel.description : "General",
                 videoCount,
-            "Hoạt động"
-        );
+                channel.status != null ? channel.status : "Hoạt động");
     }
 
     public AdminVideoChannelDto createChannel(UpsertVideoChannelRequest request) {
@@ -81,7 +75,8 @@ public class AdminVideoService {
     }
 
     public void deleteChannel(Long id) {
-        boolean hasVideos = videoRepository.findVideoManagementRows().stream().anyMatch(v -> id.equals(v.getChannelId()));
+        boolean hasVideos = videoRepository.findVideoManagementRows().stream()
+                .anyMatch(v -> id.equals(v.getChannelId()));
         if (hasVideos) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete channel with linked videos");
         }
@@ -100,17 +95,16 @@ public class AdminVideoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found"));
 
         return new AdminVideoDto(
-            toLong(Math.toIntExact(video.id)),
+                toLong(Math.toIntExact(video.id)),
                 defaultString(video.title, ""),
                 defaultString(video.url, ""),
-            video.channel == null ? null : toLong(Math.toIntExact(video.channel.id)),
+                video.channel == null ? null : toLong(Math.toIntExact(video.channel.id)),
                 video.channel == null ? "" : defaultString(video.channel.name, ""),
 
-            "Trung bình",
-            "—",
-            0,
-            "Chờ biên tập"
-        );
+                video.difficulty != null ? video.difficulty : "Trung bình",
+                video.duration != null ? video.duration : "—",
+                video.wordsHighlighted != null ? video.wordsHighlighted : 0,
+                video.status != null ? video.status : "Chờ biên tập");
     }
 
     public AdminVideoDto createVideo(UpsertVideoRequest request) {
@@ -162,10 +156,7 @@ public class AdminVideoService {
         YouTubeChannel channel = youTubeChannelRepository.findById(request.channelId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Channel not found"));
 
-        Topic topic = null;
         if (request.topicId() != null) {
-            topic = topicRepository.findById(request.topicId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Topic not found"));
         }
 
         video.title = title;
@@ -173,17 +164,16 @@ public class AdminVideoService {
         video.url = youtubeUrl;
         video.channel = channel;
 
-        
         // Lấy transcript từ request (admin tự nhập sau khi review)
         String transcript = request == null ? "" : defaultString(request.transcript(), "").trim();
         video.transcript = transcript;
-        
+
         // Set default values if not provided
         video.difficulty = request == null ? "Trung bình" : defaultString(request.difficulty(), "Trung bình");
         video.duration = request == null ? "—" : defaultString(request.duration(), "—");
         video.wordsHighlighted = 0;
         video.status = request == null ? "Chờ biên tập" : defaultString(request.status(), "Chờ biên tập");
-        
+
         // Handle segments if provided
         if (request != null && request.segments() != null && !request.segments().isEmpty()) {
             // Clear existing segments
@@ -192,16 +182,15 @@ public class AdminVideoService {
             } else {
                 video.segments = new ArrayList<>();
             }
-            
+
             // Add new segments
             for (var segmentDto : request.segments()) {
                 Segment segment = new Segment(
-                    segmentDto.segmentOrder(),
-                    segmentDto.startSec(),
-                    segmentDto.endSec(),
-                    segmentDto.text(),
-                    video
-                );
+                        segmentDto.segmentOrder(),
+                        segmentDto.startSec(),
+                        segmentDto.endSec(),
+                        segmentDto.text(),
+                        video);
                 video.segments.add(segment);
             }
         }
@@ -211,11 +200,10 @@ public class AdminVideoService {
         return new AdminVideoChannelDto(
                 row.getId(),
                 defaultString(row.getName(), ""),
-            extractHandle(row.getUrl()),
-            "General",
+                extractHandle(row.getUrl()),
+                row.getDescription() != null ? row.getDescription() : "General",
                 row.getVideoCount() == null ? 0 : row.getVideoCount(),
-            "Hoạt động"
-        );
+                row.getStatus() != null ? row.getStatus() : "Hoạt động");
     }
 
     private AdminVideoDto toVideoDto(VideoManagementProjection row) {
@@ -226,11 +214,10 @@ public class AdminVideoService {
                 row.getChannelId(),
                 defaultString(row.getChannelName(), ""),
 
-                "Trung bình",
-                "—",
-                0,
-                "Chờ biên tập"
-        );
+                row.getDifficulty() != null ? row.getDifficulty() : "Trung bình",
+                row.getDuration() != null ? row.getDuration() : "—",
+                row.getWordsHighlighted() == null ? 0 : row.getWordsHighlighted(),
+                row.getStatus() != null ? row.getStatus() : "Chờ biên tập");
     }
 
     private String normalizeHandle(String value) {
@@ -283,9 +270,9 @@ public class AdminVideoService {
             }
 
             // Fetch English transcript với chunks
-            com.example.DATN.util.TranscriptFetchResult fetchResult = 
-                YouTubeCaptionUtil.fetchEnglishTranscript(videoId);
-            
+            com.example.DATN.util.TranscriptFetchResult fetchResult = YouTubeCaptionUtil
+                    .fetchEnglishTranscript(videoId);
+
             if (fetchResult == null || fetchResult.transcript == null || fetchResult.transcript.isEmpty()) {
                 TranscriptResponseDto errorResponse = new TranscriptResponseDto();
                 errorResponse.videoId = videoId;
@@ -300,10 +287,9 @@ public class AdminVideoService {
             List<TranscriptSegmentDto> segments = new ArrayList<>();
             if (fetchResult.chunks != null && !fetchResult.chunks.isEmpty()) {
                 segments = YouTubeTranscriptService.buildTimedSegments(
-                    fetchResult.chunks,
-                    fetchResult.transcript,
-                    fetchResult.language
-                );
+                        fetchResult.chunks,
+                        fetchResult.transcript,
+                        fetchResult.language);
             }
 
             // Determine language
@@ -314,20 +300,19 @@ public class AdminVideoService {
 
             // Build response
             TranscriptResponseDto response = new TranscriptResponseDto(
-                videoId,
-                title,
-                fetchResult.transcript,
-                segments,
-                language,
-                youtubeUrl
-            );
+                    videoId,
+                    title,
+                    fetchResult.transcript,
+                    segments,
+                    language,
+                    youtubeUrl);
 
             return response;
 
         } catch (Exception e) {
             System.err.println("Error fetching YouTube captions: " + e.getMessage());
             e.printStackTrace();
-            
+
             TranscriptResponseDto errorResponse = new TranscriptResponseDto();
             errorResponse.error = "Error: " + e.getMessage();
             return errorResponse;

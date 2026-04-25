@@ -18,13 +18,10 @@ public class AiDictionaryService {
     @Value("${datn.ai.openai-api-key}")
     private String openAiApiKey;
 
-    private final com.example.DATN.repository.UserRepository userRepository;
     private final PremiumService premiumService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public AiDictionaryService(com.example.DATN.repository.UserRepository userRepository,
-            PremiumService premiumService) {
-        this.userRepository = userRepository;
+    public AiDictionaryService(PremiumService premiumService) {
         this.premiumService = premiumService;
     }
 
@@ -37,10 +34,11 @@ public class AiDictionaryService {
         }
 
         String prompt = String.format(
-                "Explain the word '%s' in the context: '%s'. " +
-                        "Provide: phonetic, level (A1-C2), definition_en, definition_vi (concise), example_en, example_vi (translation of example_en). "
+                "Analyze the word '%s' in the context: '%s'. " +
+                        "1. Identify the root/base form of the word (e.g., 'running' -> 'run', 'better' -> 'good'). " +
+                        "2. Provide details for the ROOT form: root_word, phonetic, level (A1-C2), part_of_speech, definition_en, definition_vi (concise meaning in Vietnamese), example_en (a sentence using the ROOT word), example_vi (Vietnamese translation of example_en). "
                         +
-                        "Format the response as a valid JSON object with these keys.",
+                        "Format the response as a valid JSON object.",
                 word, context);
 
         Map<String, Object> payload = new HashMap<>();
@@ -82,19 +80,20 @@ public class AiDictionaryService {
         // Parse content JSON từ AI
         JsonNode resultJson = objectMapper.readTree(content);
         Map<String, String> result = new HashMap<>();
-        result.put("word", word);
+
+        String rootWord = resultJson.path("root_word").asText().trim();
+        if (rootWord.isEmpty())
+            rootWord = word;
+
+        result.put("word", rootWord);
         result.put("phonetic", resultJson.path("phonetic").asText());
         result.put("level", resultJson.path("level").asText());
+        result.put("partOfSpeech", resultJson.path("part_of_speech").asText());
         result.put("definitionEn", resultJson.path("definition_en").asText());
         result.put("definitionVi", resultJson.path("definition_vi").asText());
-        result.put("example", resultJson.path("example_en").asText());
+        result.put("example", resultJson.path("example").asText());
         result.put("exampleVi", resultJson.path("example_vi").asText());
 
         return result;
-    }
-
-    private boolean isSameDay(java.util.Date d1, java.util.Date d2) {
-        java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("yyyyMMdd");
-        return fmt.format(d1).equals(fmt.format(d2));
     }
 }

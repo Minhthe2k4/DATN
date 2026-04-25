@@ -22,7 +22,6 @@ const UserManagement = lazy(() => import('./pages/users/UserManagement').then((m
 const PremiumManagement = lazy(() => import('./pages/premium/PremiumManagement').then((module) => ({ default: module.PremiumManagement })))
 const RevenueManagement = lazy(() => import('./pages/revenue/RevenueManagement').then((module) => ({ default: module.RevenueManagement })))
 const SpacedRepetitionManagement = lazy(() => import('./pages/spaced-repetition/SpacedRepetitionManagement').then((module) => ({ default: module.SpacedRepetitionManagement })))
-const RoleManagement = lazy(() => import('./pages/roles/RoleManagement').then((module) => ({ default: module.RoleManagement })))
 const SupportManagement = lazy(() => import('./pages/support/SupportManagement').then((module) => ({ default: module.SupportManagement })))
 const AdminCrudPage = lazy(() => import('./pages/crud/AdminCrudPage').then((module) => ({ default: module.AdminCrudPage })))
 
@@ -113,7 +112,6 @@ export function AdminApp() {
                 <Route path="premium" element={<PremiumManagement />} />
                 <Route path="revenue" element={<RevenueManagement />} />
                 <Route path="spaced-repetition" element={<SpacedRepetitionManagement />} />
-                <Route path="roles" element={<RoleManagement />} />
                 <Route path="support" element={<SupportManagement />} />
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>

@@ -6,6 +6,8 @@ public record AdminLessonDto(
         String description,
         Long topicId,
         String difficulty,
-        String status
+        String status,
+        String lessonImage,
+        Boolean isPremium
 ) {
 }

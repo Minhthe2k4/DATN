@@ -103,7 +103,8 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 .reading-page__container > *,
 .reading-detail-page__container > *,
 .dictionary-page__container > *,
-.subscription-page__container > * {
+.subscription-page__container > *,
+.flashcard-page__container > * {
   animation: sectionIn 0.5s cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
@@ -115,7 +116,8 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 .reading-page__container > *:nth-child(1),
 .reading-detail-page__container > *:nth-child(1),
 .dictionary-page__container > *:nth-child(1),
-.subscription-page__container > *:nth-child(1) {
+.subscription-page__container > *:nth-child(1),
+.flashcard-page__container > *:nth-child(1) {
   animation-delay: 40ms;
 }
 
@@ -127,7 +129,8 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 .reading-page__container > *:nth-child(2),
 .reading-detail-page__container > *:nth-child(2),
 .dictionary-page__container > *:nth-child(2),
-.subscription-page__container > *:nth-child(2) {
+.subscription-page__container > *:nth-child(2),
+.flashcard-page__container > *:nth-child(2) {
   animation-delay: 90ms;
 }
 
@@ -139,7 +142,8 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 .reading-page__container > *:nth-child(3),
 .reading-detail-page__container > *:nth-child(3),
 .dictionary-page__container > *:nth-child(3),
-.subscription-page__container > *:nth-child(3) {
+.subscription-page__container > *:nth-child(3),
+.flashcard-page__container > *:nth-child(3) {
   animation-delay: 140ms;
 }
 

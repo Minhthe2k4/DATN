@@ -18,4 +18,6 @@ public interface TopicManagementProjection {
     Long getLessonCount();
 
     Long getWordCount();
+    
+    String getTopicImage();
 }

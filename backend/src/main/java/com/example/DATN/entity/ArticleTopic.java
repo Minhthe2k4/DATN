@@ -1,9 +1,14 @@
 package com.example.DATN.entity;
 
 import jakarta.persistence.*;
+import java.util.Date;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "article_topics")
+@SQLDelete(sql = "UPDATE article_topics SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class ArticleTopic {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,9 +27,11 @@ public class ArticleTopic {
     @Column(name = "status")
     public Boolean status;
 
-    @Column(name = "article_topic_image", length = 45)
+    @Column(name = "article_topic_image", columnDefinition = "TEXT")
     public String articleTopicImage;
+
+    @Column(name = "deleted_at")
+    public Date deletedAt;
 
     public ArticleTopic() {}
 }
-

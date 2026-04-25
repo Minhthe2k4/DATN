@@ -10,11 +10,15 @@ public interface LessonManagementProjection {
 
     String getDescription();
 
-    Boolean getStatus();
+    String getStatus();
 
     Long getTopicId();
 
-    String getTopicLevel();
+    String getDifficulty();
 
     Long getVocabCount();
+    
+    String getLessonImage();
+
+    Boolean getIsPremium();
 }

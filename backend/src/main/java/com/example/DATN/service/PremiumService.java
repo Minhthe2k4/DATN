@@ -47,7 +47,7 @@ public class PremiumService {
                     UserSubscription newSub = new UserSubscription(user);
                     newSub.startDate = new Date();
                     newSub.status = "FREE";
-                    
+
                     // Priority 1: Plan named "Free" (any case)
                     // Priority 2: Any plan available
                     newSub.plan = planRepository.findAll().stream()
@@ -72,25 +72,25 @@ public class PremiumService {
                         return (sub.isPremium != null && sub.isPremium) ? 999999 : 5;
                     });
         }
-        System.out.println("[DEBUG] Resolved dailyLimit: " + dailyLimit + " (Count so far: " + sub.dailyLookupCount + ")");
+        System.out.println(
+                "[DEBUG] Resolved dailyLimit: " + dailyLimit + " (Count so far: " + sub.dailyLookupCount + ")");
 
         // 1. Check if feature is locked
         boolean isLocked = false;
         if (sub.plan != null) {
             isLocked = featureLimitRepository.findByPlanIdAndFeatureName(sub.plan.id, "DICTIONARY_LOOKUP")
-                .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
+                    .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
         } else {
             isLocked = planRepository.findAll().stream()
-                .filter(p -> p.name.equalsIgnoreCase("Free")).findFirst()
-                .flatMap(p -> featureLimitRepository.findByPlanIdAndFeatureName(p.id, "DICTIONARY_LOOKUP"))
-                .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
+                    .filter(p -> p.name.equalsIgnoreCase("Free")).findFirst()
+                    .flatMap(p -> featureLimitRepository.findByPlanIdAndFeatureName(p.id, "DICTIONARY_LOOKUP"))
+                    .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
         }
-        
+
         if (isLocked) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN,
-                    "Tính năng tra cứu từ điển hiện đang bị khóa cho gói cước của bạn."
-            );
+                    "Tính năng tra cứu từ điển hiện đang bị khóa cho gói cước của bạn.");
         }
 
         // Reset counter if it's a new day
@@ -101,13 +101,13 @@ public class PremiumService {
         }
 
         if (sub.dailyLookupCount >= dailyLimit) {
-            String msg = Boolean.TRUE.equals(sub.isPremium) 
-                ? "Bạn đã dùng hết lượt tra cứu giới hạn của gói Premium này."
-                : "Bạn đã hết lượt tra cứu miễn phí hôm nay (Tối đa " + dailyLimit + " lần). Hãy nâng cấp Premium để học tập không giới hạn!";
+            String msg = Boolean.TRUE.equals(sub.isPremium)
+                    ? "Bạn đã dùng hết lượt tra cứu giới hạn của gói Premium này."
+                    : "Bạn đã hết lượt tra cứu miễn phí hôm nay (Tối đa " + dailyLimit
+                            + " lần). Hãy nâng cấp Premium để học tập không giới hạn!";
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN,
-                    msg
-            );
+                    msg);
         }
 
         sub.dailyLookupCount++;
@@ -137,7 +137,8 @@ public class PremiumService {
 
     /**
      * Chỉ kiểm tra quyền truy cập (không tăng bộ đếm).
-     * Dùng cho các tính năng không giới hạn lượt dùng nhưng có thể bị khóa (ví dụ: Ôn tập SRS).
+     * Dùng cho các tính năng không giới hạn lượt dùng nhưng có thể bị khóa (ví dụ:
+     * Ôn tập SRS).
      */
     public void checkFeatureAccess(Long userId, String featureId, String featureLabel) {
         UserSubscription sub = subscriptionRepository.findLatestByUserId(userId).stream().findFirst()
@@ -156,13 +157,13 @@ public class PremiumService {
         if (limitOpt.map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false)) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN,
-                    "Tính năng " + featureLabel + " hiện đang bị khóa cho gói cước của bạn. Vui lòng nâng cấp gói cước để sử dụng."
-            );
+                    "Tính năng " + featureLabel
+                            + " hiện đang bị khóa cho gói cước của bạn. Vui lòng nâng cấp gói cước để sử dụng.");
         }
 
         // 2. Check if user is premium for locked-by-default features
         if (limitOpt.isEmpty() && !Boolean.TRUE.equals(sub.isPremium)) {
-             // Optional: handle default logic for free users
+            // Optional: handle default logic for free users
         }
     }
 
@@ -171,10 +172,12 @@ public class PremiumService {
      */
     public int getFeatureLimit(Long userId, String featureId, int defaultLimit) {
         UserSubscription sub = subscriptionRepository.findLatestByUserId(userId).stream().findFirst().orElse(null);
-        if (sub == null) return defaultLimit;
+        if (sub == null)
+            return defaultLimit;
 
         Long planId = sub.plan != null ? sub.plan.id : null;
-        if (planId == null) return defaultLimit;
+        if (planId == null)
+            return defaultLimit;
 
         return featureLimitRepository.findByPlanId(planId).stream()
                 .filter(l -> featureId.equals(l.getFeatureName()))
@@ -195,32 +198,22 @@ public class PremiumService {
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy thông tin đăng ký."));
 
-        // Fetch dynamic limit
-        Long planId = sub.plan != null ? sub.plan.id : null;
-        java.util.Optional<com.example.DATN.entity.PremiumFeatureLimit> limitOpt = java.util.Optional.empty();
-        if (planId != null) {
-            limitOpt = featureLimitRepository.findByPlanId(planId).stream()
-                    .filter(l -> featureId.equals(l.getFeatureName()))
-                    .findFirst();
-        }
-
         // 1. Check Locked status
         boolean isLocked;
         if (sub.plan == null) {
             isLocked = planRepository.findAll().stream()
-                .filter(p -> p.name.equalsIgnoreCase("Free")).findFirst()
-                .flatMap(p -> featureLimitRepository.findByPlanIdAndFeatureName(p.id, featureId))
-                .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
+                    .filter(p -> p.name.equalsIgnoreCase("Free")).findFirst()
+                    .flatMap(p -> featureLimitRepository.findByPlanIdAndFeatureName(p.id, featureId))
+                    .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
         } else {
             isLocked = featureLimitRepository.findByPlanIdAndFeatureName(sub.plan.id, featureId)
-                .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
+                    .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
         }
-        
+
         if (isLocked) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN,
-                    "Tính năng " + featureLabel + " hiện đang bị khóa cho gói cước của bạn."
-            );
+                    "Tính năng " + featureLabel + " hiện đang bị khóa cho gói cước của bạn.");
         }
 
         // 2. Check usage limit
@@ -239,41 +232,46 @@ public class PremiumService {
         System.out.println("[DEBUG] Action " + featureId + " resolved limit: " + limit);
 
         if (limit <= 0 && !Boolean.TRUE.equals(sub.isPremium)) {
-             throw new org.springframework.web.server.ResponseStatusException(
+            throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN,
-                    "Tính năng " + featureLabel + " yêu cầu gói Premium."
-            );
+                    "Tính năng " + featureLabel + " yêu cầu gói Premium.");
         }
 
         Date today = new Date();
-        
+
         // Handle counters based on featureId
         if (featureId.equals("ARTICLE_DOWNLOADS")) {
             if (sub.lastDownloadDate == null || !isSameDay(sub.lastDownloadDate, today)) {
-                sub.dailyDownloadCount = 0; sub.lastDownloadDate = today;
+                sub.dailyDownloadCount = 0;
+                sub.lastDownloadDate = today;
             }
             if (sub.dailyDownloadCount >= limit && limit < 999999) {
                 throwLimitException(featureLabel, limit, periodType);
             }
             sub.dailyDownloadCount = (sub.dailyDownloadCount == null ? 0 : sub.dailyDownloadCount) + 1;
-        } 
-        else if (featureId.equals("VIDEO_TRANSCRIPT_DOWNLOADS")) {
+        } else if (featureId.equals("VIDEO_TRANSCRIPT_DOWNLOADS")) {
             if (sub.lastVideoDownloadDate == null || !isSameDay(sub.lastVideoDownloadDate, today)) {
-                sub.dailyVideoDownloadCount = 0; sub.lastVideoDownloadDate = today;
+                sub.dailyVideoDownloadCount = 0;
+                sub.lastVideoDownloadDate = today;
             }
             if (sub.dailyVideoDownloadCount >= limit && limit < 999999) {
                 throwLimitException(featureLabel, limit, periodType);
             }
             sub.dailyVideoDownloadCount = (sub.dailyVideoDownloadCount == null ? 0 : sub.dailyVideoDownloadCount) + 1;
-        }
-        else if (featureId.equals("MONTHLY_VOCABULARY_TESTS")) {
+        } else if (featureId.equals("MONTHLY_VOCABULARY_TESTS")) {
             if (sub.lastTestDate == null || !isSameMonth(sub.lastTestDate, today)) {
-                sub.monthlyTestCount = 0; sub.lastTestDate = today;
+                sub.monthlyTestCount = 0;
+                sub.lastTestDate = today;
             }
             if (sub.monthlyTestCount >= limit && limit < 999999) {
                 throwLimitException(featureLabel, limit, periodType);
             }
             sub.monthlyTestCount = (sub.monthlyTestCount == null ? 0 : sub.monthlyTestCount) + 1;
+        } else if (featureId.equals("SAVED_VOCABULARY")) {
+            // For SAVED_VOCABULARY, we check if it's locked or premium required
+            if (!Boolean.TRUE.equals(sub.isPremium) && limit < 999999) {
+                // Basic check for non-premium users
+            }
         }
 
         subscriptionRepository.save(sub);
@@ -282,8 +280,7 @@ public class PremiumService {
     private void throwLimitException(String featureLabel, int limit, String periodType) {
         throw new org.springframework.web.server.ResponseStatusException(
                 org.springframework.http.HttpStatus.FORBIDDEN,
-                "Bạn đã hết lượt " + featureLabel + " trong " + periodType + " này (Tối đa " + limit + " lượt)."
-        );
+                "Bạn đã hết lượt " + featureLabel + " trong " + periodType + " này (Tối đa " + limit + " lượt).");
     }
 
     private boolean isSameMonth(Date d1, Date d2) {
@@ -318,7 +315,7 @@ public class PremiumService {
         sub.status = "ACTIVE";
         sub.plan = plan;
         sub.startDate = new Date();
-        
+
         java.util.Calendar c = java.util.Calendar.getInstance();
         c.setTime(sub.startDate);
         c.add(java.util.Calendar.DAY_OF_MONTH, plan.duration != null ? plan.duration : 30);

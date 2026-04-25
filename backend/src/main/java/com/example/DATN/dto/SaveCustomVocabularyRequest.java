@@ -16,8 +16,9 @@ public class SaveCustomVocabularyRequest {
         @JsonProperty("word")
         public String word;
 
-        @JsonProperty("phonetic")
-        public String phonetic;
+        @JsonProperty("pronunciation")
+        public String pronunciation;
+
 
         @JsonProperty("meaningEn")
         public String meaningEn;

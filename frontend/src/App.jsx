@@ -15,8 +15,10 @@ import { Subscription } from './user/pages/subscription/Subscription.jsx'
 import { VocabularyTest } from './user/pages/vocabulary_test/VocabularyTest.jsx'
 import { VocabularySaved } from './user/pages/vocabulary_saved/VocabularySaved.jsx'
 import { Support } from './user/pages/support/Support.jsx'
+import { Leaderboard } from './user/pages/leaderboard/Leaderboard.jsx'
 import { Login } from './user/pages/auth/Login.jsx'
 import { Register } from './user/pages/auth/Register.jsx'
+import { ForgotPassword } from './user/pages/auth/ForgotPassword.jsx'
 import ManagePersonalInfoPage from './user/pages/settings/ManagePersonalInfoPage.jsx'
 import Profile from './user/pages/profile/Profile.jsx'
 import FlashcardManager from './user/pages/flashcard/FlashcardManager.jsx'
@@ -33,7 +35,7 @@ const AdminApp = lazy(() => import('./admin/AdminApp.jsx').then((module) => ({ d
 
 function App() {
   const location = useLocation()
-  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register'
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password'
   const isAdminLoginRoute = location.pathname === '/admin/login'
   const isAdminRoute = location.pathname.startsWith('/admin')
   const [isRouteAnimating, setIsRouteAnimating] = useState(false)
@@ -253,6 +255,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
@@ -290,6 +293,7 @@ function App() {
               <Route path="/subscription" element={<Subscription />} />
               <Route path="/vocabulary-test" element={<VocabularyTest />} />
               <Route path="/vocabulary-saved" element={<VocabularySaved />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<ProtectedRoute><Profile/></ProtectedRoute>} />
               <Route path="/flashcards" element={<ProtectedRoute><FlashcardManager/></ProtectedRoute>} />
               <Route path="/flashcards/study/:deckId" element={<ProtectedRoute><FlashcardStudy/></ProtectedRoute>} />

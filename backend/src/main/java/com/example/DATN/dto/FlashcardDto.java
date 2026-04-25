@@ -13,7 +13,7 @@ public class FlashcardDto {
     // Original word info if linked
     public String originalWord;
     public String meaningVi;
-    public String phonetic;
+    public String pronunciation;
 
     public static class DeckDto {
         public Long id;

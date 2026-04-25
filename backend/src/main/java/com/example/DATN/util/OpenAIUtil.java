@@ -36,8 +36,8 @@ public class OpenAIUtil {
             JSONObject message = new JSONObject();
             message.put("role", "user");
             message.put("content", String.format(
-                "Translate this English definition to a SHORT Vietnamese phrase (noun phrase only, no full sentence, max 3-5 words). " +
-                "Example: English 'move quickly' → Vietnamese 'di chuyển nhanh' or just 'chạy'. " +
+                "Translate this English definition to a SHORT Vietnamese phrase (concise meaning, max 3-5 words). " +
+                "Example: English 'move quickly' → Vietnamese 'chạy' or 'di chuyển nhanh'. " +
                 "Definition: \"%s\"\n" +
                 "Reply ONLY with the Vietnamese phrase, no other text.",
                 englishDefinition
@@ -80,6 +80,58 @@ public class OpenAIUtil {
 
         } catch (Exception e) {
             System.err.println("[OpenAI] Translation error: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Translate English example sentence to Vietnamese
+     */
+    public String translateExample(String englishExample) {
+        if (openaiApiKey == null || openaiApiKey.trim().isEmpty()) {
+            return "";
+        }
+
+        try {
+            JSONObject message = new JSONObject();
+            message.put("role", "user");
+            message.put("content", String.format(
+                "Translate this English sentence to natural Vietnamese.\n" +
+                "Sentence: \"%s\"\n" +
+                "Reply ONLY with the Vietnamese translation.",
+                englishExample
+            ));
+
+            JSONArray messages = new JSONArray();
+            messages.put(message);
+
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", openaiModel);
+            requestBody.put("messages", messages);
+            requestBody.put("max_tokens", 100);
+            requestBody.put("temperature", 0.3);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(OPENAI_API_URL))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + openaiApiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                    .timeout(java.time.Duration.ofSeconds(10))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) return "";
+
+            JSONObject responseBody = new JSONObject(response.body());
+            return responseBody
+                    .getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content")
+                    .trim();
+
+        } catch (Exception e) {
             return "";
         }
     }

@@ -12,6 +12,10 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
 			select v.id as id,
 				   v.title as title,
 				   v.url as url,
+				   v.difficulty as difficulty,
+				   v.duration as duration,
+				   v.wordsHighlighted as wordsHighlighted,
+				   v.status as status,
 				   c.id as channelId,
 				   c.name as channelName
 			from Video v

@@ -1,10 +1,15 @@
 package com.example.DATN.entity;
 
 import jakarta.persistence.*;
+import java.util.Date;
 import java.util.List;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "videos")
+@SQLDelete(sql = "UPDATE videos SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class Video {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +45,9 @@ public class Video {
     @Column(name = "status", length = 255)
     public String status;
 
+    @Column(name = "deleted_at")
+    public Date deletedAt;
+
     @ManyToOne
     @JoinColumn(name = "channel_id")
     public YouTubeChannel channel;
@@ -49,4 +57,3 @@ public class Video {
 
     public Video() {}
 }
-

@@ -1,13 +1,8 @@
 package com.example.DATN.controller;
 
-import com.example.DATN.dto.AuthLoginRequest;
-import com.example.DATN.dto.AuthRegisterRequest;
-import com.example.DATN.dto.AuthUserResponse;
+import com.example.DATN.dto.*;
 import com.example.DATN.service.AuthService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -26,5 +21,26 @@ public class AuthController {
     @PostMapping("/register")
     public AuthUserResponse register(@RequestBody AuthRegisterRequest request) {
         return authService.register(request);
+    }
+
+    @PostMapping("/forgot-password")
+    public void forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.email());
+    }
+
+    @PostMapping("/verify-otp")
+    public boolean verifyOtp(@RequestBody VerifyOtpRequest request) {
+        return authService.verifyOtp(request.email(), request.otp());
+    }
+
+    @PostMapping("/reset-password")
+    public void resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+    }
+
+    @PostMapping("/google-login")
+    public AuthUserResponse loginWithGoogle(@RequestBody java.util.Map<String, String> body) {
+        String idToken = body.get("idToken");
+        return authService.loginWithGoogle(idToken);
     }
 }

@@ -17,13 +17,15 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
             select l.id as id,
                    l.name as name,
                    l.description as description,
-                   true as status,
+                   l.status as status,
+                   l.difficulty as difficulty,
+                   l.lessonImage as lessonImage,
+                   l.isPremium as isPremium,
                    t.id as topicId,
-                   t.level as topicLevel,
                    0L as vocabCount
             from Lesson l
             left join l.topic t
-                 group by l.id, l.name, l.description, t.id, t.level
+            group by l.id, l.name, l.description, l.status, l.difficulty, l.lessonImage, l.isPremium, t.id
             order by l.id desc
             """)
     List<LessonManagementProjection> findLessonManagementRows();

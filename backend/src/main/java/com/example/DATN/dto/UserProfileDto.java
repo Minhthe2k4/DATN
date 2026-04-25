@@ -15,6 +15,8 @@ public record UserProfileDto(
         Integer streakDays,
         Float accuracy,
         boolean isPremium,
-        Date premiumUntil
+        Date premiumUntil,
+        Double totalStudyTime,
+        Integer rank
 ) {
 }

@@ -71,7 +71,8 @@ public class UserLessonService {
                                 l.id,
                                 l.name,
                                 l.description,
-                                words);
+                                words,
+                                l.isPremium);
         }
 
         /**
@@ -90,7 +91,8 @@ public class UserLessonService {
                                                 lesson.id,
                                                 lesson.name,
                                                 lesson.description,
-                                                getWordsForLesson(lesson.id)))
+                                                getWordsForLesson(lesson.id),
+                                                lesson.isPremium))
                                 .collect(Collectors.toList());
         }
 
@@ -139,7 +141,8 @@ public class UserLessonService {
                                                         lesson.id,
                                                         lesson.name,
                                                         lesson.description,
-                                                        (int) wordCount);
+                                                        (int) wordCount,
+                                                        lesson.isPremium);
                                 })
                                 .collect(Collectors.toList());
 

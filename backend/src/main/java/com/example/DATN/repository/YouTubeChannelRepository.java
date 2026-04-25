@@ -9,11 +9,13 @@ public interface YouTubeChannelRepository extends JpaRepository<YouTubeChannel, 
     @Query("""
             select c.id as id,
                    c.name as name,
-             c.url as url,
+                   c.url as url,
+                   c.description as description,
+                   c.status as status,
                    count(v.id) as videoCount
             from YouTubeChannel c
             left join Video v on v.channel.id = c.id
-         group by c.id, c.name, c.url
+            group by c.id, c.name, c.url, c.description, c.status
             order by c.id desc
             """)
     List<YouTubeChannelManagementProjection> findChannelManagementRows();

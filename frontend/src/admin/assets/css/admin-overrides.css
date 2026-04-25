@@ -366,6 +366,11 @@ body.admin-mode .page-content .card {
   box-shadow: none;
 }
 
+body.admin-mode .page-content .card .card-body {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
 body.admin-mode .page-content .card .card-header {
   border-bottom: 1px solid #f1f5f9;
 }
@@ -388,6 +393,33 @@ body.admin-mode .btn.btn-soft-primary {
 body.admin-mode .btn.btn-soft-primary:hover {
   background: #dbeafe;
   color: #1e40af;
+}
+
+/* Admin form layout fixes */
+body.admin-mode .page-content .container-fluid {
+  padding-left: 0;
+  padding-right: 0;
+  width: 100%;
+}
+
+body.admin-mode .page-content .row {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+body.admin-mode .page-content .row > [class*="col-"] {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+body.admin-mode .page-content form .row {
+  width: 100%;
+}
+
+body.admin-mode .page-content form .row [class*="col-"] {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 
 @media (max-width: 1199.98px) {
@@ -676,6 +708,34 @@ body.admin-mode.dark-mode .admin-notif-item--unread .admin-notif-item__text {
 
 body.admin-mode.dark-mode .admin-notif-item__time {
   color: #64748b;
+}
+
+/* ── Admin Modals Overrides ──────────────────────────────── */
+body.admin-mode .modal {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+body.admin-mode .modal-dialog {
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+body.admin-mode .modal-dialog.modal-xl,
+body.admin-mode .force-xl-modal {
+  max-width: 96vw !important;
+  width: 96vw !important;
+  min-width: 96vw !important;
+}
+
+body.admin-mode .modal-content {
+  border-radius: 20px;
+  border: 1px solid var(--admin-border);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 /* Admin topbar icon button base */

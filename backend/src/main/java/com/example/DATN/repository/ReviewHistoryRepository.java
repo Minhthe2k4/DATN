@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReviewHistoryRepository extends JpaRepository<ReviewHistory, Long> {
     long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime start, LocalDateTime end);
+    java.util.List<ReviewHistory> findByUser_Id(Long userId);
 }

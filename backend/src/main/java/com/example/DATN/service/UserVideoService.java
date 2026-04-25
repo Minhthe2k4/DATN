@@ -20,13 +20,35 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserVideoService {
     private final VideoRepository videoRepository;
     private final YouTubeChannelRepository youTubeChannelRepository;
+    private final ReadingDictionaryService readingDictionaryService;
 
     public UserVideoService(
             VideoRepository videoRepository,
-            YouTubeChannelRepository youTubeChannelRepository
+            YouTubeChannelRepository youTubeChannelRepository,
+            ReadingDictionaryService readingDictionaryService
     ) {
         this.videoRepository = videoRepository;
         this.youTubeChannelRepository = youTubeChannelRepository;
+        this.readingDictionaryService = readingDictionaryService;
+    }
+
+    /**
+     * Tra từ vựng thông minh trong Video
+     */
+    public com.example.DATN.dto.ReadingWordLookupResponse lookupWordInVideo(com.example.DATN.dto.ReadingWordLookupRequest request) {
+        return readingDictionaryService.lookupWord(
+                request.word(),
+                request.sentence(),
+                request.userId(),
+                null // Không có articleId
+        );
+    }
+
+    /**
+     * Lưu từ vựng từ video vào kho cá nhân
+     */
+    public com.example.DATN.entity.UserVocabularyCustom saveWordFromVideo(com.example.DATN.dto.SaveReadingWordRequest request) {
+        return readingDictionaryService.saveWordToPersonalVocabulary(request);
     }
 
     /**

@@ -8,31 +8,31 @@ const STORAGE_KEY = 'dashboard-vocab-bank-v1'
 
 const KNOWN_WORDS = {
 	platform: {
-		phonetic: '/ˈplæt.fɔːrm/',
+		pronunciation: '/ˈplæt.fɔːrm/',
 		meaningEn: 'A base or place where people can do a specific activity.',
 		meaningVi: 'Nền tảng hoặc nơi để thực hiện một hoạt động cụ thể.',
 		example: 'This app is a learning platform for daily English practice.',
 	},
 	efficient: {
-		phonetic: '/ɪˈfɪʃ.ənt/',
+		pronunciation: '/ɪˈfɪʃ.ənt/',
 		meaningEn: 'Working well without wasting time or energy.',
 		meaningVi: 'Hiệu quả, không lãng phí thời gian hoặc năng lượng.',
 		example: 'A short review routine can be very efficient.',
 	},
 	adapt: {
-		phonetic: '/əˈdæpt/',
+		pronunciation: '/əˈdæpt/',
 		meaningEn: 'To change your behavior or method to fit a new situation.',
 		meaningVi: 'Thích nghi, điều chỉnh để phù hợp với tình huống mới.',
 		example: 'Students adapt quickly when the lesson format changes.',
 	},
 	innovate: {
-		phonetic: '/ˈɪn.ə.veɪt/',
+		pronunciation: '/ˈɪn.ə.veɪt/',
 		meaningEn: 'To introduce new ideas or methods.',
 		meaningVi: 'Đổi mới, đưa ra ý tưởng hoặc phương pháp mới.',
 		example: 'Great teams innovate when old solutions stop working.',
 	},
 	collaborate: {
-		phonetic: '/kəˈlæb.ə.reɪt/',
+		pronunciation: '/kəˈlæb.ə.reɪt/',
 		meaningEn: 'To work together with others.',
 		meaningVi: 'Hợp tác, làm việc cùng với người khác.',
 		example: 'Designers and developers collaborate on each release.',
@@ -141,7 +141,7 @@ async function fetchDictionaryProfile(word) {
 		}
 	}
 
-	let phonetic = guessPhonetic(normalized)
+	let pronunciation = guessPhonetic(normalized)
 	let meaningEn = `An English vocabulary word: ${normalized}.`
 	let example = `The word "${normalized}" appears in this vocabulary note.`
 
@@ -153,7 +153,7 @@ async function fetchDictionaryProfile(word) {
 			const phoneticText = entry?.phonetic || entry?.phonetics?.find((item) => item?.text)?.text
 			const firstMeaning = entry?.meanings?.[0]?.definitions?.[0]
 			if (phoneticText) {
-				phonetic = phoneticText
+				pronunciation = phoneticText
 			}
 			if (firstMeaning?.definition) {
 				meaningEn = firstMeaning.definition
@@ -184,7 +184,7 @@ async function fetchDictionaryProfile(word) {
 	const level = estimateWordLevel(normalized, meaningEn, example)
 
 	return {
-		phonetic,
+		pronunciation,
 		meaningEn,
 		meaningVi,
 		example,
@@ -209,7 +209,7 @@ function createRow() {
 	return {
 		id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 		word: '',
-		phonetic: '',
+		pronunciation: '',
 		meaningEn: '',
 		meaningVi: '',
 		example: '',
@@ -225,7 +225,7 @@ function createSavedItem(row) {
 	return {
 		id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 		word: row.word.trim(),
-		phonetic: row.phonetic,
+		pronunciation: row.pronunciation,
 		meaningEn: row.meaningEn,
 		meaningVi: row.meaningVi,
 		example: row.example,
@@ -360,7 +360,7 @@ export function VocabularyManager() {
 	const handleWordChange = (id, value) => {
 		updateRow(id, {
 			word: value,
-			phonetic: '',
+			pronunciation: '',
 			meaningEn: '',
 			meaningVi: '',
 			example: '',
@@ -385,7 +385,7 @@ export function VocabularyManager() {
 			}
 
 			updateRow(row.id, {
-				phonetic: row.phonetic || generated.phonetic,
+				pronunciation: row.pronunciation || generated.pronunciation,
 				meaningEn: row.meaningEn || generated.meaningEn,
 				meaningVi: row.meaningVi || generated.meaningVi,
 				example: row.example || generated.example,
@@ -468,16 +468,18 @@ export function VocabularyManager() {
 			return
 		}
 
-		// Kiểm tra quyền Premium & Feature Lock
-		const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
-		if (vocabLimit?.IS_LOCKED) {
-			alert(`🔒 Tính năng lưu từ vựng hiện đang bị khóa cho gói cước của bạn.\nHãy nâng cấp gói cước để sử dụng tính năng này!`)
-			return
-		}
+		// Kiểm tra quyền Premium & Feature Lock - CHỈ khi chọn lưu vào SRS
+		if (saveOptions.saveToSRS) {
+			const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
+			if (vocabLimit?.IS_LOCKED) {
+				alert(`🔒 Tính năng lưu từ vựng vào SRS hiện đang bị khóa cho gói cước của bạn.\nHãy nâng cấp gói cước để sử dụng tính năng này!`)
+				return
+			}
 
-		if (!premiumStatus?.isPremium && !vocabLimit) {
-			alert('✨ Tính năng lưu từ vựng thủ công vào "Thời điểm vàng" (SRS) chỉ dành cho thành viên Premium. Hãy nâng cấp ngay để sử dụng!')
-			return
+			if (!premiumStatus?.isPremium && !vocabLimit) {
+				alert('✨ Tính năng lưu từ vựng thủ công vào "Thời điểm vàng" (SRS) chỉ dành cho thành viên Premium. Hãy nâng cấp ngay để sử dụng hoặc chỉ lưu vào Flashcard!')
+				return
+			}
 		}
 
 		const filledRows = rows.filter((row) => row.word.trim())
@@ -512,7 +514,7 @@ export function VocabularyManager() {
 		try {
 			const vocabsToSave = generatedRows.map((item) => ({
 				word: item.word,
-				phonetic: item.phonetic,
+				pronunciation: item.pronunciation,
 				meaningEn: item.meaningEn,
 				meaningVi: item.meaningVi,
 				example: item.example,
@@ -662,8 +664,7 @@ export function VocabularyManager() {
 				body: JSON.stringify({
 					vocabularies: localData.map(v => ({
 						word: v.word,
-						pronunciation: v.phonetic,
-						phonetic: v.phonetic,
+						pronunciation: v.pronunciation || v.phonetic,
 						partOfSpeech: v.partOfSpeech || 'n',
 						meaningEn: v.meaningEn || '',
 						meaningVi: v.meaningVi || v.definition || '',
@@ -782,8 +783,8 @@ export function VocabularyManager() {
 											</div>
 											<div className="vmanager-field-grid vmanager-field-grid--compact">
 												<div className="vmanager-field">
-													<label>Phonetic</label>
-													<input value={row.phonetic} onChange={(event) => updateRowField(row.id, 'phonetic', event.target.value)} placeholder="AI sẽ điền phiên âm" />
+													<label>Phien am</label>
+													<input value={row.pronunciation} onChange={(event) => updateRowField(row.id, 'pronunciation', event.target.value)} placeholder="AI sẽ điền phiên âm" />
 												</div>
 												<div className="vmanager-field">
 													<label>Level</label>

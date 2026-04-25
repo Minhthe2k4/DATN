@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,18 +35,20 @@ public class UserVocabularyCustomController {
         if (auth != null && !auth.getName().equals("anonymousUser")) {
             try {
                 return Long.parseLong(auth.getName());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
-        
+
         // 2. Fallback: Parse Bearer token manually from header
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             try {
                 String token = bearerToken.substring(7);
                 return Long.parseLong(token);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
-        
+
         return null;
     }
 
@@ -74,25 +75,28 @@ public class UserVocabularyCustomController {
 
             // Check Premium Limit
             Map<String, Object> premiumStatus = userHomepageService.getPremiumStatus(userId);
+            @SuppressWarnings("unchecked")
             Map<String, Object> featureLimits = (Map<String, Object>) premiumStatus.get("featureLimits");
+            @SuppressWarnings("unchecked")
             Map<String, Object> vocabLimitMap = (Map<String, Object>) featureLimits.get("SAVED_VOCABULARY");
-            
+
             // 1. Check if feature is locked
             if (vocabLimitMap != null && Boolean.TRUE.equals(vocabLimitMap.get("IS_LOCKED"))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Tính năng lưu từ vựng hiện đang bị khóa cho gói cước của bạn.");
+                        .body("Tính năng lưu từ vựng hiện đang bị khóa cho gói cước của bạn.");
             }
 
             // 2. Check usage limit
-            // Default 50 for free if not specified. For premium, if not specified, we assume unlimited.
+            // Default 50 for free if not specified. For premium, if not specified, we
+            // assume unlimited.
             boolean isPremium = (boolean) premiumStatus.get("isPremium");
             int limit = vocabLimitMap != null ? (int) vocabLimitMap.get("FREE_LIMIT") : (isPremium ? 999999 : 50);
-            
+
             long currentCount = userVocabularyCustomService.countByUser_Id(userId);
             if (currentCount >= limit) {
-                String msg = isPremium 
-                    ? "Bạn đã đạt giới hạn lưu từ vựng của gói Premium này (" + limit + " từ)."
-                    : "Bạn đã đạt giới hạn lưu từ vựng (" + limit + " từ). Vui lòng nâng cấp Premium để lưu thêm!";
+                String msg = isPremium
+                        ? "Bạn đã đạt giới hạn lưu từ vựng của gói Premium này (" + limit + " từ)."
+                        : "Bạn đã đạt giới hạn lưu từ vựng (" + limit + " từ). Vui lòng nâng cấp Premium để lưu thêm!";
                 return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(msg);
             }
 
@@ -112,37 +116,37 @@ public class UserVocabularyCustomController {
             HttpServletRequest httpRequest) {
         try {
             Long userId = getUserIdFromAuth(auth, httpRequest);
-            
-            // If not authenticated, create temp user or skip user association
             if (userId == null) {
-                // For unauthenticated users, we'll save vocabularies without user association
-                // This allows the frontend to save locally while syncing to backend later
-                List<UserVocabularyCustom> vocabularies = new ArrayList<>();
-                for (SaveCustomVocabularyRequest.CustomVocabularyItem item : request.vocabularies) {
-                    UserVocabularyCustom vocab = new UserVocabularyCustom();
-                    vocab.word = item.word;
-                    vocab.phonetic = item.phonetic;
-                    vocab.meaningEn = item.meaningEn;
-                    vocab.meaningVi = item.meaningVi;
-                    vocab.example = item.example;
-                    vocab.level = item.level;
-                    vocab.levelSource = item.levelSource;
-                    // Skip user association for unauthenticated requests
-                    vocabularies.add(vocab);
+                // ... (existing temp logic)
+                return ResponseEntity.ok(Map.of("status", "local_storage", "count", request.vocabularies.size()));
+            }
+
+            // Check Premium Limit - ONLY if adding to SRS
+            if (request.addToSRS) {
+                Map<String, Object> premiumStatus = userHomepageService.getPremiumStatus(userId);
+                boolean isPremium = (boolean) premiumStatus.get("isPremium");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> featureLimits = (Map<String, Object>) premiumStatus.get("featureLimits");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> vocabLimitMap = (Map<String, Object>) featureLimits.get("SAVED_VOCABULARY");
+
+                int limit = vocabLimitMap != null ? (int) vocabLimitMap.get("FREE_LIMIT") : (isPremium ? 999999 : 50);
+                long currentCount = userVocabularyCustomService.countByUser_Id(userId);
+
+                if (currentCount + request.vocabularies.size() > limit) {
+                    String msg = isPremium
+                            ? "Bạn đã đạt giới hạn lưu từ vựng của gói Premium này (" + limit + " từ)."
+                            : "Bạn đã đạt giới hạn lưu từ vựng (" + limit
+                                    + " từ). Vui lòng nâng cấp Premium để lưu thêm vào lộ trình SRS!";
+                    return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(msg);
                 }
-                // Return success without saving to DB if no user
-                Map<String, Object> response = new HashMap<>();
-                response.put("status", "local_storage");
-                response.put("message", "Vocabularies saved to local storage. Login to sync with server.");
-                response.put("count", vocabularies.size());
-                return ResponseEntity.ok(response);
             }
 
             List<UserVocabularyCustom> vocabularies = new ArrayList<>();
             for (SaveCustomVocabularyRequest.CustomVocabularyItem item : request.vocabularies) {
                 UserVocabularyCustom vocab = new UserVocabularyCustom();
                 vocab.word = item.word;
-                vocab.phonetic = item.phonetic;
+                vocab.pronunciation = item.pronunciation;
                 vocab.meaningEn = item.meaningEn;
                 vocab.meaningVi = item.meaningVi;
                 vocab.example = item.example;
@@ -152,7 +156,8 @@ public class UserVocabularyCustomController {
                 vocabularies.add(vocab);
             }
 
-            List<UserVocabularyCustom> saved = userVocabularyCustomService.saveMultiple(vocabularies, userId, request.addToSRS);
+            List<UserVocabularyCustom> saved = userVocabularyCustomService.saveMultiple(vocabularies, userId,
+                    request.addToSRS);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -165,18 +170,18 @@ public class UserVocabularyCustomController {
         try {
             Long userId = getUserIdFromAuth(auth, httpRequest);
             if (userId == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xem danh sách từ vựng.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Vui lòng đăng nhập để xem danh sách từ vựng.");
             }
 
             List<UserVocabularyCustom> vocabs = userVocabularyCustomService.getUserCustomVocabularies(userId);
             List<UserVocabularyCustomDto> dtos = new ArrayList<>();
             for (UserVocabularyCustom vocab : vocabs) {
                 dtos.add(new UserVocabularyCustomDto(
-                        vocab.id, vocab.word, vocab.pronunciation, vocab.phonetic,
+                        vocab.id, vocab.word, vocab.pronunciation,
                         vocab.partOfSpeech, vocab.meaningEn, vocab.meaningVi,
                         vocab.example, vocab.exampleVi, vocab.level, vocab.levelSource,
-                        vocab.createdAt, vocab.updatedAt
-                ));
+                        vocab.createdAt, vocab.updatedAt));
             }
             return ResponseEntity.ok(dtos);
         } catch (Exception e) {
@@ -203,11 +208,10 @@ public class UserVocabularyCustomController {
             }
 
             UserVocabularyCustomDto dto = new UserVocabularyCustomDto(
-                    vocab.id, vocab.word, vocab.pronunciation, vocab.phonetic,
+                    vocab.id, vocab.word, vocab.pronunciation,
                     vocab.partOfSpeech, vocab.meaningEn, vocab.meaningVi,
                     vocab.example, vocab.exampleVi, vocab.level, vocab.levelSource,
-                    vocab.createdAt, vocab.updatedAt
-            );
+                    vocab.createdAt, vocab.updatedAt);
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

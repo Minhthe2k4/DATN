@@ -1,6 +1,5 @@
 package com.example.DATN.controller;
 
-import com.example.DATN.dto.UserProfileDto;
 import com.example.DATN.service.UserProfileService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +21,16 @@ public class UserProfileController {
         if (auth != null && !auth.getName().equals("anonymousUser")) {
             try {
                 return Long.parseLong(auth.getName());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         String bearerToken = request.getHeader("Authorization");
         System.out.println("DEBUG: Profile Auth Header = " + bearerToken);
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             try {
                 return Long.parseLong(bearerToken.substring(7));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         return null;
     }

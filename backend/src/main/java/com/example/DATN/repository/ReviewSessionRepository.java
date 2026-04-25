@@ -15,4 +15,6 @@ public interface ReviewSessionRepository extends JpaRepository<ReviewSession, Lo
 
     @Query("select count(distinct rs.user.id) from ReviewSession rs where rs.createdAt >= :start and rs.createdAt < :end")
     long countDistinctUsersInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    java.util.List<ReviewSession> findByUser_Id(Long userId);
 }

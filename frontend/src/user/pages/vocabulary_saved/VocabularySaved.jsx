@@ -56,7 +56,7 @@ export function VocabularySaved() {
 		}
 
 		return items.filter((item) => {
-			const text = [item.word, item.phonetic, item.meaningEn, item.meaningVi, item.example]
+			const text = [item.word, item.pronunciation, item.meaningEn, item.meaningVi, item.example]
 				.filter(Boolean)
 				.join(' ')
 				.toLowerCase()
@@ -110,7 +110,7 @@ export function VocabularySaved() {
 			const authToken = localStorage.getItem('token') || session?.userId
 			const vocabsToSave = localItems.map(it => ({
 				word: it.word,
-				phonetic: it.phonetic,
+				pronunciation: it.pronunciation,
 				meaningEn: it.meaningEn,
 				meaningVi: it.meaningVi,
 				example: it.example,
@@ -194,7 +194,7 @@ export function VocabularySaved() {
 			return {
 				...item,
 				word: draft.word.trim(),
-				phonetic: draft.phonetic || '',
+				pronunciation: draft.pronunciation || '',
 				meaningEn: draft.meaningEn || '',
 				meaningVi: draft.meaningVi || '',
 				example: draft.example || '',
@@ -315,9 +315,9 @@ export function VocabularySaved() {
 														/>
 														<input
 															type="text"
-															value={draft.phonetic || ''}
-															onChange={(event) => setDraft((prev) => ({ ...prev, phonetic: event.target.value }))}
-															placeholder="Phiên âm"
+															value={draft.pronunciation || ''}
+															onChange={(event) => setDraft((prev) => ({ ...prev, pronunciation: event.target.value }))}
+															placeholder="Phien am"
 														/>
 														<textarea
 															rows={2}
@@ -352,7 +352,7 @@ export function VocabularySaved() {
 														<h3>{item.word}</h3>
 														<span>Lv.{normalizeLevel(item.level)}</span>
 													</div>
-													{item.phonetic ? <p className="saved-word-card__phonetic">{item.phonetic}</p> : null}
+													{item.pronunciation ? <p className="saved-word-card__phonetic">{item.pronunciation}</p> : null}
 													{item.meaningVi ? <p><strong>VI:</strong> {item.meaningVi}</p> : null}
 													{item.meaningEn ? <p><strong>EN:</strong> {item.meaningEn}</p> : null}
 													{item.example ? <p className="saved-word-card__example">{item.example}</p> : null}

@@ -49,7 +49,7 @@ function getWordDetails(word) {
 
 	return {
 		word: normalizedWord,
-		phonetic: '/.../',
+		pronunciation: '/.../',
 		meaningEn: 'No definition available yet.',
 		meaningVi: 'Chua co nghia cho tu nay.',
 		example: `Example: ${normalizedWord}`,
@@ -83,7 +83,7 @@ function AnswerWordPopup({ data, onNext }) {
 				<div className="vtest-word-popup__word-row">
 					<div>
 						<h3 className="vtest-word-popup__word">{details.word}</h3>
-						<p className="vtest-word-popup__phonetic">{details.phonetic}</p>
+						<p className="vtest-word-popup__phonetic">{details.pronunciation}</p>
 					</div>
 					<button
 						type="button"
@@ -515,6 +515,9 @@ export function VocabularyTest() {
 	const [questionKey, setQuestionKey] = useState(0)
 	const [popupData, setPopupData] = useState(null)
 	const [isSyncing, setIsSyncing] = useState(false)
+	const [failedQueue, setFailedQueue] = useState([])
+	const [isReviewPhase, setIsReviewPhase] = useState(false)
+	const [originalQuestions, setOriginalQuestions] = useState([])
 	const startTimeRef = useRef(null)
 
 	const session = getUserSession()
@@ -554,6 +557,7 @@ export function VocabularyTest() {
 				if (data.length > 0) {
 					const generated = generateQuestions(data)
 					setQuestions(generated)
+					setOriginalQuestions(generated)
 					setAnswers(Array(generated.length).fill(null))
 					setAnswerDetails(Array(generated.length).fill(null))
 				}
@@ -664,13 +668,23 @@ export function VocabularyTest() {
 	}
 
 	const goToNextQuestion = () => {
-		if (currentIndex + 1 >= questions.length) {
-			setPopupData(null)
-			setIsFinished(true)
-		} else {
+		if (currentIndex + 1 < questions.length) {
 			setPopupData(null)
 			setCurrentIndex((prev) => prev + 1)
 			setQuestionKey((prev) => prev + 1)
+		} else {
+			// Finished current batch, check if there's a failed queue to review
+			if (failedQueue.length > 0) {
+				setPopupData(null)
+				setQuestions([...failedQueue])
+				setFailedQueue([])
+				setCurrentIndex(0)
+				setQuestionKey((prev) => prev + 1)
+				setIsReviewPhase(true)
+			} else {
+				setPopupData(null)
+				setIsFinished(true)
+			}
 		}
 	}
 
@@ -683,7 +697,7 @@ export function VocabularyTest() {
 		
 		const details = {
 			word: meta.word,
-			phonetic: meta.phonetic,
+			pronunciation: meta.pronunciation,
 			meaningEn: meta.meaningEn,
 			meaningVi: meta.meaningVi,
 			example: meta.example
@@ -696,26 +710,33 @@ export function VocabularyTest() {
 			})
 		}
 
-		// Buffer everything in answerDetails
-		setAnswerDetails((prev) => {
-			const next = [...prev]
-			next[currentIndex] = {
-				vocabId: meta.vocabId,
-				isCustom: meta.isCustom,
-				isCorrect: isCorrect,
-				responseTimeMs: responseTimeMs,
-				selectedAnswer: payload?.selectedAnswer ?? '---',
-				correctAnswer: payload?.correctAnswer ?? '---',
-				wordDetails: details
-			}
-			return next
-		})
+		// Buffer everything in answerDetails ONLY if it's the first attempt (not in review phase)
+		if (!isReviewPhase) {
+			setAnswerDetails((prev) => {
+				const next = [...prev]
+				next[currentIndex] = {
+					vocabId: meta.vocabId,
+					isCustom: meta.isCustom,
+					isCorrect: isCorrect,
+					responseTimeMs: responseTimeMs,
+					selectedAnswer: payload?.selectedAnswer ?? '---',
+					correctAnswer: payload?.correctAnswer ?? '---',
+					wordDetails: details
+				}
+				return next
+			})
 
-		setAnswers((prev) => {
-			const next = [...prev]
-			next[currentIndex] = isCorrect
-			return next
-		})
+			setAnswers((prev) => {
+				const next = [...prev]
+				next[currentIndex] = isCorrect
+				return next
+			})
+		}
+
+		// If incorrect, add to failedQueue for later review
+		if (!isCorrect) {
+			setFailedQueue(prev => [...prev, question])
+		}
 
 		if (!details) {
 			goToNextQuestion()
@@ -753,7 +774,7 @@ export function VocabularyTest() {
 							<ProgressBar
 								questions={questions}
 								currentIndex={currentIndex}
-								answers={answers}
+								answers={isReviewPhase ? Array(questions.length).fill(null) : answers}
 							/>
 							<div className="vtest-card">
 								{renderQuestion()}
@@ -770,7 +791,7 @@ export function VocabularyTest() {
 					)
 				) : (
 					<ResultsScreen
-						questions={questions}
+						questions={originalQuestions}
 						answers={answers}
 						answerDetails={answerDetails}
 						onSync={handleSync}

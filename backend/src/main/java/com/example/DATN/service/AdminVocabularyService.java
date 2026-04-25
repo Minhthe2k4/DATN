@@ -3,7 +3,6 @@ package com.example.DATN.service;
 import com.example.DATN.dto.AdminVocabularyDto;
 import com.example.DATN.dto.UpsertVocabularyRequest;
 import com.example.DATN.entity.LessonVocabulary;
-import com.example.DATN.entity.LessonVocabularyId;
 import com.example.DATN.entity.Vocabulary;
 import com.example.DATN.repository.LessonRepository;
 import com.example.DATN.repository.LessonVocabularyRepository;
@@ -25,8 +24,7 @@ public class AdminVocabularyService {
     public AdminVocabularyService(
             VocabularyRepository vocabularyRepository,
             LessonRepository lessonRepository,
-            LessonVocabularyRepository lessonVocabularyRepository
-    ) {
+            LessonVocabularyRepository lessonVocabularyRepository) {
         this.vocabularyRepository = vocabularyRepository;
         this.lessonRepository = lessonRepository;
         this.lessonVocabularyRepository = lessonVocabularyRepository;
@@ -55,8 +53,7 @@ public class AdminVocabularyService {
                 normalizeDifficulty(vocabulary.level),
                 "Đã duyệt",
                 lessonId,
-                null
-        );
+                null);
     }
 
     public AdminVocabularyDto create(UpsertVocabularyRequest request) {
@@ -65,7 +62,7 @@ public class AdminVocabularyService {
         apply(vocabulary, request);
         try {
             Vocabulary saved = vocabularyRepository.save(vocabulary);
-            
+
             // Save lesson-vocabulary relationship
             if (lessonId != null) {
                 LessonVocabulary lessonVocab = new LessonVocabulary();
@@ -73,7 +70,7 @@ public class AdminVocabularyService {
                 lessonVocab.vocabId = saved.id;
                 lessonVocabularyRepository.save(lessonVocab);
             }
-            
+
             return findById(toLong(Math.toIntExact(saved.id)));
         } catch (DataIntegrityViolationException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vocabulary word already exists");
@@ -88,7 +85,7 @@ public class AdminVocabularyService {
         apply(vocabulary, request);
         try {
             vocabularyRepository.save(vocabulary);
-            
+
             // Update lesson-vocabulary relationship
             // First, remove vocabulary from all lessons
             lessonVocabularyRepository.findAll().forEach(lv -> {
@@ -96,7 +93,7 @@ public class AdminVocabularyService {
                     lessonVocabularyRepository.delete(lv);
                 }
             });
-            
+
             // Then add to new lesson if specified
             if (newLessonId != null) {
                 LessonVocabulary lessonVocab = new LessonVocabulary();
@@ -104,7 +101,7 @@ public class AdminVocabularyService {
                 lessonVocab.vocabId = id;
                 lessonVocabularyRepository.save(lessonVocab);
             }
-            
+
             return findById(id);
         } catch (DataIntegrityViolationException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vocabulary word already exists");
@@ -115,14 +112,14 @@ public class AdminVocabularyService {
         if (!vocabularyRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Vocabulary not found");
         }
-        
+
         // Remove from all lessons first
         lessonVocabularyRepository.findAll().forEach(lv -> {
             if (lv.vocabId.equals(id)) {
                 lessonVocabularyRepository.delete(lv);
             }
         });
-        
+
         // Then delete the vocabulary
         vocabularyRepository.deleteById(id);
     }
@@ -166,8 +163,7 @@ public class AdminVocabularyService {
                 normalizeDifficulty(row.getLevel()),
                 "Đã duyệt",
                 lessonId,
-                null
-        );
+                null);
     }
 
     private String normalizeDifficulty(String value) {

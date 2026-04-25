@@ -109,15 +109,32 @@ export default function FlashcardStudy() {
   )
 
   return (
-    <div className="flashcard-study">
-      <header className="study-header">
-        <button className="btn-back" onClick={() => navigate('/flashcards')}>← Thoát</button>
-        <div className="study-progress">
-          Thẻ {currentIndex + 1} / {cards.length}
+    <div className="flashcard-page">
+      <div className="flashcard-page__container study-mode">
+        <header className="study-header">
+          <button className="btn-secondary" onClick={() => navigate('/flashcards')}>
+            <span>🏠</span> Thoát
+          </button>
+        
+        <div className="study-progress-container">
+          <div className="study-progress-text">
+            Tiến độ: <strong>{currentIndex + 1}</strong> / {cards.length} thẻ
+          </div>
+          <div className="progress-bar-wrapper">
+            <div 
+              className="progress-bar-fill" 
+              style={{ width: `${((currentIndex + 1) / cards.length) * 100}%` }}
+            ></div>
+          </div>
         </div>
+
         <div className="mode-selector">
-          <button className={mode === 'FLIP' ? 'active' : ''} onClick={() => {setMode('FLIP'); setCurrentIndex(0); setIsFinished(false);}}>Lật thẻ</button>
-          <button className={mode === 'MCQ' ? 'active' : ''} onClick={() => {setMode('MCQ'); setCurrentIndex(0); setIsFinished(false);}}>Trắc nghiệm</button>
+          <button className={mode === 'FLIP' ? 'active' : ''} onClick={() => {setMode('FLIP'); setCurrentIndex(0); setIsFinished(false);}}>
+            <span>🔄</span> Lật thẻ
+          </button>
+          <button className={mode === 'MCQ' ? 'active' : ''} onClick={() => {setMode('MCQ'); setCurrentIndex(0); setIsFinished(false);}}>
+            <span>📝</span> Trắc nghiệm
+          </button>
         </div>
       </header>
 
@@ -128,7 +145,7 @@ export default function FlashcardStudy() {
               <div className="flashcard-front">
                 <div className="card-label">Front</div>
                 <div className="card-text">{currentCard.frontText || currentCard.originalWord}</div>
-                {currentCard.phonetic && <div className="card-phonetic">/{currentCard.phonetic}/</div>}
+                {currentCard.pronunciation && <div className="card-pronunciation">/{currentCard.pronunciation}/</div>}
                 <div className="card-hint">Nhấn để xem nghĩa</div>
               </div>
               <div className="flashcard-back">
@@ -163,6 +180,7 @@ export default function FlashcardStudy() {
           </div>
         )}
       </footer>
+      </div>
     </div>
   )
 }

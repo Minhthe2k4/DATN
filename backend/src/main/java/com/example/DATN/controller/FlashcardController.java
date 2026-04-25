@@ -172,7 +172,7 @@ public class FlashcardController {
         if (card.getCustomVocab() != null) {
             dto.originalWord = card.getCustomVocab().word;
             dto.meaningVi = card.getCustomVocab().meaningVi;
-            dto.phonetic = card.getCustomVocab().phonetic;
+            dto.pronunciation = card.getCustomVocab().pronunciation;
         }
         return dto;
     }

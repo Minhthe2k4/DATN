@@ -24,14 +24,17 @@ public class VocabularyTopicDto {
         public String title;
         public String description;
         public Integer wordCount;
+        public Boolean isPremium;
+
 
         public LessonSummaryDto() {}
 
-        public LessonSummaryDto(Long id, String title, String description, Integer wordCount) {
+        public LessonSummaryDto(Long id, String title, String description, Integer wordCount, Boolean isPremium) {
             this.id = id;
             this.title = title;
             this.description = description;
             this.wordCount = wordCount;
+            this.isPremium = isPremium;
         }
     }
 }

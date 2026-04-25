@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { premiumMembers, premiumRequests } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid } from '../../components/console/AdminUi'
+import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, FilterTabs } from '../../components/console/AdminUi'
 import './premium-management.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
@@ -71,7 +71,7 @@ function normalizePlanRow(row) {
   }
 }
 
-const DEFAULT_REQUEST_FILTER = { status: 'ALL', email: '', fromDate: '', toDate: '' }
+const DEFAULT_REQUEST_FILTER = { status: 'PENDING', email: '', fromDate: '', toDate: '' }
 const DEFAULT_MEMBER_FILTER = { status: 'ALL', email: '', expiringInDays: '' }
 
 const CONFIGURABLE_FEATURES = [
@@ -135,15 +135,15 @@ export function PremiumManagement() {
   const [requestFilter, setRequestFilter] = useState(DEFAULT_REQUEST_FILTER)
   const [memberFilter, setMemberFilter] = useState(DEFAULT_MEMBER_FILTER)
   const [selectedMembers, setSelectedMembers] = useState(new Set())
-  
+
   // Modal states
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [editingPlan, setEditingPlan] = useState(null)
   const [currentStep, setCurrentStep] = useState(1) // 1: Basic, 2: Features
-  const [planForm, setPlanForm] = useState({ 
-    name: '', 
-    price: '', 
-    durationDays: '', 
+  const [planForm, setPlanForm] = useState({
+    name: '',
+    price: '',
+    durationDays: '',
     description: '',
     limits: []
   })
@@ -409,7 +409,7 @@ export function PremiumManagement() {
   const handleGrantFormChange = (field, value) => {
     setGrantForm(prev => {
       const next = { ...prev, [field]: value }
-      
+
       // Auto-fill duration if plan changes
       if (field === 'planId') {
         const plan = planRows.find(p => p.id.toString() === value)
@@ -417,7 +417,7 @@ export function PremiumManagement() {
           next.durationDays = plan.durationDays.toString()
         }
       }
-      
+
       return next
     })
   }
@@ -468,10 +468,10 @@ export function PremiumManagement() {
   const handleAddPlan = () => {
     setEditingPlan(null)
     setCurrentStep(1)
-    setPlanForm({ 
-      name: '', 
-      price: '', 
-      durationDays: '', 
+    setPlanForm({
+      name: '',
+      price: '',
+      durationDays: '',
       description: '',
       limits: CONFIGURABLE_FEATURES.map(f => ({
         featureName: f.id,
@@ -485,7 +485,7 @@ export function PremiumManagement() {
   const handleEditPlan = (plan) => {
     setEditingPlan(plan)
     setCurrentStep(1)
-    
+
     // Merge plan limits with CONFIGURABLE_FEATURES to ensure all are present
     const planLimitsMap = new Map((plan.limits || []).map(l => [l.featureName, l]))
     const mergedLimits = CONFIGURABLE_FEATURES.map(f => {
@@ -709,9 +709,6 @@ export function PremiumManagement() {
           description="Quản lý yêu cầu, thành viên Premium, gói cước và lịch sử hoạt động."
           actions={
             <div className="premium-actions">
-              <button type="button" className="btn btn-primary" onClick={() => setShowPlanModal(true)}>
-                📦 Quản lý Gói
-              </button>
               <button type="button" className="btn btn-primary" onClick={handleManualGrant}>
                 ➕ Cấp Premium
               </button>
@@ -740,6 +737,24 @@ export function PremiumManagement() {
             <AdminSectionCard>
               <h5><span className="section-header-icon">📋</span> Yêu cầu nâng cấp</h5>
               <p>Duyệt các yêu cầu từ người dùng ({requestRows.length} chờ xử lý)</p>
+
+              <div className="mb-3">
+                <FilterTabs
+                  items={[
+                    { label: 'Tất cả', value: 'ALL' },
+                    { label: 'Chờ duyệt', value: 'PENDING' },
+                    { label: 'Đã duyệt', value: 'APPROVED' },
+                    { label: 'Từ chối', value: 'REJECTED' }
+                  ]}
+                  active={requestFilter.status}
+                  onChange={(val) => {
+                    const next = { ...requestFilter, status: val }
+                    setRequestFilter(next)
+                    reloadData(next, memberFilter)
+                  }}
+                />
+              </div>
+
               <hr className="my-3" />
               <SimpleTable
                 columns={[
@@ -747,12 +762,14 @@ export function PremiumManagement() {
                   { key: 'packageName', label: 'Gói' },
                   { key: 'requestedAt', label: 'Ngày gửi', render: r => <small>{r.requestedAt}</small> },
                   { key: 'status', label: 'Trạng thái', render: r => <Badge tone={requestStatusTone(r.status)}>{r.status}</Badge> },
-                  { key: 'actions', label: '', render: r => (
-                    <div className="premium-row-actions">
-                      <button className="btn btn-sm btn-success" onClick={() => handleApprove(r)} title="Duyệt">✓</button>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleReject(r)} title="Từ chối">✕</button>
-                    </div>
-                  )},
+                  {
+                    key: 'actions', label: '', render: r => (
+                      <div className="premium-row-actions">
+                        <button className="btn btn-sm btn-success" onClick={() => handleApprove(r)} title="Duyệt">✓</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleReject(r)} title="Từ chối">✕</button>
+                      </div>
+                    )
+                  },
                 ]}
                 rows={requestRows}
                 emptyMessage="✨ Không có yêu cầu chờ duyệt"
@@ -767,7 +784,7 @@ export function PremiumManagement() {
               <p>Quản lý các thành viên Premium ({memberRows.length} người)</p>
               <hr className="my-3" />
               {selectedMembers.size > 0 && (
-                <div className="alert alert-info mb-3" style={{padding: '0.8rem'}}>
+                <div className="alert alert-info mb-3" style={{ padding: '0.8rem' }}>
                   <div className="d-flex gap-2 flex-wrap">
                     <button className="btn btn-sm btn-warning" onClick={handleBulkExtend}>⏳ Gia hạn ({selectedMembers.size})</button>
                     <button className="btn btn-sm btn-outline-danger" onClick={handleBulkCancel}>❌ Hủy ({selectedMembers.size})</button>
@@ -777,18 +794,24 @@ export function PremiumManagement() {
               )}
               <SimpleTable
                 columns={[
-                  { key: 'check', label: <input type="checkbox" checked={selectedMembers.size > 0 && selectedMembers.size === memberRows.length} onChange={toggleAllMembers} title="Chọn tất cả" />, render: r => (
-                    <input type="checkbox" checked={selectedMembers.has(r.userId)} onChange={() => toggleMemberSelection(r.userId)} />
-                  )},
+                  {
+                    key: 'check', label: <input type="checkbox" checked={selectedMembers.size > 0 && selectedMembers.size === memberRows.length} onChange={toggleAllMembers} title="Chọn tất cả" />, render: r => (
+                      <input type="checkbox" checked={selectedMembers.has(r.userId)} onChange={() => toggleMemberSelection(r.userId)} />
+                    )
+                  },
                   { key: 'email', label: 'Email', render: r => <small>{r.email}</small> },
                   { key: 'plan', label: 'Gói' },
                   { key: 'expiresAt', label: 'Hết hạn', render: r => <small>{r.expiresAt}</small> },
-                  { key: 'actions', label: '', render: r => (
-                    <div className="premium-row-actions">
-                      <button className="btn btn-sm btn-outline-warning" onClick={() => handleExtendPremium(r)}>⏳</button>
-                      <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancelPremium(r)}>✕</button>
-                    </div>
-                  )},
+                  {
+                    key: 'actions', label: '', render: r => (
+                      <div className="premium-row-actions">
+                        <button className="btn btn-sm btn-outline-warning" onClick={() => handleExtendPremium(r)} title="Gia hạn">⏳</button>
+                        {r.status === 'Đang hoạt động' && (
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancelPremium(r)} title="Hủy Premium">✕</button>
+                        )}
+                      </div>
+                    )
+                  },
                 ]}
                 rows={memberRows}
                 emptyMessage="✨ Không có thành viên Premium"
@@ -801,8 +824,8 @@ export function PremiumManagement() {
             <AdminSectionCard>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                  <h5 style={{margin: 0}}><span className="section-header-icon">📦</span> Gói Premium</h5>
-                  <p style={{margin: 0, marginTop: '0.25rem'}}>Quản lý các gói cước ({planRows.length} gói)</p>
+                  <h5 style={{ margin: 0 }}><span className="section-header-icon">📦</span> Gói Premium</h5>
+                  <p style={{ margin: 0, marginTop: '0.25rem' }}>Quản lý các gói cước ({planRows.length} gói)</p>
                 </div>
                 <button className="btn btn-sm btn-primary" onClick={handleAddPlan}>➕ Thêm Gói Mới</button>
               </div>
@@ -813,15 +836,17 @@ export function PremiumManagement() {
                   { key: 'price', label: 'Giá', render: r => `${r.price.toLocaleString('vi-VN')} VND` },
                   { key: 'durationDays', label: 'Kỳ hạn', render: r => `${r.durationDays} ngày` },
                   { key: 'description', label: 'Mô tả', render: r => <small>{r.description || '—'}</small> },
-                  { key: 'actions', label: '', render: p => (
-                    <div className="premium-row-actions">
-                      {p.name === 'Free' && <Badge tone="info">Mặc định</Badge>}
-                      <button className="btn btn-sm btn-outline-primary" onClick={() => handleEditPlan(p)} title="Chỉnh sửa">✏️</button>
-                      {p.name !== 'Free' && (
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePlan(p)} title="Xóa">🗑️</button>
-                      )}
-                    </div>
-                  )},
+                  {
+                    key: 'actions', label: '', render: p => (
+                      <div className="premium-row-actions">
+                        {p.name === 'Free' && <Badge tone="info">Mặc định</Badge>}
+                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleEditPlan(p)} title="Chỉnh sửa">✏️</button>
+                        {p.name !== 'Free' && (
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePlan(p)} title="Xóa">🗑️</button>
+                        )}
+                      </div>
+                    )
+                  },
                 ]}
                 rows={planRows}
                 emptyMessage="✨ Chưa có gói Premium nào. Tạo gói mới để bắt đầu."
@@ -879,42 +904,42 @@ export function PremiumManagement() {
                     {currentStep === 1 ? (
                       <div className="step-content-fade-in">
                         <div className="mb-3">
-                          <label className="premium-form-label">Tên gói <span style={{color: '#dc2626'}}>*</span></label>
-                          <input 
-                            type="text" 
-                            className="form-control premium-input" 
-                            value={planForm.name} 
-                            onChange={e => setPlanForm({...planForm, name: e.target.value})}
+                          <label className="premium-form-label">Tên gói <span style={{ color: '#dc2626' }}>*</span></label>
+                          <input
+                            type="text"
+                            className="form-control premium-input"
+                            value={planForm.name}
+                            onChange={e => setPlanForm({ ...planForm, name: e.target.value })}
                             placeholder="VD: Premium 1 tháng"
                           />
                         </div>
                         <div className="mb-3">
-                          <label className="premium-form-label">Giá (VND) <span style={{color: '#dc2626'}}>*</span></label>
-                          <input 
-                            type="number" 
-                            className="form-control premium-input" 
-                            value={planForm.price} 
-                            onChange={e => setPlanForm({...planForm, price: e.target.value})}
+                          <label className="premium-form-label">Giá (VND) <span style={{ color: '#dc2626' }}>*</span></label>
+                          <input
+                            type="number"
+                            className="form-control premium-input"
+                            value={planForm.price}
+                            onChange={e => setPlanForm({ ...planForm, price: e.target.value })}
                             placeholder="99000"
                           />
                         </div>
                         <div className="mb-3">
-                          <label className="premium-form-label">Kỳ hạn (ngày) <span style={{color: '#dc2626'}}>*</span></label>
-                          <input 
-                            type="number" 
-                            className="form-control premium-input" 
-                            value={planForm.durationDays} 
-                            onChange={e => setPlanForm({...planForm, durationDays: e.target.value})}
+                          <label className="premium-form-label">Kỳ hạn (ngày) <span style={{ color: '#dc2626' }}>*</span></label>
+                          <input
+                            type="number"
+                            className="form-control premium-input"
+                            value={planForm.durationDays}
+                            onChange={e => setPlanForm({ ...planForm, durationDays: e.target.value })}
                             placeholder="30"
                           />
                         </div>
                         <div className="mb-3">
                           <label className="premium-form-label">Mô tả</label>
-                          <textarea 
-                            className="form-control premium-input" 
-                            rows="3" 
-                            value={planForm.description} 
-                            onChange={e => setPlanForm({...planForm, description: e.target.value})}
+                          <textarea
+                            className="form-control premium-input"
+                            rows="3"
+                            value={planForm.description}
+                            onChange={e => setPlanForm({ ...planForm, description: e.target.value })}
                             placeholder="Nội dung chi tiết về gói này..."
                           ></textarea>
                         </div>
@@ -933,12 +958,12 @@ export function PremiumManagement() {
                                     <small className="text-muted">{feat.description}</small>
                                   </div>
                                   <div className="form-check form-switch">
-                                    <input 
-                                      className="form-check-input" 
-                                      type="checkbox" 
-                                      checked={!currentLimit.isLocked} 
+                                    <input
+                                      className="form-check-input"
+                                      type="checkbox"
+                                      checked={!currentLimit.isLocked}
                                       onChange={(e) => {
-                                        const newLimits = planForm.limits.map(l => 
+                                        const newLimits = planForm.limits.map(l =>
                                           l.featureName === feat.id ? { ...l, isLocked: !e.target.checked } : l
                                         )
                                         setPlanForm({ ...planForm, limits: newLimits })
@@ -951,28 +976,28 @@ export function PremiumManagement() {
                                   <div className="d-flex align-items-center gap-2 mt-2">
                                     <label className="small text-nowrap">Hạn mức:</label>
                                     <div className="input-group input-group-sm" style={{ width: '180px' }}>
-                                      <input 
-                                        type="number" 
-                                        className="form-control" 
+                                      <input
+                                        type="number"
+                                        className="form-control"
                                         disabled={currentLimit.usageLimit >= 999999}
                                         value={currentLimit.usageLimit >= 999999 ? '' : currentLimit.usageLimit}
                                         placeholder={currentLimit.usageLimit >= 999999 ? "∞ Vô hạn" : "0"}
                                         onChange={(e) => {
                                           const val = parseInt(e.target.value) || 0
-                                          const newLimits = planForm.limits.map(l => 
+                                          const newLimits = planForm.limits.map(l =>
                                             l.featureName === feat.id ? { ...l, usageLimit: val } : l
                                           )
                                           setPlanForm({ ...planForm, limits: newLimits })
                                         }}
                                       />
-                                      <button 
+                                      <button
                                         className={`btn ${currentLimit.usageLimit >= 999999 ? 'btn-success' : 'btn-outline-secondary'}`}
                                         type="button"
                                         title="Chuyển sang Vô hạn"
                                         onClick={() => {
                                           const isCurrentlyUnlimited = currentLimit.usageLimit >= 999999
                                           const newLimit = isCurrentlyUnlimited ? feat.defaultLimit : 999999
-                                          const newLimits = planForm.limits.map(l => 
+                                          const newLimits = planForm.limits.map(l =>
                                             l.featureName === feat.id ? { ...l, usageLimit: newLimit } : l
                                           )
                                           setPlanForm({ ...planForm, limits: newLimits })
@@ -1010,7 +1035,7 @@ export function PremiumManagement() {
             <div className="modal-backdrop fade show"></div>
           </>
         )}
-        
+
         {/* GRANT PREMIUM MODAL */}
         {showGrantModal && (
           <>
@@ -1023,19 +1048,19 @@ export function PremiumManagement() {
                   </div>
                   <div className="modal-body">
                     <div className="mb-3">
-                      <label className="premium-form-label">Email người dùng <span style={{color: '#dc2626'}}>*</span></label>
-                      <input 
-                        type="email" 
-                        className="form-control premium-input" 
-                        value={grantForm.email} 
+                      <label className="premium-form-label">Email người dùng <span style={{ color: '#dc2626' }}>*</span></label>
+                      <input
+                        type="email"
+                        className="form-control premium-input"
+                        value={grantForm.email}
                         onChange={e => handleGrantFormChange('email', e.target.value)}
                         placeholder="VD: user@example.com"
                       />
                     </div>
-                    
+
                     <div className="mb-3">
-                      <label className="premium-form-label">Chọn Gói cước <span style={{color: '#dc2626'}}>*</span></label>
-                      <select 
+                      <label className="premium-form-label">Chọn Gói cước <span style={{ color: '#dc2626' }}>*</span></label>
+                      <select
                         className="form-select premium-input"
                         value={grantForm.planId}
                         onChange={e => handleGrantFormChange('planId', e.target.value)}
@@ -1051,22 +1076,22 @@ export function PremiumManagement() {
                     </div>
 
                     <div className="mb-3">
-                      <label className="premium-form-label">Thời hạn cấp (ngày) <span style={{color: '#dc2626'}}>*</span></label>
-                      <input 
-                        type="number" 
-                        className="form-control premium-input" 
-                        value={grantForm.durationDays} 
+                      <label className="premium-form-label">Thời hạn cấp (ngày) <span style={{ color: '#dc2626' }}>*</span></label>
+                      <input
+                        type="number"
+                        className="form-control premium-input"
+                        value={grantForm.durationDays}
                         onChange={e => handleGrantFormChange('durationDays', e.target.value)}
                         placeholder="30"
                       />
                     </div>
 
                     <div className="mb-3">
-                      <label className="premium-form-label">Lý do cấp quyền <span style={{color: '#dc2626'}}>*</span></label>
-                      <textarea 
-                        className="form-control premium-input" 
-                        rows="3" 
-                        value={grantForm.reason} 
+                      <label className="premium-form-label">Lý do cấp quyền <span style={{ color: '#dc2626' }}>*</span></label>
+                      <textarea
+                        className="form-control premium-input"
+                        rows="3"
+                        value={grantForm.reason}
                         onChange={e => handleGrantFormChange('reason', e.target.value)}
                         placeholder="VD: Tặng quà sự kiện tháng 10..."
                       ></textarea>

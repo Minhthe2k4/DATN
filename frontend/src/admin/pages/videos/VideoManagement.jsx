@@ -65,6 +65,7 @@ export function VideoManagement() {
   const [editingVideoId, setEditingVideoId] = useState(null)
   const [videoDraft, setVideoDraft] = useState({ ...emptyVideoDraft(), difficulty: 'All', status: 'Công khai' })
   const [videoError, setVideoError] = useState('')
+  const [reprocessVideo, setReprocessVideo] = useState(false)
 
   // State cho upload video file
   const [uploadFile, setUploadFile] = useState(null)         // File được chọn
@@ -221,16 +222,16 @@ export function VideoManagement() {
         if (!disposed) {
           if (data.error) {
             console.error('API Error:', data.error)
-            const errorMessage = data.error.includes('Failed to fetch captions') 
+            const errorMessage = data.error.includes('Failed to fetch captions')
               ? `❌ Video này không có phụ đề tiếng Anh. Hãy chọn video khác có bật phụ đề.`
               : `Lỗi: ${data.error}`
             alert(errorMessage)
             setPreviewSegments([])
           } else {
             const segments = data.segments && Array.isArray(data.segments) ? data.segments : []
-            
+
             setPreviewSegments(segments)
-            
+
             if (segments.length === 0) {
               alert('⚠️ Không tìm thấy phụ đề cho video này. Hãy kiểm tra video có bật phụ đề tiếng Anh không.')
             } else {
@@ -284,19 +285,19 @@ export function VideoManagement() {
   // Extract YouTube video ID from various URL formats
   const extractYouTubeVideoId = (url) => {
     if (!url) return ''
-    
+
     // Format: https://youtu.be/VIDEO_ID or https://youtu.be/VIDEO_ID?t=...
     let match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
     if (match) return match[1]
-    
+
     // Format: https://www.youtube.com/watch?v=VIDEO_ID or youtube.com/watch?v=VIDEO_ID
     match = url.match(/(?:youtube\.com|youtube-nocookie\.com).*[?&]v=([a-zA-Z0-9_-]{11})/)
     if (match) return match[1]
-    
+
     // Fallback: just look for the ID pattern
     match = url.match(/([a-zA-Z0-9_-]{11})/)
     if (match) return match[1]
-    
+
     return ''
   }
 
@@ -339,15 +340,15 @@ export function VideoManagement() {
     setEditingVideoId(video.id)
     setVideoDraft({
       title: video.title,
-      youtubeUrl: video.url || '', // Hiện lại link YouTube cũ
+      youtubeUrl: video.youtubeUrl || '',
       channelId: video.channelId || '',
       topicId: video.topicId || '',
       difficulty: video.difficulty || 'All',
       duration: video.duration || '',
-      status: video.status || 'Hiển thị',
+      status: video.status || 'Chờ biên tập',
       transcript: video.transcript || '',
     })
-    setYoutubeUrl(video.url || '') // Sync youtubeUrl state
+    setYoutubeUrl(video.youtubeUrl || '') // Sync youtubeUrl state
     setReprocessVideo(false) // Mặc định không xử lý lại
     setVideoError('')
     setIsVideoModalOpen(true)
@@ -373,15 +374,15 @@ export function VideoManagement() {
         })
 
         if (!response.ok) throw new Error('Lỗi cập nhật thông tin')
-        
+
         setIsVideoModalOpen(false)
-        fetchVideos()
+        reloadData()
       } catch (err) {
         setVideoError(err.message)
       }
     } else {
       // LUỒNG 2: THÊM MỚI HOẶC SỬA + TẢI LẠI VIDEO
-      if (uploadType === 'youtube') {
+      if (uploadMode === 'youtube') {
         handleUploadFromYoutube()
       } else {
         handleUploadFromFile()
@@ -594,8 +595,8 @@ export function VideoManagement() {
               description="Tất cả video trong hệ thống, sắp xếp theo kênh. Biên tập xong thì xuất bản để hiển thị cho người học."
               actions={
                 <div className="d-flex gap-2">
-                  <select 
-                    className="form-select form-select-sm" 
+                  <select
+                    className="form-select form-select-sm"
                     style={{ width: '180px' }}
                     value={filterChannelId}
                     onChange={(e) => setFilterChannelId(e.target.value)}
@@ -829,6 +830,24 @@ export function VideoManagement() {
 
                 <div className="modal-footer">
                   <button type="button" className="btn btn-outline-secondary" onClick={closeVideoModal} disabled={isUploading}>Hủy</button>
+                  {editingVideoId && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary"
+                      onClick={() => {
+                        const video = videos.find(v => v.id === editingVideoId);
+                        if (video) {
+                          setPreviewVideo({
+                            ...video,
+                            youtubeUrl: video.url || youtubeUrl // Use latest state
+                          });
+                          setIsPreviewModalOpen(true);
+                        }
+                      }}
+                    >
+                      <i className="iconoir-eye me-1"></i> Xem trước & Sửa phụ đề
+                    </button>
+                  )}
                   <button type="button" className="btn btn-primary" disabled={isUploading}
                     onClick={uploadMode === 'youtube' ? handleUploadFromYoutube : handleUploadFromFile}>
                     {isUploading ? '⏳ Đang xử lý...' : '▶ Bắt đầu – Tạo phụ đề AI'}
@@ -927,7 +946,7 @@ export function VideoManagement() {
                       </div>
                     </div>
                     <div className="col-12 col-md-6" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <SegmentsEditor 
+                      <SegmentsEditor
                         segments={previewSegments}
                         onSegmentsChange={setPreviewSegments}
                         isLoading={previewCaptionsLoading}

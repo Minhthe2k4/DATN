@@ -119,6 +119,24 @@
 			<artifactId>jackson-databind</artifactId>
 			<version>2.16.0</version>
 		</dependency>
+
+		<!-- Spring Boot Starter Mail để gửi OTP qua Email -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<!-- Google API Client để xác thực Google ID Token -->
+		<dependency>
+			<groupId>com.google.api-client</groupId>
+			<artifactId>google-api-client</artifactId>
+			<version>1.35.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-gson</artifactId>
+			<version>1.43.3</version>
+		</dependency>
 	</dependencies>
 
 	<build>

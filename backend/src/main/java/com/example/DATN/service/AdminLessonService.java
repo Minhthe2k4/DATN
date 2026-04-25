@@ -32,20 +32,21 @@ public class AdminLessonService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found"));
 
         return new AdminLessonDto(
-            toLong(Math.toIntExact(lesson.id)),
+                lesson.id,
                 defaultString(lesson.name, ""),
                 defaultString(lesson.description, ""),
-            lesson.topic == null ? null : toLong(Math.toIntExact(lesson.topic.id)),
-                normalizeDifficulty(lesson.topic == null ? null : lesson.topic.level),
-            "Đang mở"
-        );
+                lesson.topic == null ? null : lesson.topic.id,
+                normalizeDifficulty(lesson.difficulty),
+                defaultString(lesson.status, "Đang mở"),
+                lesson.lessonImage,
+                lesson.isPremium);
     }
 
     public AdminLessonDto create(UpsertLessonRequest request) {
         Lesson lesson = new Lesson();
         apply(lesson, request);
         Lesson saved = lessonRepository.save(lesson);
-        return findById(toLong(Math.toIntExact(saved.id)));
+        return findById(saved.id);
     }
 
     public AdminLessonDto update(Long id, UpsertLessonRequest request) {
@@ -78,6 +79,10 @@ public class AdminLessonService {
         lesson.name = name;
         lesson.description = request == null ? "" : defaultString(request.description(), "").trim();
         lesson.topic = topic;
+        lesson.difficulty = normalizeDifficulty(request == null ? null : request.difficulty());
+        lesson.status = defaultString(request == null ? null : request.status(), "Đang mở");
+        lesson.lessonImage = request == null ? null : request.lessonImage();
+        lesson.isPremium = request != null && Boolean.TRUE.equals(request.isPremium());
     }
 
     private AdminLessonDto toDto(LessonManagementProjection row) {
@@ -86,9 +91,10 @@ public class AdminLessonService {
                 defaultString(row.getName(), ""),
                 defaultString(row.getDescription(), ""),
                 row.getTopicId(),
-                normalizeDifficulty(row.getTopicLevel()),
-                "Đang mở"
-        );
+                normalizeDifficulty(row.getDifficulty()),
+                defaultString(row.getStatus(), "Đang mở"),
+                row.getLessonImage(),
+                row.getIsPremium());
     }
 
     private String normalizeDifficulty(String value) {
@@ -105,9 +111,5 @@ public class AdminLessonService {
             return fallback;
         }
         return value;
-    }
-
-    private Long toLong(Integer value) {
-        return value == null ? null : value.longValue();
     }
 }

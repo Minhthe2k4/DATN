@@ -6,7 +6,7 @@ public record UserLearningVocabDto(
     Long id,               // UserVocabularyLearning record ID
     Long vocabId,          // Original vocab ID (system or custom)
     String word,
-    String phonetic,
+    String pronunciation,
     String meaningEn,
     String meaningVi,
     String example,

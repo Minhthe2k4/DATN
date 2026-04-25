@@ -59,7 +59,7 @@ export function Dictionary() {
 	const [showSaveModal, setShowSaveModal] = useState(false)
 	const [saveFormData, setSaveFormData] = useState({
 		word: '',
-		phonetic: '',
+		pronunciation: '',
 		definitionEng: '',
 		definitionVi: '',
 		exampleEng: '',
@@ -153,7 +153,7 @@ export function Dictionary() {
 		if (resultEntry) {
 			setSaveFormData({
 				word: resultEntry.word,
-				phonetic: resultEntry.uk,
+				pronunciation: resultEntry.uk,
 				definitionEng: meaning.definition || '',
 				definitionVi: meaning.meaningVi || '',
 				exampleEng: meaning.examples[0] || meaning.example || '',
@@ -221,7 +221,7 @@ export function Dictionary() {
 				},
 				body: JSON.stringify({
 					word: saveFormData.word,
-					phonetic: saveFormData.phonetic,
+					pronunciation: saveFormData.pronunciation,
 					meaningEn: saveFormData.definitionEng,
 					meaningVi: saveFormData.definitionVi,
 					example: saveFormData.exampleEng,
@@ -397,11 +397,11 @@ export function Dictionary() {
 								</div>
 
 								<div className="dictionary-save-form__group">
-									<label>Phiên âm</label>
+									<label>Phien am</label>
 									<input
 										type="text"
-										value={saveFormData.phonetic}
-										onChange={(e) => handleSaveFormChange('phonetic', e.target.value)}
+										value={saveFormData.pronunciation}
+										onChange={(e) => handleSaveFormChange('pronunciation', e.target.value)}
 									/>
 								</div>
 

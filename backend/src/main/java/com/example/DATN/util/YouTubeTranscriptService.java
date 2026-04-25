@@ -3,7 +3,6 @@ package com.example.DATN.util;
 import com.example.DATN.dto.TranscriptSegmentDto;
 import com.example.DATN.dto.TranscriptChunkDto;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -12,15 +11,9 @@ import java.util.regex.Pattern;
  */
 public class YouTubeTranscriptService {
 
-    // Regex để nhận diện kết thúc câu tiếng Hàn
-    // Các dấu câu: . ! ? , ; hoặc đuôi câu như ~다, ~네, ~어, ~아
-    private static final Pattern KOREAN_SENTENCE_END_PATTERN = Pattern.compile(
-        "[.!?\\n]|[a-zA-Z0-9가-힣]+[다었네요다면서용기나까](?:[.!?\\n]|\\s|$)"
-    );
-
     // Min và max duration cho một segment
-    private static final double MIN_SEGMENT_DURATION = 0.5;
-    private static final double MAX_SEGMENT_DURATION = 15.0;
+    private static final double MIN_SEGMENT_DURATION = 0.2;
+    private static final double MAX_SEGMENT_DURATION = 8.0;
     private static final double MIN_CHUNK_DURATION = 0.1;
 
     /**
@@ -115,11 +108,10 @@ public class YouTubeTranscriptService {
             }
 
             TranscriptSegmentDto segment = new TranscriptSegmentDto(
-                startSec,
-                endSec,
-                finalText,
-                segmentOrder++
-            );
+                    startSec,
+                    endSec,
+                    finalText,
+                    segmentOrder++);
 
             segments.add(segment);
         }
@@ -201,20 +193,13 @@ public class YouTubeTranscriptService {
 
         text = text.trim();
 
-        // Kiểm tra dấu câu cơ bản
-        if (text.endsWith(".") || text.endsWith("!") || text.endsWith("?")) {
+        // 1. Kiểm tra dấu câu kết thúc câu chuẩn (English/International)
+        // Hỗ trợ cả trường hợp có dấu ngoặc kép hoặc khoảng trắng sau dấu câu
+        if (text.matches(".*[.!?][\"']?\\s*$")) {
             return true;
         }
 
-        // Kiểm tra đuôi câu tiếng Hàn
-        if (language != null && language.contains("ko")) {
-            // Pattern cơ bản cho kết thúc câu Hàn
-            if (text.matches(".*[다었네요?!.]$")) {
-                return true;
-            }
-        }
-
-        // Kiểm tra newline
+        // 2. Tách theo newline (YouTube thường ngắt đoạn tại đây)
         if (text.contains("\n")) {
             return true;
         }

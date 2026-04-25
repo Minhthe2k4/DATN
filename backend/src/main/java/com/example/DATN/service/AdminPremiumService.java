@@ -11,7 +11,6 @@ import com.example.DATN.entity.PremiumFeatureLimit;
 import com.example.DATN.entity.User;
 import com.example.DATN.entity.UserSubscription;
 import com.example.DATN.repository.PremiumAuditLogRepository;
-import com.example.DATN.repository.PremiumFeatureLimitRepository;
 import com.example.DATN.repository.PremiumPlanRepository;
 import com.example.DATN.repository.TransactionRepository;
 import com.example.DATN.repository.UserRepository;
@@ -34,7 +33,8 @@ import jakarta.annotation.PostConstruct;
 @Service
 @Transactional
 public class AdminPremiumService {
-    private static final Set<String> PENDING_STATUSES = Set.of("PENDING", "WAITING", "AWAITING", "PROCESSING", "REQUESTED", "CHỜ DUYỆT", "CHO DUYET");
+    private static final Set<String> PENDING_STATUSES = Set.of("PENDING", "WAITING", "AWAITING", "PROCESSING",
+            "REQUESTED", "CHỜ DUYỆT", "CHO DUYET");
     private static final Set<String> ACTIVE_STATUSES = Set.of("ACTIVE", "ACTIVATED", "PAID", "PREMIUM");
     private static final int DEFAULT_DURATION_DAYS = 30;
 
@@ -43,22 +43,19 @@ public class AdminPremiumService {
     private final UserRepository userRepository;
     private final PremiumPlanRepository premiumPlanRepository;
     private final PremiumAuditLogRepository premiumAuditLogRepository;
-    private final PremiumFeatureLimitRepository premiumFeatureLimitRepository;
 
     public AdminPremiumService(
             TransactionRepository transactionRepository,
             UserSubscriptionRepository userSubscriptionRepository,
             UserRepository userRepository,
             PremiumPlanRepository premiumPlanRepository,
-            PremiumAuditLogRepository premiumAuditLogRepository,
-            PremiumFeatureLimitRepository premiumFeatureLimitRepository
-    ) {
+            PremiumAuditLogRepository premiumAuditLogRepository) {
         this.transactionRepository = transactionRepository;
         this.userSubscriptionRepository = userSubscriptionRepository;
         this.userRepository = userRepository;
         this.premiumPlanRepository = premiumPlanRepository;
         this.premiumAuditLogRepository = premiumAuditLogRepository;
-        this.premiumFeatureLimitRepository = premiumFeatureLimitRepository;
+
     }
 
     @PostConstruct
@@ -70,16 +67,16 @@ public class AdminPremiumService {
             freePlan.price = 0.0;
             freePlan.duration = 36500; // 100 years
             freePlan.description = "Gói mặc định cho người dùng mới";
-            
+
             PremiumPlan saved = premiumPlanRepository.save(freePlan);
-            
+
             // Add default limits
             List<PremiumFeatureLimit> defaultLimits = new ArrayList<>();
             defaultLimits.add(createLimit(saved, "SAVED_VOCABULARY", false, 50));
             defaultLimits.add(createLimit(saved, "DICTIONARY_LOOKUP", false, 5));
             defaultLimits.add(createLimit(saved, "ARTICLE_DOWNLOADS", true, 0));
             defaultLimits.add(createLimit(saved, "VIDEO_TRANSCRIPT_DOWNLOADS", true, 0));
-            
+
             saved.setFeatureLimits(defaultLimits);
             premiumPlanRepository.save(saved);
         }
@@ -94,7 +91,8 @@ public class AdminPremiumService {
         return entity;
     }
 
-    public List<AdminPremiumRequestDto> findRequests(String status, String email, LocalDate fromDate, LocalDate toDate) {
+    public List<AdminPremiumRequestDto> findRequests(String status, String email, LocalDate fromDate,
+            LocalDate toDate) {
         String normalizedStatusFilter = normalizeStatusFilter(status);
         String normalizedEmail = defaultString(email, "").trim().toLowerCase(Locale.ROOT);
         LocalDateTime from = fromDate == null ? null : fromDate.atStartOfDay();
@@ -102,7 +100,8 @@ public class AdminPremiumService {
 
         return transactionRepository.findAllRequestRows(PageRequest.of(0, 500)).stream()
                 .filter(row -> matchesRequestStatus(normalizedStatusFilter, row.getStatus()))
-                .filter(row -> normalizedEmail.isBlank() || defaultString(row.getEmail(), "").toLowerCase(Locale.ROOT).contains(normalizedEmail))
+                .filter(row -> normalizedEmail.isBlank()
+                        || defaultString(row.getEmail(), "").toLowerCase(Locale.ROOT).contains(normalizedEmail))
                 .filter(row -> isWithinRange(row.getRequestedAt(), from, to))
                 .map(row -> new AdminPremiumRequestDto(
                         row.getId(),
@@ -111,8 +110,7 @@ public class AdminPremiumService {
                         defaultString(row.getEmail(), "(không có email)"),
                         defaultString(row.getPackageName(), "Premium"),
                         row.getRequestedAt() == null ? null : java.sql.Timestamp.valueOf(row.getRequestedAt()),
-                        mapRequestStatusLabel(row.getStatus())
-                ))
+                        mapRequestStatusLabel(row.getStatus())))
                 .toList();
     }
 
@@ -122,7 +120,8 @@ public class AdminPremiumService {
         Integer validExpiringInDays = expiringInDays != null && expiringInDays >= 0 ? expiringInDays : null;
 
         return userSubscriptionRepository.findLatestMembers().stream()
-                .filter(row -> normalizedEmail.isBlank() || defaultString(row.getEmail(), "").toLowerCase(Locale.ROOT).contains(normalizedEmail))
+                .filter(row -> normalizedEmail.isBlank()
+                        || defaultString(row.getEmail(), "").toLowerCase(Locale.ROOT).contains(normalizedEmail))
                 .filter(row -> matchesMemberStatus(normalizedStatusFilter, row.getStatus(), row.getEndDate()))
                 .filter(row -> matchesExpiringFilter(row.getEndDate(), validExpiringInDays))
                 .map(row -> new AdminPremiumMemberDto(
@@ -131,8 +130,7 @@ public class AdminPremiumService {
                         defaultString(row.getEmail(), "(không có email)"),
                         defaultString(row.getPlanName(), "Premium"),
                         row.getEndDate(),
-                        mapMemberStatusLabel(row.getStatus(), row.getEndDate())
-                ))
+                        mapMemberStatusLabel(row.getStatus(), row.getEndDate())))
                 .toList();
     }
 
@@ -150,8 +148,7 @@ public class AdminPremiumService {
                         defaultString(log.statusAfter, ""),
                         defaultString(log.reason, ""),
                         defaultString(log.adminActor, ""),
-                        log.createdAt
-                ))
+                        log.createdAt))
                 .toList();
     }
 
@@ -167,7 +164,8 @@ public class AdminPremiumService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request missing user information");
         }
 
-        // Identify the plan to apply: prioritize transaction.plan, then fallback to transaction.subscription.plan
+        // Identify the plan to apply: prioritize transaction.plan, then fallback to
+        // transaction.subscription.plan
         PremiumPlan planToApply = transaction.plan;
         if (planToApply == null && transaction.subscription != null) {
             planToApply = transaction.subscription.plan;
@@ -181,8 +179,7 @@ public class AdminPremiumService {
         UserSubscription subscription = grantOrExtendSubscription(
                 transaction.user,
                 planToApply,
-                durationDays
-        );
+                durationDays);
 
         String beforeStatus = defaultString(transaction.status, "");
         transaction.status = "APPROVED";
@@ -197,8 +194,7 @@ public class AdminPremiumService {
                 beforeStatus,
                 transaction.status,
                 reason,
-                adminActor
-        );
+                adminActor);
     }
 
     public void rejectRequest(Long transactionId, String reason, String adminActor) {
@@ -221,14 +217,15 @@ public class AdminPremiumService {
                 beforeStatus,
                 transaction.status,
                 reason,
-                adminActor
-        );
+                adminActor);
     }
 
     public void cancelPremium(Long userId, String reason, String adminActor) {
-        List<UserSubscription> subscriptions = userSubscriptionRepository.findActiveSubscriptionsByUserId(userId, new Date());
+        List<UserSubscription> subscriptions = userSubscriptionRepository.findActiveSubscriptionsByUserId(userId,
+                new Date());
         if (subscriptions.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Active premium subscription not found");
+            // Already canceled or expired, nothing to do
+            return;
         }
 
         Date now = new Date();
@@ -244,8 +241,7 @@ public class AdminPremiumService {
                     beforeStatus,
                     subscription.status,
                     reason,
-                    adminActor
-            );
+                    adminActor);
         });
         userSubscriptionRepository.saveAll(subscriptions);
     }
@@ -275,8 +271,7 @@ public class AdminPremiumService {
                 beforeStatus,
                 target.status,
                 defaultString(reason, "") + " (" + extensionDays + " days)",
-                adminActor
-        );
+                adminActor);
     }
 
     public void grantPremium(ManualPremiumGrantRequest request) {
@@ -288,13 +283,16 @@ public class AdminPremiumService {
         PremiumPlan plan = null;
         if (request.planId() != null) {
             plan = premiumPlanRepository.findById(request.planId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Gói cước Premium không tồn tại"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Gói cước Premium không tồn tại"));
         }
-        
+
         // Basic enforcement: New subscriptions MUST have a plan
-        List<UserSubscription> activeSubs = userSubscriptionRepository.findActiveSubscriptionsByUserId(user.id, new Date());
+        List<UserSubscription> activeSubs = userSubscriptionRepository.findActiveSubscriptionsByUserId(user.id,
+                new Date());
         if (activeSubs.isEmpty() && plan == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cần chọn gói cước cụ thể khi cấp mới Premium cho người dùng này.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cần chọn gói cước cụ thể khi cấp mới Premium cho người dùng này.");
         }
 
         int durationDays = request.durationDays() == null || request.durationDays() <= 0
@@ -310,8 +308,7 @@ public class AdminPremiumService {
                 "",
                 defaultString(subscription.status, ""),
                 defaultString(request.reason(), "") + " (" + durationDays + " days)",
-                request.adminActor()
-        );
+                request.adminActor());
     }
 
     // ============= PLAN MANAGEMENT =============
@@ -319,14 +316,14 @@ public class AdminPremiumService {
     public List<com.example.DATN.dto.AdminPremiumPlanDto> findAllPlans() {
         return premiumPlanRepository.findAll().stream()
                 .map(p -> new com.example.DATN.dto.AdminPremiumPlanDto(
-                    p.id,
-                    p.name,
-                    p.price,
-                    p.duration,
-                    p.description,
-                    p.getFeatureLimits() == null ? java.util.Collections.emptyList() :
-                        p.getFeatureLimits().stream().map(com.example.DATN.dto.FeatureLimitDto::fromEntity).toList()
-                ))
+                        p.id,
+                        p.name,
+                        p.price,
+                        p.duration,
+                        p.description,
+                        p.getFeatureLimits() == null ? java.util.Collections.emptyList()
+                                : p.getFeatureLimits().stream().map(com.example.DATN.dto.FeatureLimitDto::fromEntity)
+                                        .toList()))
                 .toList();
     }
 
@@ -334,14 +331,14 @@ public class AdminPremiumService {
         PremiumPlan plan = premiumPlanRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Premium plan not found"));
         return new com.example.DATN.dto.AdminPremiumPlanDto(
-            plan.id,
-            plan.name,
-            plan.price,
-            plan.duration,
-            plan.description,
-            plan.getFeatureLimits() == null ? java.util.Collections.emptyList() :
-                plan.getFeatureLimits().stream().map(com.example.DATN.dto.FeatureLimitDto::fromEntity).toList()
-        );
+                plan.id,
+                plan.name,
+                plan.price,
+                plan.duration,
+                plan.description,
+                plan.getFeatureLimits() == null ? java.util.Collections.emptyList()
+                        : plan.getFeatureLimits().stream().map(com.example.DATN.dto.FeatureLimitDto::fromEntity)
+                                .toList());
     }
 
     public com.example.DATN.dto.AdminPremiumPlanDto createPlan(com.example.DATN.dto.UpsertPremiumPlanRequest request) {
@@ -360,20 +357,20 @@ public class AdminPremiumService {
         plan.price = request.price();
         plan.duration = request.durationDays();
         plan.description = defaultString(request.description(), "").trim();
-        
+
         final PremiumPlan saved = premiumPlanRepository.save(plan);
-        
+
         if (request.limits() != null) {
             List<PremiumFeatureLimit> entities = request.limits().stream()
-                .map(l -> {
-                    PremiumFeatureLimit entity = new PremiumFeatureLimit();
-                    entity.setPlan(saved);
-                    entity.setFeatureName(l.featureName());
-                    entity.setIsLocked(l.isLocked());
-                    entity.setUsageLimit(l.usageLimit());
-                    return entity;
-                }).toList();
-            
+                    .map(l -> {
+                        PremiumFeatureLimit entity = new PremiumFeatureLimit();
+                        entity.setPlan(saved);
+                        entity.setFeatureName(l.featureName());
+                        entity.setIsLocked(l.isLocked());
+                        entity.setUsageLimit(l.usageLimit());
+                        return entity;
+                    }).toList();
+
             if (saved.getFeatureLimits() == null) {
                 saved.setFeatureLimits(new ArrayList<>());
             }
@@ -384,7 +381,8 @@ public class AdminPremiumService {
         return findPlanById(saved.id);
     }
 
-    public com.example.DATN.dto.AdminPremiumPlanDto updatePlan(Long id, com.example.DATN.dto.UpsertPremiumPlanRequest request) {
+    public com.example.DATN.dto.AdminPremiumPlanDto updatePlan(Long id,
+            com.example.DATN.dto.UpsertPremiumPlanRequest request) {
         PremiumPlan plan = premiumPlanRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Premium plan not found"));
 
@@ -409,15 +407,15 @@ public class AdminPremiumService {
 
         if (request.limits() != null) {
             List<PremiumFeatureLimit> entities = request.limits().stream()
-                .map(l -> {
-                    PremiumFeatureLimit entity = new PremiumFeatureLimit();
-                    entity.setPlan(plan);
-                    entity.setFeatureName(l.featureName());
-                    entity.setIsLocked(l.isLocked());
-                    entity.setUsageLimit(l.usageLimit());
-                    return entity;
-                }).toList();
-            
+                    .map(l -> {
+                        PremiumFeatureLimit entity = new PremiumFeatureLimit();
+                        entity.setPlan(plan);
+                        entity.setFeatureName(l.featureName());
+                        entity.setIsLocked(l.isLocked());
+                        entity.setUsageLimit(l.usageLimit());
+                        return entity;
+                    }).toList();
+
             if (plan.getFeatureLimits() == null) {
                 plan.setFeatureLimits(new ArrayList<>());
             }
@@ -439,7 +437,8 @@ public class AdminPremiumService {
 
     private UserSubscription grantOrExtendSubscription(User user, PremiumPlan plan, int durationDays) {
         Date now = new Date();
-        List<UserSubscription> activeSubs = userSubscriptionRepository.findActiveSubscriptionsByUserId(toLong(Math.toIntExact(user.id)), now);
+        List<UserSubscription> activeSubs = userSubscriptionRepository
+                .findActiveSubscriptionsByUserId(toLong(Math.toIntExact(user.id)), now);
         UserSubscription target = activeSubs.stream().findFirst().orElse(null);
 
         if (target == null) {
@@ -453,7 +452,8 @@ public class AdminPremiumService {
         }
 
         if (target.plan == null) {
-            // This should have been caught in grantPremium, but as a safety for other callers
+            // This should have been caught in grantPremium, but as a safety for other
+            // callers
             throw new IllegalStateException("Không thể tạo hoặc gia hạn đăng ký mà không có Gói cước (Plan)");
         }
 
@@ -486,8 +486,7 @@ public class AdminPremiumService {
             String before,
             String after,
             String reason,
-            String adminActor
-    ) {
+            String adminActor) {
         PremiumAuditLog log = new PremiumAuditLog();
         log.user = user;
         log.transaction = transaction;
@@ -519,11 +518,15 @@ public class AdminPremiumService {
     }
 
     private boolean matchesRequestStatus(String statusFilter, String status) {
+        String normalized = normalizeStatus(status);
+        if (normalized.equals("INITIATED")) {
+            return false;
+        }
+
         if (statusFilter.isBlank() || statusFilter.equals("ALL")) {
             return true;
         }
 
-        String normalized = normalizeStatus(status);
         if (statusFilter.equals("PENDING")) {
             return PENDING_STATUSES.contains(normalized);
         }
@@ -615,7 +618,8 @@ public class AdminPremiumService {
         if (normalized.equals("DA DUYET") || normalized.equals("ĐÃ DUYỆT") || normalized.equals("APPROVED")) {
             return "APPROVED";
         }
-        if (normalized.equals("DA HUY") || normalized.equals("ĐÃ HỦY") || normalized.equals("CANCELED") || normalized.equals("CANCELLED")) {
+        if (normalized.equals("DA HUY") || normalized.equals("ĐÃ HỦY") || normalized.equals("CANCELED")
+                || normalized.equals("CANCELLED")) {
             return "CANCELED";
         }
         if (normalized.equals("HET HAN") || normalized.equals("HẾT HẠN") || normalized.equals("EXPIRED")) {

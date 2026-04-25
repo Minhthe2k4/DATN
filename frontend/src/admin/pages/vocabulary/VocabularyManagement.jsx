@@ -475,7 +475,7 @@ export function VocabularyManagement() {
       {isModalOpen ? (
         <>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable force-xl-modal" role="document">
               <div className="modal-content topic-bulk-modal">
                 <div className="modal-header">
                   <div>
