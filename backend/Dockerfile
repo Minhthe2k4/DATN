@@ -36,4 +36,4 @@ ENV APP_FRONTEND_URL=""
 ENV YT_DLP_PATH="/usr/local/bin/yt-dlp"
 ENV FFMPEG_PATH="/usr/bin/ffmpeg"
 
-ENTRYPOINT ["java", "-Xmx384m", "-Xms384m", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx300m", "-Xss512k", "-XX:ReservedCodeCacheSize=64m", "-XX:MaxMetaspaceSize=128m", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
