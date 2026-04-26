@@ -26,7 +26,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 COPY --from=build /app/target/DATN-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose the port
-EXPOSE 8080
+EXPOSE 10000
 
 # Environment variables with defaults
 ENV SPRING_DATASOURCE_URL=""
