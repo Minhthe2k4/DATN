@@ -34,4 +34,4 @@ ENV APP_FRONTEND_URL=""
 ENV YT_DLP_PATH="/usr/local/bin/yt-dlp"
 ENV FFMPEG_PATH="/usr/bin/ffmpeg"
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
