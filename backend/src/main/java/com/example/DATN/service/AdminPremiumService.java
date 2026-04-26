@@ -61,24 +61,33 @@ public class AdminPremiumService {
     @PostConstruct
     @Transactional
     public void initDefaultPlans() {
-        if (premiumPlanRepository.findByName("Free").isEmpty()) {
-            PremiumPlan freePlan = new PremiumPlan();
-            freePlan.name = "Free";
-            freePlan.price = 0.0;
-            freePlan.duration = 36500; // 100 years
-            freePlan.description = "Gói mặc định cho người dùng mới";
+        System.out.println("DEBUG: Initializing default plans...");
+        try {
+            if (premiumPlanRepository.findByName("Free").isEmpty()) {
+                PremiumPlan freePlan = new PremiumPlan();
+                freePlan.name = "Free";
+                freePlan.price = 0.0;
+                freePlan.duration = 36500; // 100 years
+                freePlan.description = "Gói mặc định cho người dùng mới";
 
-            PremiumPlan saved = premiumPlanRepository.save(freePlan);
+                PremiumPlan saved = premiumPlanRepository.save(freePlan);
 
-            // Add default limits
-            List<PremiumFeatureLimit> defaultLimits = new ArrayList<>();
-            defaultLimits.add(createLimit(saved, "SAVED_VOCABULARY", false, 50));
-            defaultLimits.add(createLimit(saved, "DICTIONARY_LOOKUP", false, 5));
-            defaultLimits.add(createLimit(saved, "ARTICLE_DOWNLOADS", true, 0));
-            defaultLimits.add(createLimit(saved, "VIDEO_TRANSCRIPT_DOWNLOADS", true, 0));
+                // Add default limits
+                List<PremiumFeatureLimit> defaultLimits = new ArrayList<>();
+                defaultLimits.add(createLimit(saved, "SAVED_VOCABULARY", false, 50));
+                defaultLimits.add(createLimit(saved, "DICTIONARY_LOOKUP", false, 5));
+                defaultLimits.add(createLimit(saved, "ARTICLE_DOWNLOADS", true, 0));
+                defaultLimits.add(createLimit(saved, "VIDEO_TRANSCRIPT_DOWNLOADS", true, 0));
 
-            saved.setFeatureLimits(defaultLimits);
-            premiumPlanRepository.save(saved);
+                saved.setFeatureLimits(defaultLimits);
+                premiumPlanRepository.save(saved);
+                System.out.println("DEBUG: Default Free plan created.");
+            }
+            System.out.println("DEBUG: Default plans initialization completed.");
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to initialize default plans:");
+            e.printStackTrace();
+            throw e;
         }
     }
 
