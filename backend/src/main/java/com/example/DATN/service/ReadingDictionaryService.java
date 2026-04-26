@@ -222,7 +222,7 @@ public class ReadingDictionaryService {
                     ? null
                     : response.selectedMeaningIndex().longValue();
             history.meaningVi = selectedMeaningVi(response);
-            history.createdAt = new Date();
+            history.createdAt = java.time.LocalDateTime.now();
 
             lookupHistoryRepository.save(history);
         } catch (Exception ignore) {

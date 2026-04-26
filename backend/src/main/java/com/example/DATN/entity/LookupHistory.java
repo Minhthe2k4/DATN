@@ -1,7 +1,6 @@
 package com.example.DATN.entity;
 
 import jakarta.persistence.*;
-import java.util.Date;
 
 // Lưu lịch sử tra cứu từ khi đọc báo (tính năng Reading)
 @Entity
@@ -36,8 +35,7 @@ public class LookupHistory {
     public String meaningVi;
 
     @Column(name = "created_at")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Date createdAt;
+    public java.time.LocalDateTime createdAt;
 
     public LookupHistory() {}
 }
