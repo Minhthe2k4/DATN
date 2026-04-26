@@ -7,11 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DatnApplication {
 
 	public static void main(String[] args) {
-		try {
-			SpringApplication.run(DatnApplication.class, args);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		SpringApplication.run(DatnApplication.class, args);
 	}
 
 }
