@@ -1,9 +1,11 @@
 # Stage 1: Build the application
-FROM maven:3.8.4-openjdk-17 AS build
+FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 COPY pom.xml .
+COPY mvnw .
+COPY .mvn ./.mvn
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN chmod +x mvnw && ./mvnw clean package -DskipTests
 
 # Stage 2: Run the application
 FROM eclipse-temurin:17-jdk
