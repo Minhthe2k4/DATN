@@ -434,7 +434,7 @@ export function ReadingDetail() {
     const pronunciationUk = pickPronunciationFallback('UK', 0)
     const pronunciationUs = pickPronunciationFallback('US', 1)
 
-    const openLookupModal = async (rawWord, sentence) => {
+    const openLookupModal = async (rawWord, sentence, forceRefresh = false) => {
         const normalizedWord = normalizeWordToken(rawWord)
         if (!normalizedWord) {
             return
@@ -462,6 +462,7 @@ export function ReadingDetail() {
                 articleId: Number(articleId),
                 word: normalizedWord,
                 sentence,
+                forceRefresh,
             })
 
             setLookupState((prev) => ({
@@ -473,7 +474,14 @@ export function ReadingDetail() {
                 contextTranslation: response.data?.contextTranslation || '',
             }))
         } catch (error) {
-            const errorMsg = error?.response?.data?.message || 'Khong the tra tu luc nay. Vui long thu lai.'
+            console.error('Lookup error:', error)
+            let errorMsg = 'Khong the tra tu luc nay. Vui long thu lai.'
+            if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+                errorMsg = 'Yêu cầu tra từ bị quá hạn (Timeout). Vui lòng thử lại.'
+            } else if (error?.response?.data?.message) {
+                errorMsg = error.response.data.message
+            }
+
             if (error?.response?.status === 403 && errorMsg.includes('Premium')) {
                 alert('🔒 ' + errorMsg)
             }
@@ -495,6 +503,7 @@ export function ReadingDetail() {
         const container = token.closest('p, li, blockquote, figcaption, h2, h3, h4')
         const fullText = container?.textContent || article?.title || ''
         const rawWord = token.textContent || ''
+        console.log(`[Lookup] Clicking word: "${rawWord}"`)
         const sentence = cleanContextSentence(extractSentence(fullText, rawWord))
         void openLookupModal(rawWord, sentence)
     }
@@ -522,7 +531,7 @@ export function ReadingDetail() {
                 word: prev.response?.normalizedWord || prev.normalizedWord,
                 pronunciation: defaultPhonetic,
                 level: prev.response?.level || '',
-                partOfSpeech: meaning?.partOfSpeech || '',
+                typeOfWord: meaning?.typeOfWord || '',
                 definitionEng: meaning?.definitionEn || '',
                 definitionVi: meaning?.definitionVi || '',
                 exampleEng: meaning?.example || prev.sentence || '',
@@ -616,7 +625,7 @@ export function ReadingDetail() {
                 articleId: Number(articleId),
                 word: lookupState.saveDraft?.word || lookupState.response?.normalizedWord || lookupState.normalizedWord,
                 pronunciation: ipa,
-                partOfSpeech: lookupState.saveDraft?.partOfSpeech || '',
+                typeOfWord: lookupState.saveDraft?.typeOfWord || '',
                 meaningEn: lookupState.saveDraft?.definitionEng || '',
                 meaningVi: lookupState.saveDraft?.definitionVi || '',
                 example: lookupState.saveDraft?.exampleEng || '',
@@ -743,11 +752,21 @@ export function ReadingDetail() {
                             {!lookupState.loading && lookupState.error ? (
                                 <div className="reading-vocab-empty reading-vocab-error-box">
                                     <span>{lookupState.error}</span>
-                                    {lookupState.error.includes('Premium') && (
-                                        <Link to="/subscription" className="reading-error-upgrade-link">
-                                            Nâng cấp Premium ngay →
-                                        </Link>
-                                    )}
+                                    <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                                        <button 
+                                            type="button" 
+                                            className="vlesson-primary" 
+                                            style={{ height: '32px', fontSize: '12px' }}
+                                            onClick={() => openLookupModal(lookupState.word, lookupState.sentence)}
+                                        >
+                                            Thử lại
+                                        </button>
+                                        {lookupState.error.includes('Premium') && (
+                                            <Link to="/subscription" className="reading-error-upgrade-link" style={{ fontSize: '12px' }}>
+                                                Nâng cấp Premium →
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
                             ) : null}
 
@@ -756,12 +775,30 @@ export function ReadingDetail() {
                                     {/* Header: Word + Part of Speech */}
                                     <div className="dict-header-section">
                                         <div>
-                                            <h2 className="dict-word-title">{lookupState.response?.word || lookupState.word}</h2>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <h2 className="dict-word-title">{lookupState.response?.word || lookupState.word}</h2>
+                                                {lookupState.response?.dictionarySource && (
+                                                    <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                                                        {lookupState.response.dictionarySource}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="dict-header-badges">
                                                 {lookupState.response?.level ? <span className="dict-pill">{lookupState.response.level}</span> : null}
-                                                {lookupState.response?.meanings?.[0]?.partOfSpeech ? <span className="dict-pill">{lookupState.response.meanings[0].partOfSpeech.toUpperCase()}</span> : null}
+                                                {lookupState.response?.meanings?.[0]?.typeOfWord ? <span className="dict-pill">{lookupState.response.meanings[0].typeOfWord.toUpperCase()}</span> : null}
                                             </div>
                                         </div>
+                                        {lookupState.response?.dictionarySource !== 'AI-Generated' && (
+                                            <button 
+                                                type="button" 
+                                                className="vlesson-ghost" 
+                                                style={{ fontSize: '11px', padding: '4px 8px' }}
+                                                onClick={() => openLookupModal(lookupState.word, lookupState.sentence, true)}
+                                                disabled={lookupState.loading}
+                                            >
+                                                ✨ Làm mới từ AI
+                                            </button>
+                                        )}
                                     </div>
 
                                     {/* Pronunciations: UK and US */}
@@ -795,7 +832,7 @@ export function ReadingDetail() {
                                             >
                                                 <div className="dict-meaning-card__header">
                                                     <div className="dict-meaning-card__left">
-                                                        {meaning.partOfSpeech ? <span className="dict-pill-large">{meaning.partOfSpeech.toUpperCase()}</span> : null}
+                                                        {meaning.typeOfWord ? <span className="dict-pill-large">{meaning.typeOfWord.toUpperCase()}</span> : null}
                                                     </div>
                                                     <button
                                                         type="button"
@@ -902,7 +939,7 @@ export function ReadingDetail() {
 
                                 <div className="reading-save-form__group">
                                     <label>Tu loai</label>
-                                    <input type="text" value={lookupState.saveDraft.partOfSpeech || ''} onChange={(event) => handleSaveFormChange('partOfSpeech', event.target.value)} />
+                                    <input type="text" value={lookupState.saveDraft.typeOfWord || ''} onChange={(event) => handleSaveFormChange('typeOfWord', event.target.value)} />
                                 </div>
 
                                 <div className="reading-save-form__group">

@@ -5,6 +5,11 @@ import com.example.DATN.dto.UpsertTopicRequest;
 import com.example.DATN.entity.Topic;
 import com.example.DATN.repository.TopicManagementProjection;
 import com.example.DATN.repository.TopicRepository;
+
+import jakarta.transaction.Transactional;
+
+import com.example.DATN.repository.LessonRepository;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.http.HttpStatus;
@@ -14,9 +19,11 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AdminTopicService {
     private final TopicRepository topicRepository;
+    private final LessonRepository lessonRepository;
 
-    public AdminTopicService(TopicRepository topicRepository) {
+    public AdminTopicService(TopicRepository topicRepository, LessonRepository lessonRepository) {
         this.topicRepository = topicRepository;
+        this.lessonRepository = lessonRepository;
     }
 
     public List<AdminTopicDto> findAll() {
@@ -31,14 +38,20 @@ public class AdminTopicService {
                 topic.id,
                 defaultString(topic.name, ""),
                 defaultString(topic.description, ""),
-                normalizeDifficulty(topic.level),
-                0,
+                lessonRepository.countByTopicId(topic.id),
                 0,
                 toStatusLabel(topic.status),
-                topic.topicImage);
+                topic.topicImage,
+                topic.createdAt,
+                topic.updatedAt,
+                topic.deletedAt);
     }
 
     public AdminTopicDto create(UpsertTopicRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (topicRepository.existsByNameIgnoreCase(name)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên chủ đề đã tồn tại. Vui lòng chọn tên khác.");
+        }
         Topic topic = new Topic();
         apply(topic, request);
         Topic saved = topicRepository.save(topic);
@@ -46,6 +59,10 @@ public class AdminTopicService {
     }
 
     public AdminTopicDto update(Long id, UpsertTopicRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (topicRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên chủ đề đã tồn tại. Vui lòng chọn tên khác.");
+        }
         Topic topic = topicRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found"));
         apply(topic, request);
@@ -53,11 +70,16 @@ public class AdminTopicService {
         return findById(id);
     }
 
-    public void delete(Long id) {
-        if (!topicRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found");
+    public void delete(Long id, boolean force) {
+        if (force) {
+            topicRepository.hardDelete(id);
+        } else {
+            Topic topic = topicRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found"));
+            topic.status = false; // Soft delete
+            topic.deletedAt = new Date();
+            topicRepository.save(topic);
         }
-        topicRepository.deleteById(id);
     }
 
     private void apply(Topic topic, UpsertTopicRequest request) {
@@ -67,7 +89,6 @@ public class AdminTopicService {
         }
         topic.name = name;
         topic.description = request == null ? "" : defaultString(request.description(), "").trim();
-        topic.level = normalizeDifficulty(request == null ? null : request.defaultDifficulty());
         topic.status = toStatusValue(request == null ? null : request.status());
         topic.topicImage = request == null ? null : request.topicImage();
     }
@@ -77,20 +98,13 @@ public class AdminTopicService {
                 row.getId(),
                 defaultString(row.getName(), ""),
                 defaultString(row.getDescription(), ""),
-                normalizeDifficulty(row.getLevel()),
                 safeLong(row.getLessonCount()),
                 safeLong(row.getWordCount()),
                 toStatusLabel(row.getStatus()),
-                row.getTopicImage());
-    }
-
-    private String normalizeDifficulty(String value) {
-        String normalized = defaultString(value, "Trung bình").trim().toLowerCase(Locale.ROOT);
-        return switch (normalized) {
-            case "co ban", "cơ bản", "basic" -> "Cơ bản";
-            case "nang cao", "nâng cao", "advanced" -> "Nâng cao";
-            default -> "Trung bình";
-        };
+                row.getTopicImage(),
+                row.getCreatedAt(),
+                row.getUpdatedAt(),
+                null); // deletedAt is usually NULL for management rows due to @SQLRestriction
     }
 
     private String toStatusLabel(Boolean status) {
@@ -111,5 +125,14 @@ public class AdminTopicService {
             return fallback;
         }
         return value;
+    }
+
+    public List<TopicManagementProjection> getDeletedTopics() {
+        return topicRepository.findDeletedRows();
+    }
+
+    @Transactional
+    public void restore(Long id) {
+        topicRepository.restore(id);
     }
 }

@@ -8,6 +8,7 @@ public record UserProfileDto(
         String email,
         String fullName,
         String avatar,
+        String phoneNumber,
         String role,
         Date createdAt,
         Integer totalWords,

@@ -132,8 +132,8 @@ export function DictionaryLookup() {
                           {idx + 1}
                         </span>
                         <div className="flex-1">
-                          {meaning.partOfSpeech && (
-                            <p className="font-semibold text-gray-700 italic">{meaning.partOfSpeech}</p>
+                          {meaning.typeOfWord && (
+                            <p className="font-semibold text-gray-700 italic">{meaning.typeOfWord}</p>
                           )}
                           <p className="text-gray-900 mt-1">{meaning.meaningEn}</p>
                           {meaning.meaningVi && (

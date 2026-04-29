@@ -13,7 +13,7 @@ public record ReadingWordLookupResponse(
         List<PronunciationItem> pronunciations,
         List<MeaningItem> meanings,
         String contextTranslation,
-        String partOfSpeech
+        String typeOfWord
 ) {
     public record PronunciationItem(
             String label,
@@ -24,7 +24,7 @@ public record ReadingWordLookupResponse(
 
     public record MeaningItem(
             Integer index,
-            String partOfSpeech,
+            String typeOfWord,
             String definitionEn,
             String definitionVi,
             String example,

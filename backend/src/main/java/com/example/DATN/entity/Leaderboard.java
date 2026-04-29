@@ -10,8 +10,8 @@ public class Leaderboard {
     @Column(name = "id")
     public Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
     public User user;
 
     @Column(name = "score")

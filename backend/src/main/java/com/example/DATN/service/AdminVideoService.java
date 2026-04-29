@@ -17,7 +17,11 @@ import com.example.DATN.repository.YouTubeChannelManagementProjection;
 import com.example.DATN.repository.VideoManagementProjection;
 import com.example.DATN.util.YouTubeCaptionUtil;
 import com.example.DATN.util.YouTubeTranscriptService;
+
+import jakarta.transaction.Transactional;
+
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -51,22 +55,38 @@ public class AdminVideoService {
                 .count();
 
         return new AdminVideoChannelDto(
-                toLong(Math.toIntExact(channel.id)),
+                channel.id,
                 defaultString(channel.name, ""),
-                extractHandle(channel.url),
-                channel.description != null ? channel.description : "General",
+                defaultString(channel.handle, ""),
+                defaultString(channel.url, ""),
+                defaultString(channel.description, ""),
+                channel.subscriberCount != null ? channel.subscriberCount : 0,
                 videoCount,
-                channel.status != null ? channel.status : "Hoạt động");
+                normalizeChannelStatus(channel.status),
+                defaultString(channel.avatar, ""),
+                channel.createdAt,
+                channel.updatedAt,
+                channel.deletedAt);
     }
 
     public AdminVideoChannelDto createChannel(UpsertVideoChannelRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (youTubeChannelRepository.existsByNameIgnoreCase(name)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tên kênh YouTube đã tồn tại. Vui lòng chọn tên khác.");
+        }
         YouTubeChannel channel = new YouTubeChannel();
         applyChannel(channel, request);
         YouTubeChannel saved = youTubeChannelRepository.save(channel);
-        return findChannelById(toLong(Math.toIntExact(saved.id)));
+        return findChannelById(saved.id);
     }
 
     public AdminVideoChannelDto updateChannel(Long id, UpsertVideoChannelRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (youTubeChannelRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tên kênh YouTube đã tồn tại. Vui lòng chọn tên khác.");
+        }
         YouTubeChannel channel = youTubeChannelRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Channel not found"));
         applyChannel(channel, request);
@@ -74,16 +94,16 @@ public class AdminVideoService {
         return findChannelById(id);
     }
 
-    public void deleteChannel(Long id) {
-        boolean hasVideos = videoRepository.findVideoManagementRows().stream()
-                .anyMatch(v -> id.equals(v.getChannelId()));
-        if (hasVideos) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete channel with linked videos");
+    public void deleteChannel(Long id, boolean force) {
+        if (force) {
+            youTubeChannelRepository.hardDelete(id);
+        } else {
+            YouTubeChannel channel = youTubeChannelRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Channel not found"));
+            channel.status = "Tạm dừng"; // Soft delete
+            channel.deletedAt = new Date();
+            youTubeChannelRepository.save(channel);
         }
-        if (!youTubeChannelRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Channel not found");
-        }
-        youTubeChannelRepository.deleteById(id);
     }
 
     public List<AdminVideoDto> findAllVideos() {
@@ -95,26 +115,41 @@ public class AdminVideoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found"));
 
         return new AdminVideoDto(
-                toLong(Math.toIntExact(video.id)),
+                video.id,
                 defaultString(video.title, ""),
                 defaultString(video.url, ""),
-                video.channel == null ? null : toLong(Math.toIntExact(video.channel.id)),
+                video.channel == null ? null : video.channel.id,
                 video.channel == null ? "" : defaultString(video.channel.name, ""),
-
                 video.difficulty != null ? video.difficulty : "Trung bình",
                 video.duration != null ? video.duration : "—",
                 video.wordsHighlighted != null ? video.wordsHighlighted : 0,
-                video.status != null ? video.status : "Chờ biên tập");
+                video.status != null ? video.status : "Chờ biên tập",
+                video.thumbnail != null ? video.thumbnail : "",
+                video.filePath != null ? video.filePath : "",
+                video.subtitleStatus != null ? video.subtitleStatus : "PENDING",
+                video.createdAt,
+                video.updatedAt,
+                video.deletedAt);
     }
 
     public AdminVideoDto createVideo(UpsertVideoRequest request) {
+        String title = request == null || request.title() == null ? "" : request.title().trim();
+        if (videoRepository.existsByTitleIgnoreCase(title)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tiêu đề video đã tồn tại. Vui lòng chọn tiêu đề khác.");
+        }
         Video video = new Video();
         applyVideo(video, request);
         Video saved = videoRepository.save(video);
-        return findVideoById(toLong(Math.toIntExact(saved.id)));
+        return findVideoById(saved.id);
     }
 
     public AdminVideoDto updateVideo(Long id, UpsertVideoRequest request) {
+        String title = request == null || request.title() == null ? "" : request.title().trim();
+        if (videoRepository.existsByTitleIgnoreCaseAndIdNot(title, id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tiêu đề video đã tồn tại. Vui lòng chọn tiêu đề khác.");
+        }
         Video video = videoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found"));
         applyVideo(video, request);
@@ -122,11 +157,16 @@ public class AdminVideoService {
         return findVideoById(id);
     }
 
-    public void deleteVideo(Long id) {
-        if (!videoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found");
+    public void deleteVideo(Long id, boolean force) {
+        if (force) {
+            videoRepository.hardDelete(id);
+        } else {
+            Video video = videoRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found"));
+            video.status = "Nháp"; // Soft delete
+            video.deletedAt = new Date();
+            videoRepository.save(video);
         }
-        videoRepository.deleteById(id);
     }
 
     private void applyChannel(YouTubeChannel channel, UpsertVideoChannelRequest request) {
@@ -134,14 +174,14 @@ public class AdminVideoService {
         if (name.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Channel name is required");
         }
-        String handle = normalizeHandle(request == null ? null : request.handle());
-        if (handle.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Channel handle is required");
-        }
 
         channel.name = name;
-        channel.url = "https://www.youtube.com/" + handle;
-        channel.description = defaultString(request == null ? null : request.topic(), "General").trim();
+        channel.handle = normalizeHandle(request == null ? null : request.handle());
+        channel.url = defaultString(request == null ? null : request.url(), "").trim();
+        channel.description = defaultString(request == null ? null : request.description(), "").trim();
+        channel.subscriberCount = request == null ? 0 : request.subscriberCount();
+        channel.avatar = request == null ? "" : defaultString(request.avatar(), "").trim();
+        channel.status = normalizeChannelStatus(request == null ? "Hoạt động" : request.status());
     }
 
     private void applyVideo(Video video, UpsertVideoRequest request) {
@@ -173,6 +213,9 @@ public class AdminVideoService {
         video.duration = request == null ? "—" : defaultString(request.duration(), "—");
         video.wordsHighlighted = 0;
         video.status = request == null ? "Chờ biên tập" : defaultString(request.status(), "Chờ biên tập");
+        video.thumbnail = request == null ? "" : defaultString(request.thumbnail(), "").trim();
+        video.filePath = request == null ? "" : defaultString(request.filePath(), "").trim();
+        video.subtitleStatus = request == null ? "PENDING" : defaultString(request.subtitleStatus(), "PENDING");
 
         // Handle segments if provided
         if (request != null && request.segments() != null && !request.segments().isEmpty()) {
@@ -200,10 +243,29 @@ public class AdminVideoService {
         return new AdminVideoChannelDto(
                 row.getId(),
                 defaultString(row.getName(), ""),
-                extractHandle(row.getUrl()),
-                row.getDescription() != null ? row.getDescription() : "General",
+                defaultString(row.getHandle(), ""),
+                defaultString(row.getUrl(), ""),
+                defaultString(row.getDescription(), ""),
+                row.getSubscriberCount() == null ? 0 : row.getSubscriberCount(),
                 row.getVideoCount() == null ? 0 : row.getVideoCount(),
-                row.getStatus() != null ? row.getStatus() : "Hoạt động");
+                normalizeChannelStatus(row.getStatus()),
+                row.getAvatar() != null ? row.getAvatar() : "",
+                row.getCreatedAt(),
+                row.getUpdatedAt(),
+                row.getDeletedAt());
+    }
+
+    private String normalizeChannelStatus(String status) {
+        String normalized = defaultString(status, "Hoạt động").trim().toLowerCase();
+        if (normalized.equals("1") || normalized.equals("active") || normalized.equals("hoạt động")
+                || normalized.equals("hoat dong")) {
+            return "Hoạt động";
+        }
+        if (normalized.equals("0") || normalized.equals("paused") || normalized.equals("tạm dừng")
+                || normalized.equals("tam dung")) {
+            return "Tạm dừng";
+        }
+        return "Hoạt động";
     }
 
     private AdminVideoDto toVideoDto(VideoManagementProjection row) {
@@ -213,11 +275,16 @@ public class AdminVideoService {
                 defaultString(row.getUrl(), ""),
                 row.getChannelId(),
                 defaultString(row.getChannelName(), ""),
-
                 row.getDifficulty() != null ? row.getDifficulty() : "Trung bình",
                 row.getDuration() != null ? row.getDuration() : "—",
                 row.getWordsHighlighted() == null ? 0 : row.getWordsHighlighted(),
-                row.getStatus() != null ? row.getStatus() : "Chờ biên tập");
+                row.getStatus() != null ? row.getStatus() : "Chờ biên tập",
+                row.getThumbnail() != null ? row.getThumbnail() : "",
+                row.getFilePath() != null ? row.getFilePath() : "",
+                row.getSubtitleStatus() != null ? row.getSubtitleStatus() : "PENDING",
+                row.getCreatedAt(),
+                row.getUpdatedAt(),
+                row.getDeletedAt());
     }
 
     private String normalizeHandle(String value) {
@@ -243,10 +310,6 @@ public class AdminVideoService {
             return fallback;
         }
         return value;
-    }
-
-    private Long toLong(Integer value) {
-        return value == null ? null : value.longValue();
     }
 
     /**
@@ -280,8 +343,13 @@ public class AdminVideoService {
                 return errorResponse;
             }
 
-            // Fetch video title
-            String title = YouTubeCaptionUtil.fetchVideoTitle(youtubeUrl);
+            // Fetch video metadata
+            java.util.Map<String, String> metadata = YouTubeCaptionUtil.fetchVideoMetadata(youtubeUrl);
+            String title = metadata.get("title");
+            String thumbnailUrl = metadata.get("thumbnailUrl");
+            String channelName = metadata.get("channelName");
+            String duration = metadata.get("duration");
+            String channelAvatarUrl = metadata.get("channelAvatarUrl");
 
             // Build timed segments từ chunks
             List<TranscriptSegmentDto> segments = new ArrayList<>();
@@ -305,7 +373,11 @@ public class AdminVideoService {
                     fetchResult.transcript,
                     segments,
                     language,
-                    youtubeUrl);
+                    youtubeUrl,
+                    thumbnailUrl,
+                    channelAvatarUrl,
+                    channelName,
+                    duration);
 
             return response;
 
@@ -317,5 +389,27 @@ public class AdminVideoService {
             errorResponse.error = "Error: " + e.getMessage();
             return errorResponse;
         }
+    }
+
+    public java.util.Map<String, String> fetchChannelInfo(String channelUrl) {
+        return YouTubeCaptionUtil.fetchChannelMetadata(channelUrl);
+    }
+
+    public List<VideoManagementProjection> getDeletedVideos() {
+        return videoRepository.findDeletedRows();
+    }
+
+    @Transactional
+    public void restoreVideo(Long id) {
+        videoRepository.restore(id);
+    }
+
+    public List<YouTubeChannelManagementProjection> getDeletedChannels() {
+        return youTubeChannelRepository.findDeletedRows();
+    }
+
+    @Transactional
+    public void restoreChannel(Long id) {
+        youTubeChannelRepository.restore(id);
     }
 }

@@ -10,7 +10,9 @@ import com.example.DATN.repository.LessonVocabularyRepository;
 import com.example.DATN.repository.UserRepository;
 import com.example.DATN.repository.UserVocabularyLearningRepository;
 import com.example.DATN.repository.VocabularyRepository;
+import com.example.DATN.repository.LessonRepository;
 import com.example.DATN.service.SpacedRepetitionService;
+import com.example.DATN.util.AuthUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -41,6 +43,9 @@ public class UserLearningController {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private LessonRepository lessonRepository;
 
     @Autowired
     private com.example.DATN.repository.ReviewSessionRepository reviewSessionRepository;
@@ -48,27 +53,6 @@ public class UserLearningController {
     @Autowired
     private com.example.DATN.service.PremiumService premiumService;
 
-    private Long getUserIdFromAuth(Authentication auth, HttpServletRequest request) {
-        // 1. Try to get from Spring Security Auth
-        if (auth != null && !auth.getName().equals("anonymousUser")) {
-            try {
-                return Long.parseLong(auth.getName());
-            } catch (Exception ignored) {
-            }
-        }
-
-        // 2. Fallback: Parse Bearer token manually from header
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            try {
-                String token = bearerToken.substring(7);
-                return Long.parseLong(token);
-            } catch (Exception ignored) {
-            }
-        }
-
-        return null;
-    }
 
     /**
      * Sub-UC: Lấy hàng đợi ôn tập (UC_LayHangDoiOnTap)
@@ -77,7 +61,7 @@ public class UserLearningController {
      */
     @GetMapping("/review-queue")
     public ResponseEntity<?> getReviewQueue(Authentication auth, HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null)
             return ResponseEntity.status(401).body("Vui lòng đăng nhập để xem từ vựng cần ôn.");
 
@@ -124,12 +108,37 @@ public class UserLearningController {
      */
     @GetMapping("/all-vocab")
     public ResponseEntity<?> getAllLearningVocab(Authentication auth, HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null)
             return ResponseEntity.status(401).body("Unauthorized");
 
         List<UserVocabularyLearning> records = userVocabularyLearningRepository.findByUser_Id(userId);
-        System.out.println("DEBUG: getAllLearningVocab found " + records.size() + " records for user " + userId);
+
+
+        // Optimization: Fetch all lesson mappings for these vocabs
+        List<Long> vocabIds = records.stream()
+                .filter(r -> r.vocabulary != null)
+                .map(r -> r.vocabulary.id)
+                .collect(Collectors.toList());
+
+        Map<Long, com.example.DATN.entity.LessonVocabulary> vocabToLessonMap = new HashMap<>();
+        Map<Long, String> lessonNameMap = new HashMap<>();
+
+        if (!vocabIds.isEmpty()) {
+            List<com.example.DATN.entity.LessonVocabulary> mappings = lessonVocabularyRepository.findByVocabIdIn(vocabIds);
+            for (com.example.DATN.entity.LessonVocabulary m : mappings) {
+                // If multiple lessons, we just pick the first one for the filter
+                vocabToLessonMap.putIfAbsent(m.vocabId, m);
+            }
+
+            Set<Long> lessonIds = mappings.stream().map(m -> m.lessonId).collect(Collectors.toSet());
+            if (!lessonIds.isEmpty()) {
+                List<com.example.DATN.entity.Lesson> lessons = lessonRepository.findAllById(lessonIds);
+                for (com.example.DATN.entity.Lesson l : lessons) {
+                    lessonNameMap.put(l.id, l.name);
+                }
+            }
+        }
 
         List<UserLearningVocabDto> dtos = records.stream()
                 .filter(r -> r.vocabulary != null || r.customVocab != null) // Safety filter
@@ -149,6 +158,18 @@ public class UserLearningController {
                     // Sync level calculation with stats (getDifficultyLevel from Entity)
                     Integer mastery = r.getDifficultyLevel();
 
+                    Long lessonId = null;
+                    String lessonName = null;
+                    if (!isCustom) {
+                        com.example.DATN.entity.LessonVocabulary lv = vocabToLessonMap.get(vocabId);
+                        if (lv != null) {
+                            lessonId = lv.lessonId;
+                            lessonName = lessonNameMap.get(lessonId);
+                        }
+                    } else {
+                        lessonName = "Từ vựng cá nhân";
+                    }
+
                     return new UserLearningVocabDto(
                             r.id,
                             vocabId,
@@ -162,7 +183,9 @@ public class UserLearningController {
                             mastery,
                             r.streakCorrect != null ? r.streakCorrect : 0,
                             r.nextReview,
-                            isCustom);
+                            isCustom,
+                            lessonId,
+                            lessonName);
                 }).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
@@ -174,7 +197,7 @@ public class UserLearningController {
     @DeleteMapping("/vocab/{id}")
     public ResponseEntity<?> deleteLearningVocab(@PathVariable Long id, Authentication auth,
             HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null)
             return ResponseEntity.status(401).body("Unauthorized");
 
@@ -197,7 +220,7 @@ public class UserLearningController {
             @RequestBody SubmitReviewResultRequest request,
             Authentication auth,
             HttpServletRequest httpRequest) {
-        Long userId = getUserIdFromAuth(auth, httpRequest);
+        Long userId = AuthUtil.getUserId(auth, httpRequest);
         if (userId == null)
             return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
 
@@ -221,7 +244,7 @@ public class UserLearningController {
             @RequestBody BulkSubmitReviewResultRequest request,
             Authentication auth,
             HttpServletRequest httpRequest) {
-        Long userId = getUserIdFromAuth(auth, httpRequest);
+        Long userId = AuthUtil.getUserId(auth, httpRequest);
         if (userId == null)
             return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
 
@@ -253,7 +276,7 @@ public class UserLearningController {
     @PostMapping("/complete-lesson/{lessonId}")
     public ResponseEntity<?> completeLesson(@PathVariable Long lessonId, Authentication auth,
             HttpServletRequest httpRequest) {
-        Long userId = getUserIdFromAuth(auth, httpRequest);
+        Long userId = AuthUtil.getUserId(auth, httpRequest);
         if (userId == null)
             return ResponseEntity.status(401).body("Vui lòng đăng nhập.");
 
@@ -281,7 +304,7 @@ public class UserLearningController {
 
     @GetMapping("/stats")
     public ResponseEntity<?> getStats(Authentication auth, HttpServletRequest httpRequest) {
-        Long userId = getUserIdFromAuth(auth, httpRequest);
+        Long userId = AuthUtil.getUserId(auth, httpRequest);
         if (userId == null) {
             // Return empty stats for guests
             return ResponseEntity
@@ -324,7 +347,7 @@ public class UserLearningController {
 
     @GetMapping("/activity-calendar")
     public ResponseEntity<?> getActivityCalendar(Authentication auth, HttpServletRequest httpRequest) {
-        Long userId = getUserIdFromAuth(auth, httpRequest);
+        Long userId = AuthUtil.getUserId(auth, httpRequest);
         if (userId == null) return ResponseEntity.ok(Collections.emptyList());
 
         List<com.example.DATN.entity.ReviewSession> sessions = reviewSessionRepository.findByUser_Id(userId);

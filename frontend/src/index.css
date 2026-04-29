@@ -178,3 +178,113 @@ body.dark-mode ::-webkit-scrollbar-thumb {
     overflow: auto;
   }
 }
+
+/* Global Button Styles & Action System */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-size: 0.925rem;
+  gap: 8px;
+  line-height: 1;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--brand-primary);
+  color: #fff;
+  border-color: var(--brand-primary);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.btn-primary:hover {
+  background: var(--brand-primary-dark);
+  border-color: var(--brand-primary-dark);
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+  background: transparent;
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.btn-outline-primary:hover {
+  background: rgba(14, 165, 233, 0.05);
+  transform: translateY(-1px);
+}
+
+.btn-soft-primary {
+  background: rgba(14, 165, 233, 0.12);
+  color: var(--brand-primary-dark);
+  border: none;
+}
+
+.btn-soft-primary:hover {
+  background: rgba(14, 165, 233, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-soft-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: none;
+}
+
+.btn-soft-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+
+/* Admin Specific Overrides & Extensions */
+body.admin-mode .btn {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Table Actions Styling */
+.admin-table .btn-soft-primary,
+.admin-table .btn-soft-danger {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+/* Badge System */
+.admin-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.admin-badge--success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.admin-badge--warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.admin-badge--neutral {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+}

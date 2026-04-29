@@ -665,7 +665,7 @@ export function VocabularyManager() {
 					vocabularies: localData.map(v => ({
 						word: v.word,
 						pronunciation: v.pronunciation || v.phonetic,
-						partOfSpeech: v.partOfSpeech || 'n',
+						typeOfWord: v.typeOfWord || 'n',
 						meaningEn: v.meaningEn || '',
 						meaningVi: v.meaningVi || v.definition || '',
 						example: v.example || '',

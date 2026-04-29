@@ -18,6 +18,9 @@ public class AiDictionaryService {
     @Value("${datn.ai.openai-api-key}")
     private String openAiApiKey;
 
+    @Value("${datn.ai.openai-model:gpt-4o-mini}")
+    private String openAiModel;
+
     private final PremiumService premiumService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -34,15 +37,22 @@ public class AiDictionaryService {
         }
 
         String prompt = String.format(
-                "Analyze the word '%s' in the context: '%s'. " +
-                        "1. Identify the root/base form of the word (e.g., 'running' -> 'run', 'better' -> 'good'). " +
-                        "2. Provide details for the ROOT form: root_word, phonetic, level (A1-C2), part_of_speech, definition_en, definition_vi (concise meaning in Vietnamese), example_en (a sentence using the ROOT word), example_vi (Vietnamese translation of example_en). "
-                        +
-                        "Format the response as a valid JSON object.",
+                "Analyze the English word '%s' used in this sentence: '%s'.\n" +
+                "You must respond with a VALID JSON object containing these exact keys:\n" +
+                "- 'root_word': the base form of the word.\n" +
+                "- 'phonetic': IPA pronunciation.\n" +
+                "- 'level': CEFR level (A1-C2).\n" +
+                "- 'type_of_word': e.g., 'noun', 'verb'.\n" +
+                "- 'definition_en': a clear English definition.\n" +
+                "- 'definition_vi': concise Vietnamese definition (DO NOT leave empty).\n" +
+                "- 'example': an English sentence using the root word.\n" +
+                "- 'example_vi': Vietnamese translation of the example.\n" +
+                "- 'context_translation': natural Vietnamese translation of the FULL context sentence provided.\n" +
+                "\nExample format: {\"root_word\": \"...\", \"definition_vi\": \"...\", ...}",
                 word, context);
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put("model", "gpt-3.5-turbo");
+        payload.put("model", openAiModel);
         payload.put("messages", new Object[] {
                 new HashMap<String, String>() {
                     {
@@ -64,10 +74,13 @@ public class AiDictionaryService {
                 .uri(URI.create("https://api.openai.com/v1/chat/completions"))
                 .header("Authorization", "Bearer " + openAiApiKey)
                 .header("Content-Type", "application/json")
+                .timeout(java.time.Duration.ofSeconds(15))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                 .build();
 
-        HttpResponse<String> response = HttpClient.newHttpClient()
+        HttpResponse<String> response = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(10))
+                .build()
                 .send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
@@ -77,8 +90,9 @@ public class AiDictionaryService {
         JsonNode root = objectMapper.readTree(response.body());
         String content = root.path("choices").get(0).path("message").path("content").asText();
 
-        // Parse content JSON từ AI
-        JsonNode resultJson = objectMapper.readTree(content);
+        // Parse content JSON từ AI (hỗ trợ bóc tách nếu AI trả về markdown code block)
+        String cleanedContent = extractJsonFromMarkdown(content);
+        JsonNode resultJson = objectMapper.readTree(cleanedContent);
         Map<String, String> result = new HashMap<>();
 
         String rootWord = resultJson.path("root_word").asText().trim();
@@ -88,12 +102,27 @@ public class AiDictionaryService {
         result.put("word", rootWord);
         result.put("phonetic", resultJson.path("phonetic").asText());
         result.put("level", resultJson.path("level").asText());
-        result.put("partOfSpeech", resultJson.path("part_of_speech").asText());
+        result.put("typeOfWord", resultJson.path("type_of_word").asText());
         result.put("definitionEn", resultJson.path("definition_en").asText());
         result.put("definitionVi", resultJson.path("definition_vi").asText());
         result.put("example", resultJson.path("example").asText());
         result.put("exampleVi", resultJson.path("example_vi").asText());
+        result.put("contextTranslation", resultJson.path("context_translation").asText());
 
         return result;
+    }
+
+    private String extractJsonFromMarkdown(String content) {
+        if (content == null || content.isBlank()) return "{}";
+        
+        // Find the first '{' and the last '}' to extract the JSON object
+        int firstBrace = content.indexOf("{");
+        int lastBrace = content.lastIndexOf("}");
+        
+        if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+            return content.substring(firstBrace, lastBrace + 1);
+        }
+        
+        return content.trim();
     }
 }

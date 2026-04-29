@@ -242,19 +242,19 @@
 .flashcard-study {
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
 .study-header {
   background: var(--flashcard-surface);
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1.25rem;
   border-radius: 1rem;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--flashcard-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .study-progress-container {
@@ -312,9 +312,9 @@
 
 /* The Flashcard */
 .flashcard {
-  height: 400px;
+  height: 350px;
   perspective: 1000px;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
   cursor: pointer;
 }
 
@@ -342,7 +342,7 @@
   background: var(--flashcard-surface);
   border-radius: 1.5rem;
   box-shadow: var(--shadow-lg);
-  padding: 2.5rem;
+  padding: 1.5rem;
   border: 1px solid var(--flashcard-border);
 }
 
@@ -364,7 +364,7 @@
 }
 
 .card-text {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 800;
   color: var(--flashcard-text);
   text-align: center;
@@ -516,4 +516,56 @@
 .form-group input:focus {
   border-color: var(--flashcard-primary);
   outline: none;
+}
+
+/* Study Footer & Controls */
+.study-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  padding-bottom: 3rem;
+}
+
+.study-controls {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-control {
+  padding: 0.8rem 2.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  border: 1px solid var(--flashcard-border);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-control:hover:not(:disabled) {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-control.btn-primary {
+  background: var(--flashcard-primary);
+  color: white;
+  border-color: var(--flashcard-primary);
+}
+
+.btn-control.btn-primary:hover:not(:disabled) {
+  background: var(--flashcard-primary-dark);
+}
+
+.btn-control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
 }

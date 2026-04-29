@@ -26,6 +26,18 @@ public class TranscriptResponseDto {
     @JsonProperty("sourceUrl")
     public String sourceUrl;
 
+    @JsonProperty("thumbnailUrl")
+    public String thumbnailUrl;
+
+    @JsonProperty("channelAvatarUrl")
+    public String channelAvatarUrl;
+
+    @JsonProperty("channelName")
+    public String channelName;
+
+    @JsonProperty("duration")
+    public String duration;
+
     @JsonProperty("error")
     public String error;
 
@@ -33,13 +45,18 @@ public class TranscriptResponseDto {
 
     public TranscriptResponseDto(String videoId, String title, String transcript, 
                                  List<TranscriptSegmentDto> segments, String language, 
-                                 String sourceUrl) {
+                                 String sourceUrl, String thumbnailUrl, String channelAvatarUrl,
+                                 String channelName, String duration) {
         this.videoId = videoId;
         this.title = title;
         this.transcript = transcript;
         this.segments = segments;
         this.language = language;
         this.sourceUrl = sourceUrl;
+        this.thumbnailUrl = thumbnailUrl;
+        this.channelAvatarUrl = channelAvatarUrl;
+        this.channelName = channelName;
+        this.duration = duration;
         this.error = null;
     }
 

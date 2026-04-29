@@ -23,4 +23,16 @@ public interface VideoManagementProjection {
     Integer getWordsHighlighted();
     
     String getStatus();
+    
+    String getThumbnail();
+
+    String getFilePath();
+
+    String getSubtitleStatus();
+
+    java.util.Date getCreatedAt();
+
+    java.util.Date getUpdatedAt();
+
+    java.util.Date getDeletedAt();
 }

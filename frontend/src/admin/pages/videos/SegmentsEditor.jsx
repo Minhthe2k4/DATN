@@ -6,11 +6,13 @@
  * - segments: array of segment objects { segmentOrder, startSec, endSec, text }
  * - onSegmentsChange: callback when segments are modified
  * - isLoading: boolean - show loading state
+ * - activeId: number - the id of the currently active segment (to highlight)
+ * - onSegmentClick: function - callback when a segment is clicked
  */
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 
-export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = false }) {
+export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = false, activeId = null, onSegmentClick = null }) {
   const [editingIndex, setEditingIndex] = useState(null)
   const [editText, setEditText] = useState('')
   const [editStart, setEditStart] = useState('')
@@ -25,7 +27,8 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
   }
 
   // Start editing a segment
-  const handleEditSegment = (index) => {
+  const handleEditSegment = (index, e) => {
+    e.stopPropagation(); // Don't trigger the row click (video jump)
     const segment = segments[index]
     setEditingIndex(index)
     setEditText(segment.text)
@@ -56,7 +59,8 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
   }
 
   // Delete segment
-  const handleDeleteSegment = (index) => {
+  const handleDeleteSegment = (index, e) => {
+    e.stopPropagation(); // Don't trigger the row click
     if (window.confirm('Xóa segment này?')) {
       const newSegments = segments.filter((_, i) => i !== index)
       onSegmentsChange(newSegments)
@@ -181,21 +185,27 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
 
         {/* SEGMENT LIST */}
         {segments.map((segment, idx) => (
-          <div key={idx} style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            marginBottom: '10px',
-            padding: '8px',
-            backgroundColor: '#fff',
-            borderRadius: '4px',
-            border: '1px solid #e9ecef'
-          }}>
+          <div 
+            key={idx} 
+            onClick={() => onSegmentClick && onSegmentClick(segment)}
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              marginBottom: '10px',
+              padding: '8px',
+              backgroundColor: segment.id === activeId ? '#f0f7ff' : '#fff',
+              borderRadius: '4px',
+              border: segment.id === activeId ? '1px solid #0066cc' : '1px solid #e9ecef',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
             {/* Time badge */}
             <div style={{
               minWidth: '80px',
               padding: '6px 8px',
-              backgroundColor: '#e7f3ff',
-              color: '#0066cc',
+              backgroundColor: segment.id === activeId ? '#0066cc' : '#e7f3ff',
+              color: segment.id === activeId ? '#fff' : '#0066cc',
               borderRadius: '3px',
               fontSize: '11px',
               fontWeight: 'bold',
@@ -224,7 +234,7 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
               <button
                 className="btn btn-sm btn-outline-primary"
                 title="Chỉnh sửa"
-                onClick={() => handleEditSegment(idx)}
+                onClick={(e) => handleEditSegment(idx, e)}
                 style={{ padding: '4px 8px', fontSize: '12px' }}
               >
                 ✏️
@@ -232,7 +242,7 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
               <button
                 className="btn btn-sm btn-outline-danger"
                 title="Xoá"
-                onClick={() => handleDeleteSegment(idx)}
+                onClick={(e) => handleDeleteSegment(idx, e)}
                 style={{ padding: '4px 8px', fontSize: '12px' }}
               >
                 🗑️

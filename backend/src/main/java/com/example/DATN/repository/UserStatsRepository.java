@@ -31,5 +31,6 @@ public interface UserStatsRepository extends JpaRepository<UserStats, Long> {
             """)
     List<TopUserActivityProjection> findTopUsers(Pageable pageable);
 
+    Optional<UserStats> findFirstByUser_Id(Long userId);
     Optional<UserStats> findByUser_Id(Long userId);
 }

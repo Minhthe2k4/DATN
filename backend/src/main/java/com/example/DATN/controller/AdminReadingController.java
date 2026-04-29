@@ -6,11 +6,14 @@ import com.example.DATN.dto.CrawlReadingArticleRequest;
 import com.example.DATN.dto.CrawlReadingArticleResponse;
 import com.example.DATN.dto.UpsertReadingArticleRequest;
 import com.example.DATN.dto.UpsertReadingTopicRequest;
+import com.example.DATN.repository.ArticleManagementProjection;
+import com.example.DATN.repository.ArticleTopicManagementProjection;
 import com.example.DATN.service.AdminReadingService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -45,7 +48,8 @@ public class AdminReadingController {
     }
 
     @PutMapping("/readings/{id}")
-    public AdminReadingArticleDto updateArticle(@PathVariable Long id, @RequestBody UpsertReadingArticleRequest request) {
+    public AdminReadingArticleDto updateArticle(@PathVariable Long id,
+            @RequestBody UpsertReadingArticleRequest request) {
         return adminReadingService.updateArticle(id, request);
     }
 
@@ -56,8 +60,10 @@ public class AdminReadingController {
 
     @DeleteMapping("/readings/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteArticle(@PathVariable Long id) {
-        adminReadingService.deleteArticle(id);
+    public void deleteArticle(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminReadingService.deleteArticle(id, force);
     }
 
     @GetMapping("/reading-topics")
@@ -83,7 +89,29 @@ public class AdminReadingController {
 
     @DeleteMapping("/reading-topics/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTopic(@PathVariable Long id) {
-        adminReadingService.deleteTopic(id);
+    public void deleteTopic(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminReadingService.deleteTopic(id, force);
+    }
+
+    @GetMapping("/readings/deleted")
+    public List<ArticleManagementProjection> getDeletedArticles() {
+        return adminReadingService.getDeletedArticles();
+    }
+
+    @PatchMapping("/readings/{id}/restore")
+    public void restoreArticle(@PathVariable Long id) {
+        adminReadingService.restoreArticle(id);
+    }
+
+    @GetMapping("/reading-topics/deleted")
+    public List<ArticleTopicManagementProjection> getDeletedTopics() {
+        return adminReadingService.getDeletedTopics();
+    }
+
+    @PatchMapping("/reading-topics/{id}/restore")
+    public void restoreTopic(@PathVariable Long id) {
+        adminReadingService.restoreTopic(id);
     }
 }

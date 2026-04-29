@@ -7,6 +7,7 @@ import com.example.DATN.entity.UserVocabularyCustom;
 import com.example.DATN.repository.UserRepository;
 import com.example.DATN.service.UserHomepageService;
 import com.example.DATN.service.UserVocabularyCustomService;
+import com.example.DATN.util.AuthUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,35 +31,13 @@ public class UserVocabularyCustomController {
     @Autowired
     private UserHomepageService userHomepageService;
 
-    private Long getUserIdFromAuth(Authentication auth, HttpServletRequest request) {
-        // 1. Try to get from Spring Security Auth
-        if (auth != null && !auth.getName().equals("anonymousUser")) {
-            try {
-                return Long.parseLong(auth.getName());
-            } catch (Exception ignored) {
-            }
-        }
-
-        // 2. Fallback: Parse Bearer token manually from header
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            try {
-                String token = bearerToken.substring(7);
-                return Long.parseLong(token);
-            } catch (Exception ignored) {
-            }
-        }
-
-        return null;
-    }
-
     @PostMapping("/save")
     public ResponseEntity<?> saveCustomVocab(
             @RequestBody UserVocabularyCustom vocab,
             Authentication auth,
             HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth, httpRequest);
+            Long userId = AuthUtil.getUserId(auth, httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để lưu từ vựng.");
             }
@@ -115,7 +94,7 @@ public class UserVocabularyCustomController {
             Authentication auth,
             HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth, httpRequest);
+            Long userId = AuthUtil.getUserId(auth, httpRequest);
             if (userId == null) {
                 // ... (existing temp logic)
                 return ResponseEntity.ok(Map.of("status", "local_storage", "count", request.vocabularies.size()));
@@ -168,7 +147,7 @@ public class UserVocabularyCustomController {
     @GetMapping("/list")
     public ResponseEntity<?> getUserCustomVocabularies(Authentication auth, HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth, httpRequest);
+            Long userId = AuthUtil.getUserId(auth, httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body("Vui lòng đăng nhập để xem danh sách từ vựng.");
@@ -179,7 +158,7 @@ public class UserVocabularyCustomController {
             for (UserVocabularyCustom vocab : vocabs) {
                 dtos.add(new UserVocabularyCustomDto(
                         vocab.id, vocab.word, vocab.pronunciation,
-                        vocab.partOfSpeech, vocab.meaningEn, vocab.meaningVi,
+                        vocab.typeOfWord, vocab.meaningEn, vocab.meaningVi,
                         vocab.example, vocab.exampleVi, vocab.level, vocab.levelSource,
                         vocab.createdAt, vocab.updatedAt));
             }
@@ -196,7 +175,7 @@ public class UserVocabularyCustomController {
             Authentication auth,
             HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth, httpRequest);
+            Long userId = AuthUtil.getUserId(auth, httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập.");
             }
@@ -209,7 +188,7 @@ public class UserVocabularyCustomController {
 
             UserVocabularyCustomDto dto = new UserVocabularyCustomDto(
                     vocab.id, vocab.word, vocab.pronunciation,
-                    vocab.partOfSpeech, vocab.meaningEn, vocab.meaningVi,
+                    vocab.typeOfWord, vocab.meaningEn, vocab.meaningVi,
                     vocab.example, vocab.exampleVi, vocab.level, vocab.levelSource,
                     vocab.createdAt, vocab.updatedAt);
             return ResponseEntity.ok(dto);
@@ -226,7 +205,7 @@ public class UserVocabularyCustomController {
             Authentication auth,
             HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth, httpRequest);
+            Long userId = AuthUtil.getUserId(auth, httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập.");
             }
@@ -251,7 +230,7 @@ public class UserVocabularyCustomController {
             Authentication auth,
             HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth, httpRequest);
+            Long userId = AuthUtil.getUserId(auth, httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập.");
             }

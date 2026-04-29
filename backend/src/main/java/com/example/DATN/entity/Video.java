@@ -3,12 +3,9 @@ package com.example.DATN.entity;
 import jakarta.persistence.*;
 import java.util.Date;
 import java.util.List;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-
 @Entity
 @Table(name = "videos")
-@SQLDelete(sql = "UPDATE videos SET deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Video {
     @Id
@@ -25,6 +22,9 @@ public class Video {
     // Đường dẫn file video được upload lên server
     @Column(name = "file_path", length = 500)
     public String filePath;
+
+    @Column(name = "thumbnail", length = 500)
+    public String thumbnail;
 
     // Trạng thái tạo phụ đề tự động: PENDING / PROCESSING / DONE / ERROR
     @Column(name = "subtitle_status", length = 50)
@@ -45,8 +45,26 @@ public class Video {
     @Column(name = "status", length = 255)
     public String status;
 
+    @Column(name = "created_at")
+    public Date createdAt;
+
+    @Column(name = "updated_at")
+    public Date updatedAt;
+
     @Column(name = "deleted_at")
     public Date deletedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Date();
+        updatedAt = new Date();
+        if (subtitleStatus == null) subtitleStatus = "PENDING";
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = new Date();
+    }
 
     @ManyToOne
     @JoinColumn(name = "channel_id")

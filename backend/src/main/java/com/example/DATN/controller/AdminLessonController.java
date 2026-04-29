@@ -2,11 +2,13 @@ package com.example.DATN.controller;
 
 import com.example.DATN.dto.AdminLessonDto;
 import com.example.DATN.dto.UpsertLessonRequest;
+import com.example.DATN.repository.LessonManagementProjection;
 import com.example.DATN.service.AdminLessonService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -47,7 +49,19 @@ public class AdminLessonController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        adminLessonService.delete(id);
+    public void delete(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminLessonService.delete(id, force);
+    }
+
+    @GetMapping("/deleted")
+    public List<LessonManagementProjection> getDeletedLessons() {
+        return adminLessonService.getDeletedLessons();
+    }
+
+    @PatchMapping("/{id}/restore")
+    public void restore(@PathVariable Long id) {
+        adminLessonService.restore(id);
     }
 }

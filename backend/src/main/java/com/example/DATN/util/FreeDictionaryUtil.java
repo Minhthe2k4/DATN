@@ -101,7 +101,7 @@ public class FreeDictionaryUtil {
                             JSONObject def = defArray.getJSONObject(j);
                             
                             Map<String, Object> m = new HashMap<>();
-                            m.put("partOfSpeech", partOfSpeech);
+                            m.put("typeOfWord", partOfSpeech);
                             m.put("definition", def.optString("definition", ""));
                             m.put("example", def.optString("example", ""));
                             

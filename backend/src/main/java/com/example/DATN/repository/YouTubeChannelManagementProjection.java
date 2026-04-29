@@ -15,4 +15,16 @@ public interface YouTubeChannelManagementProjection {
     String getDescription();
     
     String getStatus();
+    
+    String getAvatar();
+
+    String getHandle();
+
+    Long getSubscriberCount();
+
+    java.util.Date getCreatedAt();
+
+    java.util.Date getUpdatedAt();
+
+    java.util.Date getDeletedAt();
 }

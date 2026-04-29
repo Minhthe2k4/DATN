@@ -1,16 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { lessons as lessonSeed, topics } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid } from '../../components/console/AdminUi'
+import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, Pagination } from '../../components/console/AdminUi'
+import { usePagination } from '../../hooks/usePagination'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
-
-const DIFFICULTY_OPTIONS = ['Cơ bản', 'Trung bình', 'Nâng cao']
-const STATUS_OPTIONS = ['Đang mở', 'Nháp']
-
-function createDraftRow(id) {
-  return { id, name: '', description: '', topic_id: '', difficulty: 'Trung bình', status: 'Đang mở', lessonImage: '', isPremium: false }
-}
 
 function normalizeLessonRow(row) {
   return {
@@ -22,6 +16,8 @@ function normalizeLessonRow(row) {
     status: row.status ?? 'Đang mở',
     lessonImage: row.lessonImage ?? '',
     isPremium: !!row.isPremium,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   }
 }
 
@@ -32,20 +28,22 @@ function normalizeTopicRow(row) {
   }
 }
 
+function formatDate(dateString) {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+}
+
 export function LessonManagement() {
   const [lessonRows, setLessonRows] = useState(lessonSeed)
   const [topicRows, setTopicRows] = useState(topics)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [draftLessons, setDraftLessons] = useState([
-    createDraftRow('row-1'),
-    createDraftRow('row-2'),
-    createDraftRow('row-3'),
-  ])
-  const [modalError, setModalError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTopicId, setFilterTopicId] = useState('')
+  const [filterDifficulty, setFilterDifficulty] = useState('')
+  const [filterPremium, setFilterPremium] = useState('All')
+  const [filterStatus, setFilterStatus] = useState('')
 
   useEffect(() => {
     let isDisposed = false
@@ -66,105 +64,24 @@ export function LessonManagement() {
           topicResponse.json(),
         ])
 
-        if (isDisposed) {
-          return
-        }
+        if (isDisposed) return
 
         setLessonRows(Array.isArray(lessonPayload) ? lessonPayload.map(normalizeLessonRow) : lessonSeed)
         setTopicRows(Array.isArray(topicPayload) ? topicPayload.map(normalizeTopicRow) : topics)
         setLoadError('')
       } catch (error) {
-        if (isDisposed) {
-          return
-        }
-
+        if (isDisposed) return
         setLessonRows(lessonSeed)
         setTopicRows(topics)
         setLoadError('Không thể tải bài học/chủ đề từ backend, đang hiển thị dữ liệu mẫu.')
       } finally {
-        if (!isDisposed) {
-          setIsLoading(false)
-        }
+        if (!isDisposed) setIsLoading(false)
       }
     }
 
     loadLessonsAndTopics()
-
-    return () => {
-      isDisposed = true
-    }
+    return () => { isDisposed = true }
   }, [])
-
-  const openModal = () => {
-    setDraftLessons([createDraftRow('row-1'), createDraftRow('row-2'), createDraftRow('row-3')])
-    setModalError('')
-    setIsModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setModalError('')
-    setIsModalOpen(false)
-  }
-
-  const addDraftRow = () => {
-    setDraftLessons((prev) => [...prev, createDraftRow(`row-${Date.now()}`)])
-  }
-
-  const removeDraftRow = (id) => {
-    setDraftLessons((prev) => prev.length <= 1 ? prev : prev.filter((item) => item.id !== id))
-  }
-
-  const updateDraftRow = (id, field, value) => {
-    setDraftLessons((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
-  }
-
-  const handleCreate = async () => {
-    const validRows = draftLessons.filter((item) => item.name.trim())
-    if (validRows.length === 0) {
-      setModalError('Bạn cần nhập tên cho ít nhất 1 bài học.')
-      return
-    }
-
-    const fallbackTopicId = topicRows[0]?.id
-    if (!fallbackTopicId && validRows.some((row) => !row.topic_id)) {
-      setModalError('Chưa có chủ đề để gán cho bài học mới.')
-      return
-    }
-
-    try {
-      const createPromises = validRows.map((item) => fetch(`${API_BASE_URL}/api/admin/lessons`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: item.name.trim(),
-          description: item.description.trim() || 'Mô tả chưa được thêm',
-          topicId: item.topic_id || fallbackTopicId,
-          difficulty: item.difficulty,
-          status: item.status,
-          lessonImage: item.lessonImage.trim(),
-          isPremium: !!item.isPremium,
-        }),
-      }))
-
-      const results = await Promise.all(createPromises)
-      const failed = results.find((response) => !response.ok)
-      if (failed) {
-        throw new Error(`Create lesson failed: ${failed.status}`)
-      }
-
-      const refresh = await fetch(`${API_BASE_URL}/api/admin/lessons`)
-      if (!refresh.ok) {
-        throw new Error(`Cannot refresh lessons: ${refresh.status}`)
-      }
-
-      const refreshedPayload = await refresh.json()
-      setLessonRows(Array.isArray(refreshedPayload) ? refreshedPayload.map(normalizeLessonRow) : lessonSeed)
-      setModalError('')
-      setIsModalOpen(false)
-    } catch (error) {
-      setModalError('Tạo bài học thất bại. Vui lòng kiểm tra backend và thử lại.')
-    }
-  }
 
   const stats = [
     {
@@ -180,10 +97,10 @@ export function LessonManagement() {
       icon: 'iconoir-play',
     },
     {
-      label: 'Bản nháp',
-      value: lessonRows.filter((lesson) => lesson.status === 'Nháp').length.toString(),
-      meta: 'Chưa sẵn sàng phát hành',
-      icon: 'iconoir-edit-pencil',
+      label: 'Premium',
+      value: lessonRows.filter((lesson) => lesson.isPremium).length.toString(),
+      meta: 'Dành cho người dùng trả phí',
+      icon: 'iconoir-star',
     },
     {
       label: 'Độ khó trung bình',
@@ -195,8 +112,9 @@ export function LessonManagement() {
 
   const difficultyDistribution = useMemo(() => {
     const total = lessonRows.length
+    const DIFFICULTIES = ['Cơ bản', 'Trung bình', 'Nâng cao']
 
-    return DIFFICULTY_OPTIONS.map((difficulty) => {
+    return DIFFICULTIES.map((difficulty) => {
       const count = lessonRows.filter((lesson) => lesson.difficulty === difficulty).length
       const ratio = total > 0 ? (count / total) * 100 : 0
       const tone =
@@ -230,8 +148,23 @@ export function LessonManagement() {
       result = result.filter(lesson => String(lesson.topic_id) === String(filterTopicId))
     }
 
+    if (filterDifficulty) {
+      result = result.filter(lesson => lesson.difficulty === filterDifficulty)
+    }
+
+    if (filterPremium !== 'All') {
+      const isPrem = filterPremium === 'Premium'
+      result = result.filter(lesson => lesson.isPremium === isPrem)
+    }
+
+    if (filterStatus) {
+      result = result.filter(lesson => lesson.status === filterStatus)
+    }
+
     return result
-  }, [lessonRows, searchTerm, filterTopicId])
+  }, [lessonRows, searchTerm, filterTopicId, filterDifficulty, filterPremium, filterStatus])
+
+  const pagination = usePagination(filteredLessons, 10)
 
   return (
     <div className="page-content">
@@ -239,10 +172,10 @@ export function LessonManagement() {
         <AdminPageHeader
           eyebrow="Lesson Management"
           title="Quản lý bài học"
-          description="Thiết lập cấu trúc bài học theo chủ đề, độ khó và khối lượng từ vựng phù hợp."
+          description="Thiết lập cấu trúc bài học theo chủ đề, độ khó và khối lượng học tập phù hợp."
           actions={
             <>
-              <button type="button" className="btn btn-primary" onClick={openModal}>Thêm bài học</button>
+              <Link to="/admin/lessons/new" className="btn btn-primary">Thêm bài học</Link>
             </>
           }
         />
@@ -253,52 +186,107 @@ export function LessonManagement() {
         <StatGrid items={stats} />
 
         <div className="row g-3 mt-1">
-          <div className="col-12 col-xl-8">
-            <AdminSectionCard title="Danh sách bài học" description="Quản lý trạng thái, độ khó và mô tả của từng bài học trong hệ thống.">
-              <div className="row g-2 mb-3">
-                <div className="col-12 col-md-7">
-                  <div className="input-group">
-                    <span className="input-group-text bg-white border-end-0">
-                      <i className="iconoir-search"></i>
-                    </span>
-                    <input
-                      type="text"
-                      className="form-control border-start-0 ps-0"
-                      placeholder="Tìm theo tên bài hoặc mô tả..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+          <div className="col-12 col-xl-9">
+            <AdminSectionCard title="Danh sách bài học" actions={<span className="badge bg-light text-primary border">{filteredLessons.length} bài học</span>}>
+              <div className="mb-4">
+                <div className="row g-2 mb-2">
+                  <div className="col-12 col-md-4">
+                    <div className="input-group">
+                      <span className="input-group-text bg-white border-end-0">
+                        <i className="iconoir-search"></i>
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control border-start-0 ps-0"
+                        placeholder="Tìm theo tên bài..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-12 col-md-4">
+                    <select
+                      className="form-select"
+                      value={filterTopicId}
+                      onChange={(e) => setFilterTopicId(e.target.value)}
+                    >
+                      <option value="">— Tất cả chủ đề —</option>
+                      {topicRows.map(topic => (
+                        <option key={topic.id} value={topic.id}>{topic.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 col-md-4">
+                    <select
+                      className="form-select"
+                      value={filterDifficulty}
+                      onChange={(e) => setFilterDifficulty(e.target.value)}
+                    >
+                      <option value="">— Độ khó —</option>
+                      <option value="Cơ bản">Cơ bản</option>
+                      <option value="Trung bình">Trung bình</option>
+                      <option value="Nâng cao">Nâng cao</option>
+                    </select>
                   </div>
                 </div>
-                <div className="col-12 col-md-5">
-                  <select
-                    className="form-select"
-                    value={filterTopicId}
-                    onChange={(e) => setFilterTopicId(e.target.value)}
-                  >
-                    <option value="">— Tất cả chủ đề —</option>
-                    {topicRows.map(topic => (
-                      <option key={topic.id} value={topic.id}>{topic.name}</option>
-                    ))}
-                  </select>
+                <div className="row g-2">
+                  <div className="col-12 col-md-6">
+                    <select
+                      className="form-select"
+                      value={filterPremium}
+                      onChange={(e) => setFilterPremium(e.target.value)}
+                    >
+                      <option value="All">Tất cả gói</option>
+                      <option value="Free">Miễn phí</option>
+                      <option value="Premium">Premium</option>
+                    </select>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <select
+                      className="form-select"
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                    >
+                      <option value="">— Trạng thái —</option>
+                      <option value="Đang mở">Đang mở</option>
+                      <option value="Tạm dừng">Tạm dừng</option>
+                      <option value="Nháp">Bản nháp</option>
+                    </select>
+                  </div>
                 </div>
               </div>
+              
               <SimpleTable
                 columns={[
-                  { key: 'name', label: 'Tên bài' },
+                  {
+                    key: 'lessonImage',
+                    label: 'Ảnh',
+                    render: (row) => (
+                      <img
+                        src={row.lessonImage || 'https://via.placeholder.com/40'}
+                        alt={row.name}
+                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
+                      />
+                    )
+                  },
+                  { 
+                    key: 'name', 
+                    label: 'Tên bài',
+                    render: (row) => <span className="fw-bold">{row.name}</span>
+                  },
                   {
                     key: 'topic',
                     label: 'Chủ đề',
                     render: (row) => {
-                      const topicName = topicRows.find((t) => t.id === row.topic_id)?.name || 'Không xác định'
+                      const topicName = topicRows.find((t) => t.id === row.topic_id)?.name || '...'
                       return topicName
                     },
                   },
                   { key: 'difficulty', label: 'Độ khó' },
                   {
                     key: 'isPremium',
-                    label: 'Premium',
-                    render: (row) => row.isPremium ? <Badge tone="info">👑 Premium</Badge> : <Badge tone="neutral">Mọi người</Badge>
+                    label: 'Loại',
+                    render: (row) => row.isPremium ? <Badge tone="info">Premium</Badge> : <Badge tone="neutral">Free</Badge>
                   },
                   {
                     key: 'status',
@@ -310,18 +298,24 @@ export function LessonManagement() {
                     label: 'Hành động',
                     render: (row) => (
                       <div className="d-flex flex-wrap gap-2">
+                        <Link to={`/admin/lessons/${row.id}`} className="btn btn-sm btn-soft-info">Chi tiết</Link>
                         <Link to={`/admin/lessons/${row.id}/edit`} className="btn btn-sm btn-soft-primary">Sửa</Link>
                         <Link to={`/admin/lessons/${row.id}/delete`} className="btn btn-sm btn-soft-danger">Xóa</Link>
                       </div>
                     ),
                   },
                 ]}
-                rows={filteredLessons}
+                rows={pagination.paginatedData}
+              />
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                onPageChange={pagination.handlePageChange}
               />
             </AdminSectionCard>
           </div>
-          <div className="col-12 col-xl-4">
-            <AdminSectionCard title="Phân bố độ khó" description="Số lượng bài học theo từng mức độ">
+          <div className="col-12 col-xl-3">
+            <AdminSectionCard title="Phân bộ độ khó" description="Thống kê bài học">
               <div className="lesson-difficulty-grid">
                 {difficultyDistribution.map((item) => (
                   <div className={`lesson-difficulty-item ${item.tone}`} key={item.difficulty}>
@@ -329,143 +323,17 @@ export function LessonManagement() {
                       <span className="lesson-difficulty-item__label">{item.difficulty}</span>
                       <span className="lesson-difficulty-item__count">{item.count}</span>
                     </div>
-                    <div className="lesson-difficulty-item__track" role="progressbar" aria-valuenow={Math.round(item.ratio)} aria-valuemin="0" aria-valuemax="100">
+                    <div className="lesson-difficulty-item__track" role="progressbar">
                       <div className="lesson-difficulty-item__fill" style={{ width: `${item.ratio}%` }}></div>
                     </div>
-                    <div className="lesson-difficulty-item__meta">{item.ratio.toFixed(1)}% tổng số bài học</div>
+                    <div className="lesson-difficulty-item__meta">{Math.round(item.ratio)}%</div>
                   </div>
                 ))}
-                <div className="lesson-difficulty-summary">Tổng số bài: <strong>{lessonRows.length}</strong></div>
               </div>
             </AdminSectionCard>
           </div>
         </div>
       </div>
-
-      {isModalOpen ? (
-        <>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
-              <div className="modal-content topic-bulk-modal">
-                <div className="modal-header">
-                  <div>
-                    <h5 className="modal-title mb-1">Tạo hàng loạt bài học</h5>
-                    <div className="topic-bulk-modal__subtitle">Nhập tên bài, chọn chủ đề và cài độ khó ngay trong từng dòng.</div>
-                  </div>
-                  <button type="button" className="btn-close" aria-label="Đóng" onClick={closeModal}></button>
-                </div>
-                <div className="modal-body">
-                  <div className="lesson-bulk-form">
-                    {draftLessons.map((item, index) => (
-                      <div className="lesson-bulk-row" key={item.id}>
-                        <div className="lesson-bulk-row__fields">
-                          <div className="lesson-bulk-field">
-                            <label className="form-label small text-muted mb-1">Tên bài học #{index + 1}</label>
-                            <input
-                              className="form-control"
-                              type="text"
-                              placeholder="Ví dụ: Email Negotiation Basics"
-                              value={item.name}
-                              onChange={(event) => updateDraftRow(item.id, 'name', event.target.value)}
-                            />
-                          </div>
-                          <div className="lesson-bulk-field">
-                            <label className="form-label small text-muted mb-1">Mô tả</label>
-                            <input
-                              className="form-control"
-                              type="text"
-                              placeholder="Mô tả nội dung bài học"
-                              value={item.description}
-                              onChange={(event) => updateDraftRow(item.id, 'description', event.target.value)}
-                            />
-                          </div>
-                          <div className="lesson-bulk-field">
-                            <label className="form-label small text-muted mb-1">Chủ đề</label>
-                            <select
-                              className="form-select"
-                              value={item.topic_id}
-                              onChange={(event) => updateDraftRow(item.id, 'topic_id', event.target.value)}
-                            >
-                              <option value="">— Chưa phân loại —</option>
-                              {topicRows.map((t) => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="lesson-bulk-field">
-                            <label className="form-label small text-muted mb-1">Độ khó</label>
-                            <select
-                              className="form-select"
-                              value={item.difficulty}
-                              onChange={(event) => updateDraftRow(item.id, 'difficulty', event.target.value)}
-                            >
-                              {DIFFICULTY_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
-                            </select>
-                          </div>
-                          <div className="lesson-bulk-field">
-                            <label className="form-label small text-muted mb-1">Trạng thái</label>
-                            <select
-                              className="form-select"
-                              value={item.status}
-                              onChange={(event) => updateDraftRow(item.id, 'status', event.target.value)}
-                            >
-                              {STATUS_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
-                            </select>
-                          </div>
-                          <div className="lesson-bulk-field">
-                            <label className="form-label small text-muted mb-1">Ảnh bài học (URL)</label>
-                            <input
-                              className="form-control"
-                              type="text"
-                              placeholder="https://example.com/lesson.png"
-                              value={item.lessonImage}
-                              onChange={(event) => updateDraftRow(item.id, 'lessonImage', event.target.value)}
-                            />
-                          </div>
-                          <div className="col-12 col-md-2">
-                            <label className="form-label small text-muted mb-1">Loại bài</label>
-                            <div className="form-check form-switch pt-1">
-                              <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={item.isPremium}
-                                onChange={(e) => updateDraftRow(item.id, 'isPremium', e.target.checked)}
-                              />
-                              <label className="form-check-label small">{item.isPremium ? '👑 Premium' : 'Mọi người'}</label>
-                            </div>
-                          </div>
-                          <div className="col-12 col-md-1">
-                            <label className="form-label small text-muted mb-1">&nbsp;</label>
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger topic-draft-row__delete d-block w-100"
-                              onClick={() => removeDraftRow(item.id)}
-                              disabled={draftLessons.length <= 1}
-                            >
-                              <i className="iconoir-trash"></i>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button type="button" className="btn btn-outline-primary mt-3" onClick={addDraftRow}>
-                    + Thêm dòng bài học
-                  </button>
-
-                  {modalError ? <div className="text-danger mt-3">{modalError}</div> : null}
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={closeModal}>Hủy</button>
-                  <button type="button" className="btn btn-primary" onClick={handleCreate}>Tạo danh sách bài học</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="modal-backdrop fade show"></div>
-        </>
-      ) : null}
     </div>
   )
 }

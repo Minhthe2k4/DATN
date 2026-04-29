@@ -152,13 +152,13 @@ public class AdminDashboardService {
                                 .findTopUsers(PageRequest.of(0, 6))
                                 .stream()
                                 .map(row -> {
-                                        int learnedWords = safeInt(Math.toIntExact(row.getLearnedWords()));
+                                        int learnedWords = row.getLearnedWords() == null ? 0 : row.getLearnedWords().intValue();
                                         int completion = calculateCompletion(learnedWords,
-                                                        safeInt(Math.toIntExact(row.getTotalWords())));
+                                                        row.getTotalWords() == null ? 0 : row.getTotalWords().intValue());
                                         return new AdminDashboardOverviewResponse.UserActivityLeaderItem(
                                                         "USR-" + defaultString(row.getUsername(), "unknown"),
                                                         defaultString(row.getUsername(), "Người dùng"),
-                                                        safeInt(Math.toIntExact(row.getStreakDays())),
+                                                        row.getStreakDays() == null ? 0 : row.getStreakDays().intValue(),
                                                         learnedWords,
                                                         completion);
                                 })

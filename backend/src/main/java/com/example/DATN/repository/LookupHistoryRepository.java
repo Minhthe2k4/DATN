@@ -4,5 +4,7 @@ import com.example.DATN.entity.LookupHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LookupHistoryRepository extends JpaRepository<LookupHistory, Long> {
-    // Có thể bổ sung các truy vấn custom nếu cần
+    java.util.Optional<LookupHistory> findTopByUserIdAndArticleIdAndWordOrderByCreatedAtDesc(Long userId, Long articleId, String word);
+
+    java.util.Optional<LookupHistory> findTopByWordOrderByCreatedAtDesc(String word);
 }

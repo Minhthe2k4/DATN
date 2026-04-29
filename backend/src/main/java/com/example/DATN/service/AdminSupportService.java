@@ -23,15 +23,18 @@ public class AdminSupportService {
     private final SupportTicketRepository supportTicketRepository;
     private final SupportResponseRepository supportResponseRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public AdminSupportService(
             SupportTicketRepository supportTicketRepository,
             SupportResponseRepository supportResponseRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            NotificationService notificationService
     ) {
         this.supportTicketRepository = supportTicketRepository;
         this.supportResponseRepository = supportResponseRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public List<AdminSupportTicketDto> findTickets(String status, String email, Integer limit) {
@@ -48,8 +51,14 @@ public class AdminSupportService {
                 .toList();
     }
 
+    public AdminSupportTicketDto findById(Long ticketId) {
+        SupportTicket ticket = supportTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+        return toTicketDto(ticket);
+    }
+
     public AdminSupportTicketDto updateStatus(Long ticketId, String status) {
-        SupportTicket ticket = supportTicketRepository.findById(toInteger(ticketId))
+        SupportTicket ticket = supportTicketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
 
         ticket.status = mapStatus(defaultString(status, ""));
@@ -58,7 +67,7 @@ public class AdminSupportService {
     }
 
     public AdminSupportTicketDto reply(Long ticketId, AdminSupportReplyRequest request, Long currentAdminId) {
-        SupportTicket ticket = supportTicketRepository.findById(toInteger(ticketId))
+        SupportTicket ticket = supportTicketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
 
         String content = defaultString(request == null ? null : request.response(), "").trim();
@@ -78,6 +87,16 @@ public class AdminSupportService {
         ticket.status = nextStatus == null || nextStatus.isBlank() ? "Đã giải quyết" : mapStatus(nextStatus);
         supportTicketRepository.save(ticket);
 
+        // Gửi thông báo realtime cho người dùng
+        if (ticket.user != null) {
+            notificationService.sendPrivateNotification(
+                    ticket.user.id,
+                    "SUPPORT_REPLY",
+                    "Admin đã trả lời yêu cầu hỗ trợ của bạn: " + ticket.title,
+                    toTicketDto(ticket)
+            );
+        }
+
         return toTicketDto(ticket);
     }
 
@@ -87,7 +106,7 @@ public class AdminSupportService {
                 .stream()
                 .map(response -> new AdminSupportResponseDto(
                         response.id,
-                        response.admin == null ? null : toLong(Math.toIntExact(response.admin.id)),
+                        response.admin == null ? null : response.admin.id,
                         response.admin == null ? "system" : defaultString(response.admin.email, "system"),
                         defaultString(response.response, ""),
                         response.createdAt
@@ -95,10 +114,10 @@ public class AdminSupportService {
                 .toList();
 
         return new AdminSupportTicketDto(
-                toLong(Math.toIntExact(ticket.id)),
-                ticket.user == null ? null : toLong(Math.toIntExact(ticket.user.id)),
-                ticket.user == null ? "Người dùng" : defaultString(ticket.user.username, "Người dùng"),
-                ticket.user == null ? "(không có email)" : defaultString(ticket.user.email, "(không có email)"),
+                ticket.id,
+                ticket.user == null ? null : ticket.user.id,
+                defaultString(ticket.senderName, ticket.user == null ? "Khách" : "Người dùng"),
+                defaultString(ticket.email, ticket.user != null ? ticket.user.email : "(không có email)"),
                 defaultString(ticket.title, "Hỗ trợ"),
                 defaultString(ticket.message, ""),
                 mapStatus(defaultString(ticket.status, "Chờ xử lý")),
@@ -110,20 +129,20 @@ public class AdminSupportService {
     private User resolveAdmin(AdminSupportReplyRequest request, Long currentAdminId) {
         // 1. Try explicit ID from request
         if (request != null && request.adminId() != null) {
-            Optional<User> opt = userRepository.findActiveById(request.adminId());
+            Optional<User> opt = userRepository.findById(request.adminId());
             if (opt.isPresent()) return opt.get();
         }
 
-        // 2. Try explicit email from request
-        if (request != null && request.adminEmail() != null && !request.adminEmail().isBlank()) {
-            Optional<User> opt = userRepository.findActiveByEmail(request.adminEmail());
-            if (opt.isPresent()) return opt.get();
-        }
-
-        // 3. Fallback to authenticated admin ID
+        // 2. Try authenticated admin ID
         if (currentAdminId != null) {
             return userRepository.findById(currentAdminId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Authenticated Admin not found"));
+        }
+
+        // 3. Try explicit email from request
+        if (request != null && request.adminEmail() != null && !request.adminEmail().isBlank()) {
+            Optional<User> opt = userRepository.findActiveByEmail(request.adminEmail());
+            if (opt.isPresent()) return opt.get();
         }
 
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin not found and no authenticated user provided");
@@ -151,24 +170,17 @@ public class AdminSupportService {
         return defaultString(status, "Chờ xử lý");
     }
 
-    private Long toLong(Integer value) {
-        return value == null ? null : value.longValue();
-    }
-
-    private Integer toInteger(Long value) {
-        if (value == null) {
-            return null;
-        }
-        if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket id is out of range");
-        }
-        return value.intValue();
-    }
-
     private String defaultString(String value, String fallback) {
         if (value == null || value.isBlank()) {
             return fallback;
         }
         return value;
+    }
+
+    /**
+     * Get all responses for a ticket (Admin view — no ownership check required)
+     */
+    public List<SupportResponse> getTicketResponses(Long ticketId) {
+        return supportResponseRepository.findByTicketIdOrderByCreatedAtAsc(ticketId);
     }
 }

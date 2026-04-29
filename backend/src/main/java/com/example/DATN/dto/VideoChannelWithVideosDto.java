@@ -11,7 +11,7 @@ public record VideoChannelWithVideosDto(
         String channelUrl,
         String channelHandle,
         String channelDescription,
-        Integer subscriberCount,
+        Long subscriberCount,
         List<UserVideoDto> videos
 ) {
 }

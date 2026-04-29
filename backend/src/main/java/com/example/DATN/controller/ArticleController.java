@@ -57,7 +57,8 @@ public class ArticleController {
                 request.word(),
                 request.sentence(),
                 request.userId(),
-                request.articleId());
+                request.articleId(),
+                request.forceRefresh());
     }
 
     @PostMapping("/save-word")

@@ -26,4 +26,7 @@ public interface ArticleManagementProjection {
     Long getTopicId();
 
     String getTopicName();
+    
+    java.util.Date getUpdatedAt();
+    java.util.Date getDeletedAt();
 }

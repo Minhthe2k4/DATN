@@ -520,33 +520,156 @@ public class YouTubeCaptionUtil {
     /**
      * Fetch video title từ YouTube oEmbed API
      */
-    public static String fetchVideoTitle(String youtubeUrl) {
-        try {
-            String oembedUrl = "https://www.youtube.com/oembed?url=" +
-                    urlEncode(youtubeUrl) + "&format=json";
+    /**
+     * Fetch video metadata (title, thumbnail, channel, duration) từ YouTube oEmbed và HTML
+     */
+    public static Map<String, String> fetchVideoMetadata(String youtubeUrl) {
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("title", "Unknown Title");
+        metadata.put("thumbnailUrl", "");
+        metadata.put("channelName", "");
+        metadata.put("duration", "—");
+        metadata.put("channelAvatarUrl", "");
 
+        try {
+            // 1. Dùng oEmbed API cho Title, Thumbnail và Channel Name
+            String oembedUrl = "https://www.youtube.com/oembed?url=" + urlEncode(youtubeUrl) + "&format=json";
             URL url = new URL(oembedUrl);
-            java.net.URLConnection conn = url.openConnection();
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
             conn.setRequestProperty("User-Agent", USER_AGENT);
             conn.setConnectTimeout(TIMEOUT_MS);
 
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
             StringBuilder content = new StringBuilder();
             String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line);
-            }
+            while ((line = reader.readLine()) != null) content.append(line);
             reader.close();
 
             JSONObject obj = new JSONObject(content.toString());
-            return obj.optString("title", "Unknown Title");
+            metadata.put("title", obj.optString("title", "Unknown Title"));
+            metadata.put("thumbnailUrl", obj.optString("thumbnail_url", ""));
+            metadata.put("channelName", obj.optString("author_name", ""));
+
+            // 2. Parse HTML để lấy Duration và Channel Avatar (nếu cần)
+            String videoId = extractVideoId(youtubeUrl);
+            if (videoId != null) {
+                // Tự tạo thumbnail chất lượng cao hơn nếu oembed trả về ảnh nhỏ
+                metadata.put("thumbnailUrl", "https://img.youtube.com/vi/" + videoId + "/maxresdefault.jpg");
+                
+                Document doc = Jsoup.connect("https://www.youtube.com/watch?v=" + videoId)
+                        .userAgent(USER_AGENT)
+                        .timeout(TIMEOUT_MS)
+                        .get();
+                
+                // Trích xuất duration từ meta tags hoặc script
+                Pattern p = Pattern.compile("\"lengthSeconds\":\"(\\d+)\"");
+                Matcher m = p.matcher(doc.html());
+                if (m.find()) {
+                    int seconds = Integer.parseInt(m.group(1));
+                    int mins = seconds / 60;
+                    int secs = seconds % 60;
+                    metadata.put("duration", String.format("%02d:%02d", mins, secs));
+                }
+
+                // Trích xuất Channel Avatar (thường nằm trong ytInitialData hoặc link rel="image_src")
+                // Cách đơn giản nhất là lấy ảnh của author từ oembed (nếu có) hoặc parse meta
+                Elements imgs = doc.select("link[itemprop=thumbnailUrl]");
+                if (metadata.get("thumbnailUrl").isEmpty() && !imgs.isEmpty()) {
+                    metadata.put("thumbnailUrl", imgs.first().attr("href"));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching video metadata: " + e.getMessage());
+        }
+        return metadata;
+    }
+
+    /**
+     * Fetch YouTube channel metadata (Name, Avatar, Subscriber Count, Handle) từ URL
+     */
+    public static Map<String, String> fetchChannelMetadata(String channelUrl) {
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("name", "Unknown Channel");
+        metadata.put("avatar", "");
+        metadata.put("subscriberCount", "0");
+        metadata.put("handle", "");
+        metadata.put("description", "");
+
+        try {
+            Document doc = Jsoup.connect(channelUrl)
+                    .userAgent(USER_AGENT)
+                    .timeout(TIMEOUT_MS)
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .get();
+
+            String html = doc.html();
+            
+            // 1. Trích xuất Title
+            metadata.put("name", doc.title().replace(" - YouTube", "").trim());
+            
+            // 2. Trích xuất Avatar (og:image)
+            Element ogImage = doc.selectFirst("meta[property=og:image]");
+            if (ogImage != null) {
+                metadata.put("avatar", ogImage.attr("content"));
+            }
+
+            // 3. Trích xuất Handle (@handle)
+            Element ogUrl = doc.selectFirst("meta[property=og:url]");
+            if (ogUrl != null) {
+                String url = ogUrl.attr("content");
+                if (url.contains("/@")) {
+                    metadata.put("handle", "@" + url.split("/@")[1]);
+                }
+            }
+
+            // 4. Trích xuất Subscriber Count và Description từ ytInitialData
+            Pattern p = Pattern.compile("ytInitialData\\s*=\\s*(\\{.+?\\});");
+            Matcher m = p.matcher(html);
+            if (m.find()) {
+                JSONObject json = new JSONObject(m.group(1));
+                // Phức tạp hơn để parse sâu, nhưng ta thử tìm các chuỗi liên quan đến subscribers
+                String jsonStr = json.toString();
+                
+                // Subscriber count thường có dạng "1.23M subscribers"
+                Pattern subPattern = Pattern.compile("(\\d+(\\.\\d+)?[KMB]?) subscribers");
+                Matcher subMatcher = subPattern.matcher(jsonStr);
+                if (subMatcher.find()) {
+                    String subStr = subMatcher.group(1);
+                    metadata.put("subscriberCount", normalizeSubscriberCount(subStr));
+                }
+
+                // Description
+                metadata.put("description", doc.select("meta[name=description]").attr("content"));
+            }
 
         } catch (Exception e) {
-            System.err.println("Error fetching video title: " + e.getMessage());
-            return "Unknown Title";
+            System.err.println("Error fetching channel metadata: " + e.getMessage());
         }
+        return metadata;
+    }
+
+    private static String normalizeSubscriberCount(String subStr) {
+        try {
+            String val = subStr.toUpperCase();
+            double multiplier = 1;
+            if (val.endsWith("K")) {
+                multiplier = 1000;
+                val = val.substring(0, val.length() - 1);
+            } else if (val.endsWith("M")) {
+                multiplier = 1000000;
+                val = val.substring(0, val.length() - 1);
+            } else if (val.endsWith("B")) {
+                multiplier = 1000000000;
+                val = val.substring(0, val.length() - 1);
+            }
+            return String.valueOf((long) (Double.parseDouble(val) * multiplier));
+        } catch (Exception e) {
+            return "0";
+        }
+    }
+
+    public static String fetchVideoTitle(String youtubeUrl) {
+        return fetchVideoMetadata(youtubeUrl).get("title");
     }
 
     /**

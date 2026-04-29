@@ -125,7 +125,7 @@
 
 .vlesson-grid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 14px;
 }
 
@@ -135,7 +135,7 @@
 	border-radius: 14px;
 	border: 1px solid var(--vl-border);
 	overflow: hidden;
-	min-height: 210px;
+	min-height: 160px;
 	cursor: pointer;
 	text-align: left;
 	padding: 0;
@@ -172,16 +172,16 @@
 
 .vlesson-tile__content h3 {
 	margin: 0;
-	font-size: 24px;
-	text-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+	font-size: 19px;
+	text-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 	font-weight: 700;
 }
 
 .vlesson-tile__content p {
-	margin: 6px 0 0;
-	font-size: 14px;
+	margin: 4px 0 0;
+	font-size: 13px;
 	opacity: 0.95;
-	line-height: 1.45;
+	line-height: 1.4;
 }
 
 .vlesson-toolbar {
@@ -863,7 +863,9 @@
 }
 
 @media (max-width: 950px) {
-	.vlesson-grid,
+	.vlesson-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 	.vlesson-grid--lessons {
 		grid-template-columns: 1fr;
 	}
@@ -874,6 +876,9 @@
 }
 
 @media (max-width: 680px) {
+	.vlesson-grid {
+		grid-template-columns: 1fr;
+	}
 	.vlesson-shell {
 		padding: 16px 12px 22px;
 	}
@@ -925,4 +930,25 @@
 	.vlesson-done-actions .vlesson-ghost {
 		width: 100%;
 	}
+}
+
+/* New Image Styles */
+.vlesson-lesson__image-container {
+	width: 100%;
+	height: 120px;
+	border-radius: 10px;
+	overflow: hidden;
+	margin-bottom: 12px;
+	background: #f1f5f9;
+}
+
+.vlesson-lesson__image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.3s ease;
+}
+
+.vlesson-lesson:hover .vlesson-lesson__image {
+	transform: scale(1.05);
 }

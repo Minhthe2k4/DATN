@@ -56,8 +56,8 @@ public class UserVocabularyCustomService {
                 vocab.word = vocabUpdates.word;
             if (vocabUpdates.pronunciation != null)
                 vocab.pronunciation = vocabUpdates.pronunciation;
-            if (vocabUpdates.partOfSpeech != null)
-                vocab.partOfSpeech = vocabUpdates.partOfSpeech;
+            if (vocabUpdates.typeOfWord != null)
+                vocab.typeOfWord = vocabUpdates.typeOfWord;
             if (vocabUpdates.meaningEn != null)
                 vocab.meaningEn = vocabUpdates.meaningEn;
             if (vocabUpdates.meaningVi != null)

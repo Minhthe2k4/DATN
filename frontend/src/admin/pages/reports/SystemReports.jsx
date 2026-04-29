@@ -141,18 +141,22 @@ export function SystemReports() {
               <div className="row g-4">
                 <div className="col-12 col-md-6">
                   <div className="admin-kicker">Tăng trưởng người dùng</div>
+                  <p className="text-muted small mb-2" style={{ fontSize: '0.8rem' }}>Số lượng tài khoản mới đăng ký thành công trên hệ thống mỗi ngày.</p>
                   <LineTrend data={reportData.trendSeries} valueKey="users" />
                 </div>
                 <div className="col-12 col-md-6">
                   <div className="admin-kicker">Khối lượng từ mới</div>
+                  <p className="text-muted small mb-2" style={{ fontSize: '0.8rem' }}>Tổng số từ vựng mới được thêm vào kho từ điển của hệ thống.</p>
                   <LineTrend data={reportData.trendSeries} valueKey="words" />
                 </div>
                 <div className="col-12 col-md-6">
                   <div className="admin-kicker">Sản lượng bài học</div>
+                  <p className="text-muted small mb-2" style={{ fontSize: '0.8rem' }}>Tổng số lượt hoàn thành bài học (Session) từ toàn bộ người dùng.</p>
                   <LineTrend data={reportData.trendSeries} valueKey="lessons" />
                 </div>
                 <div className="col-12 col-md-6">
                   <div className="admin-kicker">Tăng trưởng ôn tập SRS</div>
+                  <p className="text-muted small mb-2" style={{ fontSize: '0.8rem' }}>Số lượng từ vựng đến hạn được lên lịch đẩy vào hàng đợi ôn tập.</p>
                   <LineTrend data={reportData.trendSeries} valueKey="reviews" />
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminSummary, resetCandidates, spacedRepetitionConfig } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, MetricList, SimpleTable, StatGrid } from '../../components/console/AdminUi'
+import { AdminPageHeader, AdminSectionCard, MetricList, SimpleTable, StatGrid, Pagination } from '../../components/console/AdminUi'
+import { usePagination } from '../../hooks/usePagination'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -87,6 +88,8 @@ export function SpacedRepetitionManagement() {
         : []
     )
   }
+
+  const pagination = usePagination(candidateRows, 10)
 
   useEffect(() => {
     let disposed = false
@@ -317,7 +320,12 @@ export function SpacedRepetitionManagement() {
                     ),
                   },
                 ]}
-                rows={candidateRows}
+                rows={pagination.paginatedData}
+              />
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                onPageChange={pagination.handlePageChange}
               />
             </AdminSectionCard>
           </div>

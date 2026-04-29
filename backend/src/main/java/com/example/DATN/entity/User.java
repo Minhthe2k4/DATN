@@ -23,20 +23,42 @@ public class User {
     @Column(name = "role", length = 20)
     public String role;
 
+    @Column(name = "avatar", length = 500)
+    public String avatar;
+
+    @Column(name = "phone_number", length = 20)
+    public String phoneNumber;
+
     @Column(name = "is_active")
     public Boolean isActive;
 
     @Column(name = "created_at")
     public Date createdAt;
 
+    @Column(name = "updated_at")
+    public Date updatedAt;
+
     @Column(name = "deleted_at")
     public Date deletedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Date();
+        updatedAt = new Date();
+        if (isActive == null)
+            isActive = true;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = new Date();
+    }
+
     // No-arg constructor required by JPA
-    public User() {}
+    public User() {
+    }
 
     public Long getId() {
         return id;
     }
 }
-

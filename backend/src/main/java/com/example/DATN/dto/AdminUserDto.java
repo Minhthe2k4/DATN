@@ -6,14 +6,16 @@ public record AdminUserDto(
         Long id,
         String username,
         String email,
-        String fullName,
+        String fullname,
         String role,
-        Date registeredAt,
-        int learnedWords,
-        Date lastActivityAt,
+        String avatar,
+        String phoneNumber,
+        boolean isActive,
+        Date createdAt,
+        Date updatedAt,
+        Date deletedAt,
         boolean premium,
         Date premiumUntil,
-        String status,
-        boolean active
+        String status
 ) {
 }

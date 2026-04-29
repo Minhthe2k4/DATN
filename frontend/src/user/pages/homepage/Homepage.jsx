@@ -11,114 +11,20 @@ import {
 } from './homepage.api'
 import './homepage.css'
 
-function SearchIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
-			<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
-			<path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-		</svg>
-	)
-}
-
-function ChevronDownIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-			<path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-		</svg>
-	)
-}
-
-function DocumentIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24">
-			<rect x="6" y="4" width="12" height="16" rx="1.5" fill="#8B5CF6" />
-			<path d="M9 9h6M9 12h6M9 15h4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-		</svg>
-	)
-}
-
-function HeadsetIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24">
-			<rect x="4" y="4" width="16" height="16" rx="8" fill="#3B82F6" />
-			<path d="M8 12a4 4 0 018 0v2h-2v-2a2 2 0 00-4 0v2H8v-2z" fill="white" />
-		</svg>
-	)
-}
-
-function VideoIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24">
-			<rect x="4" y="4" width="16" height="16" rx="2" fill="#EF4444" />
-			<path d="M10 9l5 3-5 3z" fill="white" />
-		</svg>
-	)
-}
-
-function DiceIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24">
-			<rect x="4" y="4" width="16" height="16" rx="2" fill="#10B981" />
-			<circle cx="12" cy="12" r="1.5" fill="white" />
-			<circle cx="9" cy="9" r="1" fill="white" />
-			<circle cx="15" cy="15" r="1" fill="white" />
-		</svg>
-	)
-}
-
-function BookmarkIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
-			<path d="M5 3h14v18l-7-4-7 4V3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-		</svg>
-	)
-}
-
-function SpeakerIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-			<path d="M11 5L6 9H2v6h4l5 4V5z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-			<path d="M15.54 8.46a5 5 0 010 7.07M18.37 5.63a9 9 0 010 12.73" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-		</svg>
-	)
-}
-
-function ReviewIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-			<path d="M20 12a8 8 0 11-2.34-5.66" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-			<path d="M20 4v6h-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-		</svg>
-	)
-}
-
-function NewWordIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-			<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
-			<path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-		</svg>
-	)
-}
-
-function StreakIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-			<path d="M12 3s5 4.2 5 8.4A5 5 0 1112 21a5 5 0 01-5-5.6C7 7.2 12 3 12 3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-		</svg>
-	)
-}
-
-
-
-function LearnedIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-			<path d="M4 6.5A2.5 2.5 0 016.5 4H20v14H6.5A2.5 2.5 0 014 15.5v-9z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-			<path d="M8 9h8M8 12h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-		</svg>
-	)
-}
+import {
+	Search,
+	ChevronDown,
+	FileText,
+	Headphones,
+	Video,
+	Dice5,
+	Bookmark,
+	Volume2,
+	RotateCcw,
+	PlusSquare,
+	Zap,
+	CheckCircle
+} from 'lucide-react'
 
 function StudyCalendar({ activityDates }) {
 	const now = new Date()
@@ -245,7 +151,7 @@ export function Homepage() {
 								<div className="today-metric">
 									<div className="today-metric__head">
 										<span className="metric-icon metric-icon--review" aria-hidden="true">
-											<ReviewIcon />
+											<RotateCcw size={18} />
 										</span>
 									</div>
 									<span className="today-metric__label">Cần ôn tập</span>
@@ -254,7 +160,7 @@ export function Homepage() {
 								<div className="today-metric">
 									<div className="today-metric__head">
 										<span className="metric-icon metric-icon--new" aria-hidden="true">
-											<NewWordIcon />
+											<PlusSquare size={18} />
 										</span>
 									</div>
 									<span className="today-metric__label">Từ mới</span>
@@ -266,9 +172,7 @@ export function Homepage() {
 								<div className="today-metric">
 									<div className="today-metric__head">
 										<span className="metric-icon metric-icon--streak" aria-hidden="true">
-											<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-												<path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-											</svg>
+											<Zap size={20} fill="currentColor" />
 										</span>
 									</div>
 									<span className="today-metric__label">Kho từ vựng</span>
@@ -277,9 +181,7 @@ export function Homepage() {
 								<div className="today-metric">
 									<div className="today-metric__head">
 										<span className="metric-icon metric-icon--learned" aria-hidden="true">
-											<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-												<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-											</svg>
+											<CheckCircle size={20} fill="currentColor" />
 										</span>
 									</div>
 									<span className="today-metric__label">Bài học</span>
@@ -293,7 +195,7 @@ export function Homepage() {
 				{/* Search Bar */}
 				<div className="search-bar">
 					<div className="search-bar__input-wrapper">
-						<SearchIcon />
+						<Search size={20} />
 						<input
 							type="text"
 							className="search-bar__input"
@@ -303,7 +205,7 @@ export function Homepage() {
 					</div>
 					<button className="language-selector" type="button" onClick={() => navigate('/dictionary')}>
 						Anh - Anh
-						<ChevronDownIcon />
+						<ChevronDown size={18} />
 					</button>
 				</div>
 
@@ -311,7 +213,7 @@ export function Homepage() {
 					<article className="progress-card">
 						<div className="progress-card__head">
 							<span className="metric-icon metric-icon--streak" aria-hidden="true">
-								<StreakIcon />
+								<Zap size={18} />
 							</span>
 						</div>
 						<p className="progress-card__label">Streak</p>
@@ -320,7 +222,7 @@ export function Homepage() {
 					<article className="progress-card">
 						<div className="progress-card__head">
 							<span className="metric-icon metric-icon--learned" aria-hidden="true">
-								<LearnedIcon />
+								<CheckCircle size={18} />
 							</span>
 						</div>
 						<p className="progress-card__label">Tổng từ đã học</p>
@@ -329,7 +231,7 @@ export function Homepage() {
 					<article className="progress-card">
 						<div className="progress-card__head">
 							<span className="metric-icon metric-icon--review" aria-hidden="true">
-								<ReviewIcon />
+								<RotateCcw size={18} />
 							</span>
 						</div>
 						<p className="progress-card__label">Cần ôn hôm nay</p>
@@ -364,9 +266,9 @@ export function Homepage() {
 							<div className="content-list">
 								{suggestedContent.map((item, idx) => (
 									<article key={idx} className="content-item">
-										{item.type === 'article' && <DocumentIcon />}
-										{item.type === 'video' && <VideoIcon />}
-										{item.type === 'tip' && <DiceIcon />}
+										{item.type === 'article' && <FileText size={24} color="#8B5CF6" />}
+										{item.type === 'video' && <Video size={24} color="#EF4444" />}
+										{item.type === 'tip' && <Dice5 size={24} color="#10B981" />}
 										<h3 className="content-item__title">{item.title}</h3>
 									</article>
 								))}
@@ -391,14 +293,14 @@ export function Homepage() {
 											<span className="pronunciation-label">UK</span>
 											<span className="pronunciation-text">{todayVocab.phoneticUK || todayVocab.pronunciation}</span>
 											<button className="pronunciation-btn" type="button" aria-label="Play UK pronunciation">
-												<SpeakerIcon />
+												<Volume2 size={18} />
 											</button>
 										</div>
 										<div className="pronunciation-item">
 											<span className="pronunciation-label">US</span>
 											<span className="pronunciation-text">{todayVocab.phoneticUS || todayVocab.pronunciation}</span>
 											<button className="pronunciation-btn" type="button" aria-label="Play US pronunciation">
-												<SpeakerIcon />
+												<Volume2 size={18} />
 											</button>
 										</div>
 									</div>
@@ -409,7 +311,7 @@ export function Homepage() {
 									<button className="word-state-btn word-state-btn--known" type="button">Đã biết</button>
 									<button className="word-state-btn word-state-btn--unknown" type="button">Chưa biết</button>
 									<button className="save-word-btn" type="button" aria-label="Save word">
-										<BookmarkIcon />
+										<Bookmark size={20} />
 									</button>
 								</div>
 							</div>

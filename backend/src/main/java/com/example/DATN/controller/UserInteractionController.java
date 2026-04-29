@@ -6,6 +6,7 @@ import com.example.DATN.entity.UserProgress;
 import com.example.DATN.repository.UserFavoriteRepository;
 import com.example.DATN.repository.UserProgressRepository;
 import com.example.DATN.repository.UserRepository;
+import com.example.DATN.util.AuthUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,21 +34,7 @@ public class UserInteractionController {
     @Autowired
     private UserRepository userRepository;
 
-    private Long getUserIdFromAuth(Authentication auth, HttpServletRequest request) {
-        if (auth != null && !auth.getName().equals("anonymousUser")) {
-            try {
-                return Long.parseLong(auth.getName());
-            } catch (Exception ignored) {}
-        }
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            try {
-                String token = bearerToken.substring(7);
-                return Long.parseLong(token);
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
+
 
     @PostMapping("/favorite/toggle")
     @Transactional
@@ -56,7 +43,7 @@ public class UserInteractionController {
             @RequestParam String targetType,
             Authentication auth,
             HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
 
         Optional<UserFavorite> existing = userFavoriteRepository.findByUserIdAndTargetIdAndTargetType(userId, targetId, targetType);
@@ -76,7 +63,7 @@ public class UserInteractionController {
 
     @GetMapping("/favorites/{type}")
     public ResponseEntity<?> getFavorites(@PathVariable String type, Authentication auth, HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         
         List<UserFavorite> favorites = userFavoriteRepository.findByUserIdAndTargetType(userId, type.toUpperCase());
@@ -91,7 +78,7 @@ public class UserInteractionController {
             @RequestParam Double percent,
             Authentication auth,
             HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
 
         UserProgress progress = userProgressRepository.findByUserIdAndTargetIdAndTargetType(userId, targetId, targetType.toUpperCase())
@@ -113,7 +100,7 @@ public class UserInteractionController {
             @RequestParam String targetType,
             Authentication auth,
             HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
 
         Map<String, Object> stats = new HashMap<>();
@@ -130,7 +117,7 @@ public class UserInteractionController {
             @RequestBody Map<String, Object> payload,
             Authentication auth,
             HttpServletRequest request) {
-        Long userId = getUserIdFromAuth(auth, request);
+        Long userId = AuthUtil.getUserId(auth, request);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
 
         @SuppressWarnings("unchecked")

@@ -10,11 +10,13 @@ public interface ArticleTopicManagementProjection {
 
     String getDescription();
 
-    String getLevel();
-
     Boolean getStatus();
 
     String getArticleTopicImage();
 
     Long getArticleCount();
+    
+    java.util.Date getCreatedAt();
+    java.util.Date getUpdatedAt();
+    java.util.Date getDeletedAt();
 }

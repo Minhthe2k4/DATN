@@ -671,6 +671,17 @@ body.admin-mode.dark-mode .topbar .text-muted {
   color: #9ca3af;
 }
 
+.admin-notif-empty-state {
+  padding: 30px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.admin-notif-empty-state p {
+  font-size: 13.5px;
+  margin: 0;
+}
+
 body.admin-mode.dark-mode .admin-notif-popover {
   background: #1e293b;
   border-color: #334155;

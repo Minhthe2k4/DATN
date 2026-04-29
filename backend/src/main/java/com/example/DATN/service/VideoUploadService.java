@@ -7,7 +7,6 @@ import com.example.DATN.repository.VideoRepository;
 import com.example.DATN.repository.YouTubeChannelRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
@@ -25,11 +24,6 @@ import java.util.UUID;
  * → Upload lên Cloudinary
  * → Xóa file tạm
  * → Whisper tạo phụ đề từ Cloudinary URL
- *
- * Luồng 2 — Upload file trực tiếp:
- * Admin chọn file video
- * → Upload lên Cloudinary
- * → Whisper tạo phụ đề
  */
 @Service
 public class VideoUploadService {
@@ -64,7 +58,7 @@ public class VideoUploadService {
      * Xử lý khi admin nhập YouTube URL.
      * yt-dlp sẽ download video về file tạm, sau đó upload lên Cloudinary.
      */
-    public Long uploadFromYoutubeUrl(String title, Long channelId, String youtubeUrl, String difficulty, String status)
+    public Long uploadFromYoutubeUrl(String title, Long channelId, String youtubeUrl, String difficulty, String status, String thumbnail)
             throws IOException, InterruptedException {
         if (title == null || title.isBlank())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu đề không được để trống");
@@ -96,7 +90,7 @@ public class VideoUploadService {
             String cloudinaryUrl = uploadToCloudinary(Files.readAllBytes(tempFile));
 
             // ── Bước 4: Lưu vào DB và trigger Whisper ────────────────────────
-            return saveVideoAndTriggerWhisper(title, channel, cloudinaryUrl, difficulty, duration, status, youtubeUrl);
+            return saveVideoAndTriggerWhisper(title, channel, cloudinaryUrl, difficulty, duration, status, youtubeUrl, thumbnail);
 
         } finally {
             // Xóa file tạm dù thành công hay thất bại
@@ -150,30 +144,8 @@ public class VideoUploadService {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // LUỒNG 2: Upload file trực tiếp → Cloudinary → Whisper
+    // PHẦN TRỢ GIÚP (HELPER METHODS)
     // ══════════════════════════════════════════════════════════════════
-
-    /**
-     * Upload trực tiếp file video lên Cloudinary.
-     */
-    public Long uploadFromFile(String title, Long channelId, MultipartFile file, String difficulty, String status)
-            throws IOException {
-        YouTubeChannel channel = channelRepository.findById(channelId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kênh không tồn tại"));
-
-        // Lưu file tạm để lấy duration
-        Path tempFile = Files.createTempFile("upload-", file.getOriginalFilename());
-        Files.write(tempFile, file.getBytes());
-
-        try {
-            String duration = getDurationWithFfprobe(tempFile);
-            String cloudinaryUrl = uploadToCloudinary(file.getBytes());
-            return saveVideoAndTriggerWhisper(title, channel, cloudinaryUrl, difficulty, duration, status,
-                    "File upload");
-        } finally {
-            Files.deleteIfExists(tempFile);
-        }
-    }
 
     private String getDurationWithFfprobe(Path videoPath) {
         try {
@@ -219,13 +191,14 @@ public class VideoUploadService {
 
     /** Tạo Video record trong DB và trigger Whisper async */
     private Long saveVideoAndTriggerWhisper(String title, YouTubeChannel channel, String cloudinaryUrl,
-            String difficulty, String duration, String status, String originalUrl) {
+            String difficulty, String duration, String status, String originalUrl, String thumbnail) {
         Video video = new Video();
         video.title = title.trim();
         video.filePath = cloudinaryUrl; // lưu Cloudinary URL
         video.channel = channel;
         video.subtitleStatus = "PROCESSING";
         video.status = status; // Sử dụng status từ Admin (Hiển thị/Ẩn)
+        video.thumbnail = thumbnail;
 
         // Gán giá trị
         video.wordsHighlighted = 0;

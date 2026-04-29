@@ -1,10 +1,12 @@
 package com.example.DATN.dto;
 
+import java.util.Date;
+
 public record AdminVocabularyDto(
         Long id,
         String word,
         String pronunciation,
-        String partOfSpeech,
+        String typeOfWord,
         String meaningEn,
         String meaningVi,
         String example,
@@ -12,6 +14,9 @@ public record AdminVocabularyDto(
         String level,
         String status,
         Long lessonId,
-        Long topicId
+        Long topicId,
+        Date createdAt,
+        Date updatedAt,
+        Date deletedAt
 ) {
 }

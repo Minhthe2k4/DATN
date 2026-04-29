@@ -3,17 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getAdminSession, clearAdminSession } from '../utils/adminSession'
 import avatar1 from '../assets/images/users/avatar-1.jpg'
 
-const ADMIN_NOTIFICATIONS = [
-  { id: 1, text: 'Yêu cầu hỗ trợ mới: lỗi đăng nhập Google', time: '10 phút trước', read: false },
-  { id: 2, text: '3 yêu cầu Premium đang chờ duyệt', time: '30 phút trước', read: false },
-  { id: 3, text: 'Người dùng mới đăng ký: an.le@example.com', time: '1 giờ trước', read: true },
-  { id: 4, text: 'Nội dung bị báo cáo: VOC-1003', time: '2 giờ trước', read: true },
-]
-
 export function Header({ isDarkMode, onToggleDarkMode }) {
   const navigate = useNavigate()
   const [isNotifOpen, setIsNotifOpen] = useState(false)
-  const [notifications, setNotifications] = useState(ADMIN_NOTIFICATIONS)
+  const [notifications, setNotifications] = useState([])
   const [adminSession, setAdminSession] = useState(null)
   const notifRef = useRef(null)
 
@@ -38,9 +31,29 @@ export function Header({ isDarkMode, onToggleDarkMode }) {
     const handleEscape = (event) => {
       if (event.key === 'Escape') setIsNotifOpen(false)
     }
+    const handleNewNotif = (event) => {
+      const notif = event.detail;
+      const session = getAdminSession();
+      
+      // Bỏ qua thông báo nếu là chính mình vừa gửi phản hồi hỗ trợ
+      if (notif.type === 'ADMIN_SUPPORT_REPLY' && String(notif.data?.adminId) === String(session?.userId)) {
+        return;
+      }
+
+      const newEntry = {
+        id: Date.now(),
+        text: notif.message,
+        time: 'Vừa xong',
+        read: false
+      };
+      setNotifications(prev => [newEntry, ...prev]);
+    };
+
+    window.addEventListener('new-notification', handleNewNotif);
     document.addEventListener('mousedown', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
     return () => {
+      window.removeEventListener('new-notification', handleNewNotif)
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
@@ -114,12 +127,18 @@ export function Header({ isDarkMode, onToggleDarkMode }) {
                     <span className="admin-notif-popover__title">Thông báo</span>
                   </div>
                   <div className="admin-notif-popover__list">
-                    {notifications.map((notif) => (
-                      <div key={notif.id} className={`admin-notif-item${notif.read ? '' : ' admin-notif-item--unread'}`}>
-                        <div className="admin-notif-item__text">{notif.text}</div>
-                        <div className="admin-notif-item__time">{notif.time}</div>
+                    {notifications.length === 0 ? (
+                      <div className="admin-notif-empty-state">
+                        <p>Hệ thống hiện không có thông báo mới</p>
                       </div>
-                    ))}
+                    ) : (
+                      notifications.map((notif) => (
+                        <div key={notif.id} className={`admin-notif-item${notif.read ? '' : ' admin-notif-item--unread'}`}>
+                          <div className="admin-notif-item__text">{notif.text}</div>
+                          <div className="admin-notif-item__time">{notif.time}</div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}

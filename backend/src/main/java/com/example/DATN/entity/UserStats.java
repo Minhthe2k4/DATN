@@ -1,24 +1,18 @@
 package com.example.DATN.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import java.util.Date;
 
 @Entity
-@Table(name = "User_Stats")
+@Table(name = "user_stats")
 public class UserStats {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	public Long id;
 
-	@ManyToOne
-	@JoinColumn(name = "user_id")
+	@OneToOne
+	@JoinColumn(name = "user_id", unique = true)
 	public User user;
 
 	@Column(name = "total_words")
@@ -35,6 +29,14 @@ public class UserStats {
 
 	@Column(name = "total_study_time")
 	public Double totalStudyTime;
+
+	@Column(name = "last_review_notification")
+	@Temporal(TemporalType.TIMESTAMP)
+	public Date lastReviewNotification;
+
+	@Column(name = "last_study_date")
+	@Temporal(TemporalType.DATE)
+	public Date lastStudyDate;
 
 	public UserStats() {}
 }

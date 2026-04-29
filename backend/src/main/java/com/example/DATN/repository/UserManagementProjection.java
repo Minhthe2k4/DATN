@@ -27,4 +27,12 @@ public interface UserManagementProjection {
     Integer getIsPremium();
 
     Date getPremiumUntil();
+
+    String getAvatar();
+
+    String getPhoneNumber();
+
+    Date getUpdatedAt();
+
+    Date getDeletedAt();
 }

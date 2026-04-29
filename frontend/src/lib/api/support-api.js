@@ -1,7 +1,4 @@
-/**
- * Support & Help API Service
- * Fetches FAQ, support categories, and manages support tickets
- */
+import { getAuthHeader } from '../../user/utils/authSession'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -20,7 +17,7 @@ const defaultFAQ = [
   {
     question: 'Làm sao để xóa tài khoản?',
     answer:
-      'Vào Cài đặt → Tài khoản → Xóa tài khoản. Lưu ý dữ liệu học tập sẽ bị xóa vĩnh viễn và không thể khôi phục. Nếu bạn đang có gói Premium, hãy liên hệ hỗ trợ trước để được tư vấn.',
+      'Vào Cài đặt → Tài khoản → Xóa tài khoản. Lưu ý dữ liệu học tập sẽ bị xóa vễn và không thể khôi phục. Nếu bạn đang có gói Premium, hãy liên hệ hỗ trợ trước để được tư vấn.',
   },
   {
     question: 'Tính năng Spaced Repetition hoạt động như thế nào?',
@@ -64,6 +61,9 @@ export async function fetchFAQ(filters = {}) {
 
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        ...getAuthHeader()
+      }
     })
     if (!response.ok) return defaultFAQ
     return await response.json()
@@ -94,19 +94,32 @@ export async function fetchSupportTopics() {
  * Submit a new support ticket
  * @param {string} topic - Support category
  * @param {string} message - Issue description
- * @param {string} email - Contact email (optional, uses user's email if not provided)
+ * @param {string} email - Contact email (optional)
+ * @param {string} name - Contact name (optional)
  * @returns {Promise<Object>} Created ticket with ID
  */
-export async function submitSupportTicket({ topic, message, email = null }) {
+export async function submitSupportTicket({ topic, message, email = null, name = null }) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/support/tickets`, {
+    const authHeader = getAuthHeader()
+    const isLoggedIn = !!authHeader.Authorization
+    
+    // Use public endpoint for guests, private for logged users
+    const url = isLoggedIn 
+      ? `${API_BASE_URL}/api/user/support/tickets` 
+      : `${API_BASE_URL}/api/support/tickets`
+
+    const response = await fetch(url, {
       method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      credentials: isLoggedIn ? 'include' : 'same-origin',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...authHeader
+      },
       body: JSON.stringify({
         topic,
         message,
         email,
+        name,
       }),
     })
 
@@ -138,6 +151,9 @@ export async function fetchUserTickets(filters = {}) {
 
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        ...getAuthHeader()
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -154,8 +170,11 @@ export async function fetchUserTickets(filters = {}) {
  */
 export async function fetchTicketDetails(ticketId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/support/tickets/${ticketId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/user/support/tickets/${ticketId}`, {
       credentials: 'include',
+      headers: {
+        ...getAuthHeader()
+      }
     })
     if (!response.ok) return null
     return await response.json()
@@ -173,10 +192,13 @@ export async function fetchTicketDetails(ticketId) {
  */
 export async function replyToTicket(ticketId, message) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/support/tickets/${ticketId}/reply`, {
+    const response = await fetch(`${API_BASE_URL}/api/user/support/tickets/${ticketId}/reply`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
       body: JSON.stringify({ message }),
     })
 
@@ -195,16 +217,39 @@ export async function replyToTicket(ticketId, message) {
  */
 export async function closeTicket(ticketId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/support/tickets/${ticketId}/close`, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/api/user/support/tickets/${ticketId}/close`, {
+      method: 'PUT',
       credentials: 'include',
+      headers: {
+        ...getAuthHeader()
+      }
     })
-
     if (!response.ok) throw new Error('Failed to close ticket')
     return await response.json()
   } catch (error) {
     console.error('Close ticket failed:', error)
     throw error
+  }
+}
+
+/**
+ * Get responses for a support ticket
+ * @param {string} ticketId - Support ticket ID
+ * @returns {Promise<Array>} List of responses
+ */
+export async function fetchTicketResponses(ticketId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user/support/tickets/${ticketId}/responses`, {
+      credentials: 'include',
+      headers: {
+        ...getAuthHeader()
+      }
+    })
+    if (!response.ok) return []
+    return await response.json()
+  } catch (error) {
+    console.warn('Failed to fetch ticket responses:', error)
+    return []
   }
 }
 
@@ -217,10 +262,13 @@ export async function closeTicket(ticketId) {
  */
 export async function rateSupport(ticketId, rating, feedback = '') {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/support/tickets/${ticketId}/rate`, {
+    const response = await fetch(`${API_BASE_URL}/api/user/support/tickets/${ticketId}/rate`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
       body: JSON.stringify({ rating, feedback }),
     })
 
@@ -231,3 +279,4 @@ export async function rateSupport(ticketId, rating, feedback = '') {
     throw error
   }
 }
+

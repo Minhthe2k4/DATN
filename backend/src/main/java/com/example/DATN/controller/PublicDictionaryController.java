@@ -28,7 +28,7 @@ public class PublicDictionaryController {
         
         String rootWord = aiData.getOrDefault("word", word);
         String phonetic = aiData.getOrDefault("phonetic", "");
-        String partOfSpeech = aiData.getOrDefault("partOfSpeech", "");
+        String typeOfWord = aiData.getOrDefault("typeOfWord", "");
         String definitionEn = aiData.getOrDefault("definitionEn", "");
         String definitionVi = aiData.getOrDefault("definitionVi", "");
         String example = aiData.getOrDefault("example", "");
@@ -42,7 +42,7 @@ public class PublicDictionaryController {
 
         java.util.List<com.example.DATN.dto.ReadingWordLookupResponse.MeaningItem> meanings = new java.util.ArrayList<>();
         meanings.add(new com.example.DATN.dto.ReadingWordLookupResponse.MeaningItem(
-            0, partOfSpeech, definitionEn, definitionVi, example, true
+            0, typeOfWord, definitionEn, definitionVi, example, true
         ));
 
         return new com.example.DATN.dto.ReadingWordLookupResponse(
@@ -56,7 +56,7 @@ public class PublicDictionaryController {
             pronunciations,
             meanings,
             exampleVi,
-            partOfSpeech
+            typeOfWord
         );
     }
 }

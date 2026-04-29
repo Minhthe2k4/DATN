@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { topics as topicSeed } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid } from '../../components/console/AdminUi'
+import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, Pagination } from '../../components/console/AdminUi'
+import { usePagination } from '../../hooks/usePagination'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -10,22 +11,12 @@ function normalizeTopicRow(row) {
     id: row.id,
     name: row.name ?? '',
     description: row.description ?? '',
-    defaultDifficulty: row.defaultDifficulty ?? 'Trung bình',
     lessons: row.lessons ?? 0,
-    words: row.words ?? 0,
     status: row.status ?? 'Hoạt động',
     topicImage: row.topicImage ?? '',
-  }
-}
-
-function createDraftRow(id) {
-  return {
-    id,
-    name: '',
-    description: '',
-    defaultDifficulty: 'Trung bình',
-    status: 'Hoạt động',
-    topicImage: '',
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    deletedAt: row.deletedAt,
   }
 }
 
@@ -33,15 +24,8 @@ export function TopicManagement() {
   const [topicRows, setTopicRows] = useState(topicSeed)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
-  const [draftTopics, setDraftTopics] = useState([
-    createDraftRow('row-1'),
-    createDraftRow('row-2'),
-    createDraftRow('row-3'),
-  ])
-  const [quickPasteInput, setQuickPasteInput] = useState('')
-  const [bulkError, setBulkError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('All')
 
   useEffect(() => {
     let isDisposed = false
@@ -103,158 +87,48 @@ export function TopicManagement() {
       icon: 'iconoir-pause-window',
     },
     {
-      label: 'Tổng từ đã gán',
-      value: topicRows.reduce((sum, topic) => sum + topic.words, 0).toLocaleString('en-US'),
-      meta: 'Chỉ số dùng để đánh giá độ sâu của từng chủ đề',
+      label: 'Số bài học',
+      value: topicRows.reduce((sum, topic) => sum + (topic.lessons || 0), 0).toLocaleString('en-US'),
+      meta: 'Tổng số bài học đã gán cho tất cả chủ đề',
       icon: 'iconoir-book',
     },
   ], [topicRows])
 
   const filteredTopics = useMemo(() => {
+    let result = topicRows
+
+    if (statusFilter !== 'All') {
+      result = result.filter(topic => topic.status === statusFilter)
+    }
+
     const term = searchTerm.toLowerCase().trim()
-    if (!term) return topicRows
-    return topicRows.filter((topic) =>
-      topic.name.toLowerCase().includes(term) ||
-      topic.description.toLowerCase().includes(term)
-    )
-  }, [topicRows, searchTerm])
-
-  const openBulkModal = () => {
-    setBulkError('')
-    setDraftTopics([
-      createDraftRow('row-1'),
-      createDraftRow('row-2'),
-      createDraftRow('row-3'),
-    ])
-    setQuickPasteInput('')
-    setIsBulkModalOpen(true)
-  }
-
-  const closeBulkModal = () => {
-    setBulkError('')
-    setIsBulkModalOpen(false)
-  }
-
-  const addDraftRow = () => {
-    setDraftTopics((prev) => [...prev, createDraftRow(`row-${Date.now()}-${prev.length}`)])
-  }
-
-  const removeDraftRow = (id) => {
-    setDraftTopics((prev) => {
-      if (prev.length <= 1) {
-        return prev
-      }
-
-      return prev.filter((item) => item.id !== id)
-    })
-  }
-
-  const updateDraftRow = (id, field, value) => {
-    setDraftTopics((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
-  }
-
-  const handleBulkCreate = async () => {
-    const manualTopics = draftTopics
-      .map((item) => ({
-        name: item.name.trim(),
-        description: item.description.trim(),
-        defaultDifficulty: item.defaultDifficulty,
-        status: item.status,
-        topicImage: item.topicImage.trim(),
-      }))
-      .filter((item) => item.name)
-
-    const lines = quickPasteInput
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-
-    const pastedTopics = []
-    const invalidLineNumbers = []
-
-    lines.forEach((line, index) => {
-      const parts = line.split('|').map((part) => part.trim())
-      const name = parts[0]
-
-      if (!name) {
-        invalidLineNumbers.push(index + 1)
-        return
-      }
-
-      pastedTopics.push({
-        name,
-        description: parts[1] || '',
-        defaultDifficulty: parts[2] || 'Trung bình',
-        status: parts[3] || 'Hoạt động',
-        topicImage: parts[4] || '',
-      })
-    })
-
-    if (invalidLineNumbers.length > 0) {
-      setBulkError(`Không thể đọc tên chủ đề ở dòng: ${invalidLineNumbers.join(', ')}.`)
-      return
+    if (term) {
+      result = result.filter((topic) =>
+        topic.name.toLowerCase().includes(term) ||
+        topic.description.toLowerCase().includes(term)
+      )
     }
 
-    const mergedTopics = [...manualTopics, ...pastedTopics]
-    if (mergedTopics.length === 0) {
-      setBulkError('Bạn cần nhập ít nhất 1 chủ đề ở phần chính hoặc phần phụ.')
-      return
-    }
+    return result
+  }, [topicRows, searchTerm, statusFilter])
 
-    const uniqueTopics = mergedTopics.filter((item, index, array) => {
-      const key = item.name.toLowerCase()
-      return array.findIndex((entry) => entry.name.toLowerCase() === key) === index
-    })
-
-    try {
-      const createPromises = uniqueTopics.map((item) => fetch(`${API_BASE_URL}/api/admin/topics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: item.name,
-          description: item.description || 'Chủ đề mới được thêm từ màn hình tạo hàng loạt.',
-          defaultDifficulty: item.defaultDifficulty || 'Trung bình',
-          status: item.status || 'Hoạt động',
-          topicImage: item.topicImage || '',
-        }),
-      }))
-
-      const results = await Promise.all(createPromises)
-      const failed = results.find((response) => !response.ok)
-      if (failed) {
-        throw new Error(`Create topic failed: ${failed.status}`)
-      }
-
-      const refresh = await fetch(`${API_BASE_URL}/api/admin/topics`)
-      if (!refresh.ok) {
-        throw new Error(`Cannot refresh topics: ${refresh.status}`)
-      }
-
-      const refreshedPayload = await refresh.json()
-      setTopicRows(Array.isArray(refreshedPayload) ? refreshedPayload.map(normalizeTopicRow) : topicSeed)
-      setBulkError('')
-      setQuickPasteInput('')
-      setIsBulkModalOpen(false)
-    } catch {
-      setBulkError('Tạo chủ đề thất bại. Vui lòng kiểm tra backend và thử lại.')
-    }
-  }
+  const pagination = usePagination(filteredTopics, 10)
 
   return (
-    <div className="page-content topic-management-page">
+    <div className="page-content">
       <div className="container-fluid">
         <AdminPageHeader
           eyebrow="Content Management"
           title="Quản lý chủ đề"
-          description="Tổ chức hệ thống chủ đề để đồng bộ việc phân loại từ vựng, bài học và bài đọc."
+          description="Tổ chức hệ thống chủ đề để đồng bộ việc quản lý bài học và tư liệu học tập."
           actions={
             <>
-              <button type="button" className="btn btn-primary" onClick={openBulkModal}>Thêm chủ đề</button>
+              <Link to="/admin/topics/new" className="btn btn-primary">Thêm chủ đề</Link>
             </>
           }
         />
 
-        {isLoading ? <div className="alert alert-light border">Đang tải dữ liệu chủ đề từ backend...</div> : null}
+        {isLoading ? <div className="alert alert-light border">Đang tải dữ liệu...</div> : null}
         {loadError ? <div className="alert alert-warning border">{loadError}</div> : null}
 
         <StatGrid items={stats} />
@@ -262,32 +136,58 @@ export function TopicManagement() {
         <div className="row g-3 mt-1">
           <div className="col-12">
             <AdminSectionCard
-              className="topic-list-card"
               title="Danh sách chủ đề"
-              description="Theo dõi trạng thái, độ khó mặc định và phạm vi sử dụng của từng chủ đề."
-              actions={<span className="topic-list-card__count">{filteredTopics.length} chủ đề</span>}
+              actions={<span className="badge bg-light text-primary border">{filteredTopics.length} chủ đề</span>}
             >
               <div className="mb-3">
-                <div className="input-group">
-                  <span className="input-group-text bg-white border-end-0">
-                    <i className="iconoir-search"></i>
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control border-start-0 ps-0"
-                    placeholder="Tìm kiếm theo tên hoặc mô tả chủ đề..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="row g-2">
+                  <div className="col-12 col-md-6">
+                    <div className="input-group">
+                      <span className="input-group-text bg-white border-end-0">
+                        <i className="iconoir-search"></i>
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control border-start-0 ps-0"
+                        placeholder="Tìm kiếm chủ đề..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <select
+                      className="form-select"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                      <option value="All">Tất cả trạng thái</option>
+                      <option value="Hoạt động">Hoạt động</option>
+                      <option value="Tạm dừng">Tạm dừng</option>
+                    </select>
+                  </div>
                 </div>
               </div>
+
               <SimpleTable
                 columns={[
-                  { key: 'name', label: 'Tên chủ đề' },
-                  { key: 'description', label: 'Mô tả' },
-                  { key: 'defaultDifficulty', label: 'Độ khó mặc định' },
+                  {
+                    key: 'topicImage',
+                    label: 'Ảnh',
+                    render: (row) => (
+                      <img
+                        src={row.topicImage || 'https://via.placeholder.com/40'}
+                        alt={row.name}
+                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
+                      />
+                    )
+                  },
+                  { 
+                    key: 'name', 
+                    label: 'Tên chủ đề',
+                    render: (row) => <span className="fw-bold">{row.name}</span>
+                  },
                   { key: 'lessons', label: 'Bài học' },
-                  { key: 'words', label: 'Số từ' },
                   {
                     key: 'status',
                     label: 'Trạng thái',
@@ -298,138 +198,25 @@ export function TopicManagement() {
                     label: 'Hành động',
                     render: (row) => (
                       <div className="d-flex flex-wrap gap-2">
+                        <Link to={`/admin/topics/${row.id}`} className="btn btn-sm btn-soft-info">Xem chi tiết</Link>
                         <Link to={`/admin/topics/${row.id}/edit`} className="btn btn-sm btn-soft-primary">Sửa</Link>
                         <Link to={`/admin/topics/${row.id}/delete`} className="btn btn-sm btn-soft-danger">Xóa</Link>
                       </div>
                     ),
                   },
                 ]}
-                rows={filteredTopics}
+                rows={pagination.paginatedData}
+              />
+              
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                onPageChange={pagination.handlePageChange}
               />
             </AdminSectionCard>
           </div>
         </div>
       </div>
-
-      {isBulkModalOpen ? (
-        <>
-          <div className="modal-backdrop fade show"></div>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-xl modal-dialog-centered force-xl-modal" role="document">
-              <div className="modal-content topic-bulk-modal">
-                <div className="modal-header">
-                  <div>
-                    <h5 className="modal-title mb-1">Hệ thống tạo chủ đề hàng loạt</h5>
-                    <div className="topic-bulk-modal__subtitle">Nhập nhanh như Quizlet: nhiều dòng, tập trung tốc độ tạo nội dung.</div>
-                  </div>
-                  <button type="button" className="btn-close" aria-label="Đóng" onClick={closeBulkModal}></button>
-                </div>
-                <div className="modal-body">
-                  <div className="table-responsive">
-                    <table className="table table-borderless table-sm align-middle mb-0">
-                      <thead>
-                        <tr className="small text-muted text-uppercase fw-bold">
-                          <th style={{ width: '18%', paddingLeft: '12px' }}>Tên chủ đề</th>
-                          <th style={{ width: '28%' }}>Mô tả ngắn</th>
-                          <th style={{ width: '14%' }}>Độ khó</th>
-                          <th style={{ width: '14%' }}>Trạng thái</th>
-                          <th style={{ width: '22%' }}>Ảnh (URL)</th>
-                          <th style={{ width: '4%' }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {draftTopics.map((item, index) => (
-                          <tr key={item.id} className="topic-draft-table-row">
-                            <td className="ps-2">
-                              <input
-                                className="form-control form-control-sm"
-                                type="text"
-                                placeholder="Ví dụ: Business English"
-                                value={item.name}
-                                onChange={(event) => updateDraftRow(item.id, 'name', event.target.value)}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                className="form-control form-control-sm"
-                                type="text"
-                                placeholder="Ngữ cảnh sử dụng..."
-                                value={item.description}
-                                onChange={(event) => updateDraftRow(item.id, 'description', event.target.value)}
-                              />
-                            </td>
-                            <td>
-                              <select
-                                className="form-select form-select-sm"
-                                value={item.defaultDifficulty}
-                                onChange={(event) => updateDraftRow(item.id, 'defaultDifficulty', event.target.value)}
-                              >
-                                <option>Cơ bản</option>
-                                <option>Trung bình</option>
-                                <option>Nâng cao</option>
-                              </select>
-                            </td>
-                            <td>
-                              <select
-                                className="form-select form-select-sm"
-                                value={item.status}
-                                onChange={(event) => updateDraftRow(item.id, 'status', event.target.value)}
-                              >
-                                <option>Hoạt động</option>
-                                <option>Tạm dừng</option>
-                              </select>
-                            </td>
-                            <td>
-                              <input
-                                className="form-control form-control-sm"
-                                type="text"
-                                placeholder="URL ảnh..."
-                                value={item.topicImage}
-                                onChange={(event) => updateDraftRow(item.id, 'topicImage', event.target.value)}
-                              />
-                            </td>
-                            <td className="text-end pe-2">
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger border-0"
-                                onClick={() => removeDraftRow(item.id)}
-                                disabled={draftTopics.length <= 1}
-                              >
-                                <i className="iconoir-trash"></i>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <button type="button" className="btn btn-outline-primary mt-3" onClick={addDraftRow}>
-                    + Thêm dòng chủ đề
-                  </button>
-
-                  <div className="topic-secondary-panel mt-3">
-                    <label className="form-label small text-muted mb-1">Dán nhanh danh sách (mỗi dòng: Tên | Mô tả | Độ khó | Trạng thái)</label>
-                    <textarea
-                      className="form-control"
-                      rows={4}
-                      placeholder="Travel & Tourism | Từ vựng du lịch thực tế | Trung bình | Hoạt động"
-                      value={quickPasteInput}
-                      onChange={(event) => setQuickPasteInput(event.target.value)}
-                    ></textarea>
-                  </div>
-
-                  {bulkError ? <div className="text-danger mt-2">{bulkError}</div> : null}
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={closeBulkModal}>Hủy</button>
-                  <button type="button" className="btn btn-primary" onClick={handleBulkCreate}>Tạo danh sách chủ đề</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : null}
     </div>
   )
 }

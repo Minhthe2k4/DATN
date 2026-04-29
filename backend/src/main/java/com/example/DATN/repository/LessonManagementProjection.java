@@ -21,4 +21,7 @@ public interface LessonManagementProjection {
     String getLessonImage();
 
     Boolean getIsPremium();
+    
+    java.util.Date getCreatedAt();
+    java.util.Date getUpdatedAt();
 }

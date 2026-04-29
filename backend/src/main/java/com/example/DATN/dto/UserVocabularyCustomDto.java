@@ -6,7 +6,7 @@ public class UserVocabularyCustomDto {
     public Long id;
     public String word;
     public String pronunciation;
-    public String partOfSpeech;
+    public String typeOfWord;
     public String meaningEn;
     public String meaningVi;
     public String example;
@@ -19,13 +19,13 @@ public class UserVocabularyCustomDto {
     public UserVocabularyCustomDto() {}
 
     public UserVocabularyCustomDto(Long id, String word, String pronunciation,
-                                   String partOfSpeech, String meaningEn, String meaningVi,
+                                   String typeOfWord, String meaningEn, String meaningVi,
                                    String example, String exampleVi, String level, String levelSource,
                                    Date createdAt, Date updatedAt) {
         this.id = id;
         this.word = word;
         this.pronunciation = pronunciation;
-        this.partOfSpeech = partOfSpeech;
+        this.typeOfWord = typeOfWord;
         this.meaningEn = meaningEn;
         this.meaningVi = meaningVi;
         this.example = example;

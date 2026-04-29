@@ -6,31 +6,7 @@ import './dictionary.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
-function SearchIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
-			<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
-			<path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-		</svg>
-	)
-}
-
-function SpeakerIcon() {
-	return (
-		<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-			<path d="M11 5L6 9H2v6h4l5 4V5z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-			<path d="M15.54 8.46a5 5 0 010 7.07M18.37 5.63a9 9 0 010 12.73" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-		</svg>
-	)
-}
-
-function BookmarkIcon() {
-	return (
-		<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-			<path d="M5 3h14v18l-7-4-7 4V3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-		</svg>
-	)
-}
+import { Search, Volume2, Bookmark } from 'lucide-react'
 
 function EmptyIcon() {
 	return (
@@ -120,7 +96,7 @@ export function Dictionary() {
 			if (data && data.meanings && data.meanings.length > 0) {
 				const transformedEntry = {
 					word: data.word || searchText.trim(),
-					partOfSpeech: data.meanings[0]?.partOfSpeech || 'noun',
+					typeOfWord: data.meanings[0]?.typeOfWord || 'noun',
 					uk: data.phonetic || '',
 					us: data.phonetic || '',
 					ukAudio: data.ukAudio || '',
@@ -128,7 +104,7 @@ export function Dictionary() {
 					meanings: data.meanings.map((m, idx) => ({
 						id: idx + 1,
 						level: m.level || '',
-						partOfSpeech: m.partOfSpeech || 'noun',
+						typeOfWord: m.typeOfWord || 'noun',
 						definition: m.definition || '',
 						example: m.example || '',
 						examples: m.examples || [],
@@ -285,7 +261,7 @@ export function Dictionary() {
 			<div className="dictionary-page__container">
 				<form className="dictionary-search" onSubmit={onSubmitSearch}>
 					<div className="dictionary-search__input-wrap">
-						<SearchIcon />
+						<Search size={20} />
 						<input
 							type="text"
 							placeholder="Tìm từ vựng"
@@ -323,14 +299,14 @@ export function Dictionary() {
 						<div className="dictionary-entry">
 							<div className="dictionary-entry__head">
 								<h1>{resultEntry.word}</h1>
-								<span className="dictionary-pill">{resultEntry.partOfSpeech}</span>
+								<span className="dictionary-pill">{resultEntry.typeOfWord}</span>
 							</div>
 
 							<div className="dictionary-pronunciation-grid">
 								<div className="dictionary-pronunciation-line">
 									<strong>UK</strong>
 									<button type="button" aria-label="Phát âm UK" onClick={() => playAudio(resultEntry.ukAudio)} disabled={!resultEntry.ukAudio}>
-										<SpeakerIcon />
+										<Volume2 size={16} />
 									</button>
 									<span>{resultEntry.uk}</span>
 								</div>
@@ -338,7 +314,7 @@ export function Dictionary() {
 								<div className="dictionary-pronunciation-line">
 									<strong>US</strong>
 									<button type="button" aria-label="Phát âm US" onClick={() => playAudio(resultEntry.usAudio)} disabled={!resultEntry.usAudio}>
-										<SpeakerIcon />
+										<Volume2 size={16} />
 									</button>
 									<span>{resultEntry.us}</span>
 								</div>
@@ -350,11 +326,11 @@ export function Dictionary() {
 										<div className="dictionary-meaning-row__title">
 											<div className="meaning-title-content">
 												{meaning.level && <span className="dictionary-pill dictionary-pill--level">{meaning.level}</span>}
-												<span className="dictionary-pill">{meaning.partOfSpeech}</span>
+												<span className="dictionary-pill">{meaning.typeOfWord}</span>
 												<strong>{meaning.definition}</strong>
 											</div>
 											<button type="button" className="dictionary-save-icon" aria-label="Lưu nghĩa" onClick={() => handleOpenSaveModal(meaning)}>
-												<BookmarkIcon />
+												<Bookmark size={15} />
 											</button>
 										</div>
 										

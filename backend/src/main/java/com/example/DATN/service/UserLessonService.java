@@ -72,7 +72,8 @@ public class UserLessonService {
                                 l.name,
                                 l.description,
                                 words,
-                                l.isPremium);
+                                l.isPremium,
+                                l.lessonImage);
         }
 
         /**
@@ -92,7 +93,8 @@ public class UserLessonService {
                                                 lesson.name,
                                                 lesson.description,
                                                 getWordsForLesson(lesson.id),
-                                                lesson.isPremium))
+                                                lesson.isPremium,
+                                                lesson.lessonImage))
                                 .collect(Collectors.toList());
         }
 
@@ -142,7 +144,8 @@ public class UserLessonService {
                                                         lesson.name,
                                                         lesson.description,
                                                         (int) wordCount,
-                                                        lesson.isPremium);
+                                                        lesson.isPremium,
+                                                        lesson.lessonImage);
                                 })
                                 .collect(Collectors.toList());
 
@@ -150,7 +153,7 @@ public class UserLessonService {
                                 topic.id,
                                 topic.name,
                                 topic.description,
-                                "",
+                                topic.topicImage,
                                 lessonSummaries);
         }
 }

@@ -76,6 +76,7 @@ public class SupportPublicController {
             SupportTicket ticket = userSupportService.createTicket(
                     userId,
                     request.email(),
+                    request.name(),
                     request.topic(), // Map topic to title in service
                     request.message()
             );

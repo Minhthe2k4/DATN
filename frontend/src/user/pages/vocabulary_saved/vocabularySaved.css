@@ -171,26 +171,40 @@
 	padding: 12px;
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 16px;
+	flex-wrap: wrap;
 }
 
-.saved-vocab-toolbar input {
+.search-group {
 	flex: 1;
+	min-width: 280px;
+}
+
+.filter-group {
+	min-width: 220px;
+}
+
+.saved-vocab-toolbar input,
+.lesson-filter-select {
+	width: 100%;
 	height: 42px;
 	padding: 0 12px;
 	border: 1px solid #d5dce8;
 	border-radius: 10px;
 	font-size: 14px;
 	font-family: 'Manrope', sans-serif;
+	background-color: white;
+	transition: all 0.2s;
 }
 
-.saved-vocab-toolbar input:focus {
+.saved-vocab-toolbar input:focus,
+.lesson-filter-select:focus {
 	outline: 0;
-	border-color: #93c5fd;
-	box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.22);
+	border-color: #2563eb;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.saved-vocab-toolbar span {
+.results-count {
 	white-space: nowrap;
 	font-size: 13px;
 	font-weight: 700;
@@ -398,6 +412,16 @@
 
 	.saved-vocab-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 680px) {
+	.saved-vocab-page {
+		padding: 12px;
+	}
+
+	.saved-vocab-grid {
+		grid-template-columns: 1fr;
 	}
 }
 

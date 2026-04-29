@@ -25,16 +25,18 @@ public class VocabularyTopicDto {
         public String description;
         public Integer wordCount;
         public Boolean isPremium;
+        public String image;
 
 
         public LessonSummaryDto() {}
 
-        public LessonSummaryDto(Long id, String title, String description, Integer wordCount, Boolean isPremium) {
+        public LessonSummaryDto(Long id, String title, String description, Integer wordCount, Boolean isPremium, String image) {
             this.id = id;
             this.title = title;
             this.description = description;
             this.wordCount = wordCount;
             this.isPremium = isPremium;
+            this.image = image;
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.example.DATN.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -10,10 +12,12 @@ public class SupportResponse {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
 
+    @JsonIgnore                          // Tránh circular reference: SupportTicket -> SupportResponse -> SupportTicket
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticket_id")
     public SupportTicket ticket;
 
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id")
     public User admin;
@@ -28,4 +32,3 @@ public class SupportResponse {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }
-

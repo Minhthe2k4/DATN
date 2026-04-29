@@ -8,16 +8,18 @@ public class VocabularyLessonDto {
     public String description;
     public List<LessonWordDto> words;
     public Boolean isPremium;
+    public String image;
 
 
     public VocabularyLessonDto() {}
 
-    public VocabularyLessonDto(Long id, String title, String description, List<LessonWordDto> words, Boolean isPremium) {
+    public VocabularyLessonDto(Long id, String title, String description, List<LessonWordDto> words, Boolean isPremium, String image) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.words = words;
         this.isPremium = isPremium;
+        this.image = image;
     }
 
     public static class LessonWordDto {

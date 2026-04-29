@@ -2,11 +2,13 @@ package com.example.DATN.controller;
 
 import com.example.DATN.dto.AdminTopicDto;
 import com.example.DATN.dto.UpsertTopicRequest;
+import com.example.DATN.repository.TopicManagementProjection;
 import com.example.DATN.service.AdminTopicService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -47,7 +49,19 @@ public class AdminTopicController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        adminTopicService.delete(id);
+    public void delete(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminTopicService.delete(id, force);
+    }
+
+    @GetMapping("/deleted")
+    public List<TopicManagementProjection> getDeletedTopics() {
+        return adminTopicService.getDeletedTopics();
+    }
+
+    @PatchMapping("/{id}/restore")
+    public void restore(@PathVariable Long id) {
+        adminTopicService.restore(id);
     }
 }

@@ -1,11 +1,19 @@
 package com.example.DATN.dto;
 
+import java.util.Date;
+
 public record AdminVideoChannelDto(
         Long id,
         String name,
         String handle,
-        String topic,
+        String url,
+        String description,
+        Long subscriberCount,
         long videoCount,
-        String status
+        String status,
+        String avatar,
+        Date createdAt,
+        Date updatedAt,
+        Date deletedAt
 ) {
 }

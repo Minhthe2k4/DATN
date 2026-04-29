@@ -4,7 +4,7 @@ import { lessons, vocabularyEntries } from '../../data/adminData'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
-const PART_OF_SPEECH = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'article', 'pronoun']
+const TYPE_OF_WORD = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'article', 'pronoun']
 const LEVELS = ['Cơ bản', 'Trung bình', 'Nâng cao']
 const STATUSES = ['Đã duyệt', 'Chờ duyệt']
 
@@ -43,10 +43,11 @@ function normalizeVocabularyRow(row) {
     id: row.id,
     word: row.word ?? '',
     pronunciation: row.pronunciation ?? '',
-    part_of_speech: row.partOfSpeech ?? row.part_of_speech ?? '',
+    type_of_word: row.typeOfWord ?? row.type_of_word ?? '',
     meaning_en: row.meaningEn ?? row.meaning_en ?? '',
     meaning_vi: row.meaningVi ?? row.meaning_vi ?? '',
     example: row.example ?? '',
+    example_vi: row.exampleVi ?? row.example_vi ?? '',
     level: row.level ?? 'Trung bình',
     status: normalizeStatus(row.status),
     lesson_id: row.lessonId ?? row.lesson_id ?? '',
@@ -59,10 +60,11 @@ function getInitialForm(row, mode) {
     return {
       word: '',
       pronunciation: '',
-      part_of_speech: '',
+      type_of_word: '',
       meaning_en: '',
       meaning_vi: '',
       example: '',
+      example_vi: '',
       level: 'Trung bình',
       status: 'Chờ duyệt',
       lesson_id: lessons[0]?.id || '',
@@ -72,10 +74,11 @@ function getInitialForm(row, mode) {
   return {
     word: row?.word || '',
     pronunciation: row?.pronunciation || '',
-    part_of_speech: row?.part_of_speech || '',
+    type_of_word: row?.type_of_word || '',
     meaning_en: row?.meaning_en || '',
     meaning_vi: row?.meaning_vi || '',
     example: row?.example || '',
+    example_vi: row?.example_vi || '',
     level: row?.level || 'Trung bình',
     status: normalizeStatus(row?.status),
     lesson_id: row?.lesson_id || '',
@@ -194,14 +197,24 @@ export function VocabularyCrudPage({ mode }) {
     }
   }
 
-  const onSubmit = async () => {
+  const extractError = async (res, defaultMsg) => {
+    try {
+      const data = await res.json()
+      return data.message || defaultMsg
+    } catch {
+      return defaultMsg
+    }
+  }
+
+  const onSubmit = async (force = false) => {
     let payload = {
       word: form.word.trim(),
       pronunciation: form.pronunciation.trim(),
-      part_of_speech: form.part_of_speech,
+      type_of_word: form.type_of_word,
       meaning_en: form.meaning_en.trim(),
       meaning_vi: form.meaning_vi.trim(),
       example: form.example.trim(),
+      example_vi: form.example_vi.trim(),
       level: form.level,
       status: form.status,
       lesson_id: form.lesson_id,
@@ -209,7 +222,7 @@ export function VocabularyCrudPage({ mode }) {
 
     if (mode !== 'delete') {
       if (!payload.word) { setError('Vui lòng nhập từ tiếng Anh'); return }
-      if (!payload.part_of_speech) { setError('Vui lòng chọn loại từ'); return }
+      if (!payload.type_of_word) { setError('Vui lòng chọn loại từ'); return }
       if (!payload.meaning_en) { setError('Vui lòng nhập định nghĩa tiếng Anh'); return }
       if (!payload.meaning_vi) { setError('Vui lòng nhập nghĩa tiếng Việt'); return }
       if (!payload.example) { setError('Vui lòng nhập câu ví dụ'); return }
@@ -245,20 +258,22 @@ export function VocabularyCrudPage({ mode }) {
           body: JSON.stringify({
             word: payload.word,
             pronunciation: payload.pronunciation,
-            partOfSpeech: payload.part_of_speech,
+            typeOfWord: payload.type_of_word,
             meaningEn: payload.meaning_en,
             meaningVi: payload.meaning_vi,
             example: payload.example,
+            exampleVi: payload.example_vi,
             level: payload.level,
             status: payload.status,
             lessonId: Number(payload.lesson_id),
           }),
         })
         if (!response.ok) {
-          throw new Error(`Create vocabulary failed: ${response.status}`)
+          throw new Error(await extractError(response, 'Tạo mới thất bại'))
         }
         setError('')
         setSuccess(`Đã thêm từ "${form.word}" thành công.`)
+        window.setTimeout(() => navigate('/admin/vocabulary'), 1500)
         return
       }
 
@@ -269,36 +284,38 @@ export function VocabularyCrudPage({ mode }) {
           body: JSON.stringify({
             word: payload.word,
             pronunciation: payload.pronunciation,
-            partOfSpeech: payload.part_of_speech,
+            typeOfWord: payload.type_of_word,
             meaningEn: payload.meaning_en,
             meaningVi: payload.meaning_vi,
             example: payload.example,
+            exampleVi: payload.example_vi,
             level: payload.level,
             status: payload.status,
             lessonId: Number(payload.lesson_id),
           }),
         })
         if (!response.ok) {
-          throw new Error(`Update vocabulary failed: ${response.status}`)
+          throw new Error(await extractError(response, 'Cập nhật thất bại'))
         }
         setError('')
         setSuccess(`Đã cập nhật từ "${form.word}" thành công.`)
+        window.setTimeout(() => navigate('/admin/vocabulary'), 1500)
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/vocabulary/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/vocabulary/${id}${force ? '?force=true' : ''}`, {
         method: 'DELETE',
       })
       if (!response.ok && response.status !== 204) {
-        throw new Error(`Delete vocabulary failed: ${response.status}`)
+        throw new Error(await extractError(response, 'Xóa thất bại'))
       }
 
       setError('')
-      setSuccess(`Đã xóa từ "${currentRow.word}" thành công.`)
+      setSuccess(force ? `Đã xóa vĩnh viễn từ "${currentRow.word}".` : `Đã xóa tạm thời từ "${currentRow.word}".`)
       window.setTimeout(() => navigate('/admin/vocabulary'), 600)
-    } catch {
+    } catch (err) {
       setSuccess('')
-      setError('Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
+      setError(err.message || 'Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
     }
   }
 
@@ -322,10 +339,17 @@ export function VocabularyCrudPage({ mode }) {
               {mode === 'delete' ? (
                 <div>
                   <div className="alert alert-danger" role="alert">
-                    Bạn chuẩn bị xóa từ vựng <strong>{currentRow?.word}</strong> (ID: {id}). Này không thể hoàn tác.
+                    Bạn chuẩn bị xóa từ vựng <strong>{currentRow?.word}</strong> (ID: {id}).
+                    <br /><br />
+                    - <strong>Xóa tạm thời:</strong> Từ vựng sẽ được chuyển sang trạng thái "Từ chối" và ẩn khỏi các bài học, nhưng dữ liệu vẫn được giữ lại để đối soát.
+                    <br />
+                    - <strong>Xóa vĩnh viễn:</strong> Toàn bộ thông tin về từ vựng này sẽ bị gỡ bỏ hoàn toàn khỏi hệ thống.
                   </div>
-                  <button type="button" className="btn btn-danger me-2" onClick={onSubmit}>Xác nhận xóa</button>
-                  <Link to="/admin/vocabulary" className="btn btn-outline-secondary">Hủy</Link>
+                  <div className="d-flex gap-2">
+                    <button type="button" className="btn btn-warning" onClick={() => onSubmit(false)}>Xóa tạm thời</button>
+                    <button type="button" className="btn btn-danger" onClick={() => onSubmit(true)}>Xóa vĩnh viễn</button>
+                    <Link to="/admin/vocabulary" className="btn btn-outline-secondary">Hủy</Link>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={(e) => { e.preventDefault(); onSubmit() }}>
@@ -352,9 +376,9 @@ export function VocabularyCrudPage({ mode }) {
                     </div>
                     <div className="col-12 col-md-6">
                       <label className="form-label fw-semibold">Loại từ <span className="text-danger">*</span></label>
-                      <select className="form-select" value={form.part_of_speech} onChange={(e) => setField('part_of_speech', e.target.value)}>
+                      <select className="form-select" value={form.type_of_word} onChange={(e) => setField('type_of_word', e.target.value)}>
                         <option value="">— Chọn —</option>
-                        {PART_OF_SPEECH.map((pos) => <option key={pos} value={pos}>{pos}</option>)}
+                        {TYPE_OF_WORD.map((pos) => <option key={pos} value={pos}>{pos}</option>)}
                       </select>
                     </div>
                   </div>
@@ -374,6 +398,11 @@ export function VocabularyCrudPage({ mode }) {
                   <div className="mb-3">
                     <label className="form-label fw-semibold">Câu ví dụ <span className="text-danger">*</span></label>
                     <textarea className="form-control" rows="2" value={form.example} onChange={(e) => setField('example', e.target.value)} placeholder="The startup remained resilient during the downturn."></textarea>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Ví dụ (Tiếng Việt)</label>
+                    <textarea className="form-control" rows="2" value={form.example_vi} onChange={(e) => setField('example_vi', e.target.value)} placeholder="Công ty khởi nghiệp vẫn kiên cường trong thời kỳ suy thoái."></textarea>
                   </div>
 
                   {/* Classification */}

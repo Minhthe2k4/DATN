@@ -51,14 +51,14 @@ public class UserProfileService {
 
         // Đảm bảo có UserStats và đồng bộ dữ liệu
         userStatsService.syncStats(userId);
-        UserStats stats = userStatsRepository.findByUser_Id(userId).orElseThrow();
+        UserStats stats = userStatsRepository.findFirstByUser_Id(userId).orElseThrow();
 
         List<UserSubscription> subscriptions = userSubscriptionRepository.findActiveSubscriptionsByUserId(userId,
                 new Date());
         boolean isPremium = !subscriptions.isEmpty();
         Date premiumUntil = isPremium ? subscriptions.get(0).endDate : null;
 
-        Integer rank = leaderboardRepository.findByUser_Id(userId)
+        Integer rank = leaderboardRepository.findFirstByUser_Id(userId)
                 .map(lb -> lb.rank)
                 .orElse(null);
 
@@ -67,7 +67,8 @@ public class UserProfileService {
                 user.username,
                 user.email,
                 profile.fullName,
-                profile.avatar,
+                user.avatar,
+                user.phoneNumber,
                 user.role,
                 user.createdAt,
                 stats.totalWords,
@@ -80,7 +81,7 @@ public class UserProfileService {
                 rank);
     }
 
-    public UserProfileDto updateProfile(Long userId, String fullName, String avatar) {
+    public UserProfileDto updateProfile(Long userId, String fullName, String avatar, String phoneNumber) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -95,10 +96,21 @@ public class UserProfileService {
             profile.fullName = fullName;
         }
         if (avatar != null) {
-            profile.avatar = avatar;
+            user.avatar = avatar;
+        }
+        if (phoneNumber != null) {
+            user.phoneNumber = phoneNumber;
         }
 
         userProfileRepository.save(profile);
+        userRepository.save(user);
         return getProfile(userId);
+    }
+
+    public void updateAvatar(Long userId, String avatarUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.avatar = avatarUrl;
+        userRepository.save(user);
     }
 }

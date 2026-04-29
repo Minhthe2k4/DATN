@@ -39,6 +39,7 @@ public class ReadingDictionaryService {
     private final UserVocabularyCustomService userVocabularyCustomService;
     private final AiDictionaryService aiDictionaryService;
     private final PremiumService premiumService;
+    private final com.example.DATN.repository.VocabularyRepository vocabularyRepository;
 
     public ReadingDictionaryService(
             UserRepository userRepository,
@@ -47,7 +48,8 @@ public class ReadingDictionaryService {
             UserVocabularyCustomRepository userVocabularyCustomRepository,
             UserVocabularyCustomService userVocabularyCustomService,
             AiDictionaryService aiDictionaryService,
-            PremiumService premiumService) {
+            PremiumService premiumService,
+            com.example.DATN.repository.VocabularyRepository vocabularyRepository) {
 
         this.objectMapper = new ObjectMapper();
         this.userRepository = userRepository;
@@ -57,10 +59,15 @@ public class ReadingDictionaryService {
         this.userVocabularyCustomService = userVocabularyCustomService;
         this.aiDictionaryService = aiDictionaryService;
         this.premiumService = premiumService;
+        this.vocabularyRepository = vocabularyRepository;
     }
 
     public ReadingWordLookupResponse lookupWord(String word, String contextSentence) {
-        return lookupWord(word, contextSentence, null, null);
+        return lookupWord(word, contextSentence, null, null, false);
+    }
+
+    public ReadingWordLookupResponse lookupWord(String word, String contextSentence, Long userId, Long articleId) {
+        return lookupWord(word, contextSentence, userId, articleId, false);
     }
 
     /**
@@ -69,7 +76,8 @@ public class ReadingDictionaryService {
      * xác nhất theo ngữ cảnh.
      */
     @Transactional
-    public ReadingWordLookupResponse lookupWord(String word, String contextSentence, Long userId, Long articleId) {
+    public ReadingWordLookupResponse lookupWord(String word, String contextSentence, Long userId, Long articleId, Boolean forceRefresh) {
+        boolean skipCache = forceRefresh != null && forceRefresh;
         String normalizedWord = normalizeWord(word);
         if (normalizedWord.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Word is required");
@@ -79,13 +87,98 @@ public class ReadingDictionaryService {
                 .map(String::trim)
                 .orElse("");
 
-        // Gọi AI để lấy nghĩa từ và bản dịch của cả câu văn
+        // CHẾ ĐỘ CHECK TRONG DB (TIẾT KIỆM TOKEN AI)
+        if (!skipCache) {
+            // 1. Check trong từ điển hệ thống (curated vocabulary)
+            java.util.Optional<com.example.DATN.entity.Vocabulary> curated = vocabularyRepository.findFirstByWordIgnoreCase(normalizedWord);
+            if (curated.isPresent()) {
+                com.example.DATN.entity.Vocabulary v = curated.get();
+                List<ReadingWordLookupResponse.MeaningItem> items = new ArrayList<>();
+                items.add(new ReadingWordLookupResponse.MeaningItem(
+                        0,
+                        v.typeOfWord,
+                        v.meaningEn,
+                        v.meaningVi,
+                        sentence.isEmpty() ? v.example : sentence,
+                        true));
+                
+                List<ReadingWordLookupResponse.PronunciationItem> prons = new ArrayList<>();
+                if (v.pronunciation != null && !v.pronunciation.isBlank()) {
+                    prons.add(new ReadingWordLookupResponse.PronunciationItem("IPA", v.pronunciation, ""));
+                }
+
+                return new ReadingWordLookupResponse(
+                        v.word,
+                        word == null ? normalizedWord : word.trim(),
+                        v.level,
+                        "System-Dictionary",
+                        sentence,
+                        false, // AI not used
+                        0,
+                        prons,
+                        items,
+                        "", 
+                        v.typeOfWord);
+            }
+
+            // 2. Check trong lịch sử tra cứu của hệ thống (Global Cache)
+            java.util.Optional<LookupHistory> globalExisting = lookupHistoryRepository.findTopByWordOrderByCreatedAtDesc(normalizedWord);
+            if (globalExisting.isPresent()) {
+                LookupHistory history = globalExisting.get();
+                if (history.definitionsJson != null && !history.definitionsJson.isBlank()) {
+                    try {
+                        List<ReadingWordLookupResponse.MeaningItem> meanings = objectMapper.readValue(
+                                history.definitionsJson,
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, ReadingWordLookupResponse.MeaningItem.class));
+                        
+                        // Kiểm tra xem dữ liệu trong cache có "đủ tốt" không (có định nghĩa)
+                        boolean isGoodData = meanings.stream().anyMatch(m -> m.definitionVi() != null && !m.definitionVi().isBlank());
+                        
+                        if (isGoodData) {
+                            return new ReadingWordLookupResponse(
+                                    history.word,
+                                    word == null ? normalizedWord : word.trim(),
+                                    "",
+                                    "Global-Cache",
+                                    sentence.isEmpty() ? history.sentence : sentence,
+                                    true,
+                                    0,
+                                    new ArrayList<>(),
+                                    meanings,
+                                    history.contextTranslation,
+                                    "");
+                        }
+                    } catch (Exception ignore) {}
+                }
+            }
+        }
+
+        // 3. Nếu không thấy hoặc buộc refresh mới gọi AI
         AiOnlyResult aiResult = lookupWithAiOnly(normalizedWord, sentence, userId);
+        
+        // VALIDATION & FALLBACK: Nếu AI trả về dữ liệu quá nghèo nàn
+        if (aiResult.definitionVi.isBlank() && aiResult.definitionEn.isBlank()) {
+             // Nếu có dịch ngữ cảnh, ta dùng nó làm định nghĩa tạm thời thay vì báo lỗi 500
+             if (!aiResult.contextTranslation.isBlank()) {
+                 aiResult = new AiOnlyResult(
+                     aiResult.rootWord,
+                     aiResult.ipaUk,
+                     aiResult.ipaUs,
+                     aiResult.typeOfWord,
+                     aiResult.level,
+                     "Context-based definition",
+                     "Nghĩa theo ngữ cảnh: " + aiResult.contextTranslation,
+                     aiResult.contextTranslation
+                 );
+             } else {
+                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "AI không trả về đủ thông tin định nghĩa. Vui lòng thử lại.");
+             }
+        }
 
         List<ReadingWordLookupResponse.MeaningItem> meaningItems = new ArrayList<>();
         meaningItems.add(new ReadingWordLookupResponse.MeaningItem(
                 0,
-                aiResult.partOfSpeech,
+                aiResult.typeOfWord,
                 aiResult.definitionEn,
                 aiResult.definitionVi,
                 sentence, // Dùng chính câu văn trong bài báo làm ví dụ minh họa
@@ -108,7 +201,7 @@ public class ReadingDictionaryService {
                 pronunciations,
                 meaningItems,
                 aiResult.contextTranslation,
-                aiResult.partOfSpeech);
+                aiResult.typeOfWord);
 
         // Lưu lịch sử tra cứu thầm lặng (không làm gián đoạn việc đọc của người dùng)
         persistLookupHistorySilently(userId, articleId, response);
@@ -127,7 +220,7 @@ public class ReadingDictionaryService {
                     data.get("word"),
                     data.get("phonetic"),
                     data.get("phonetic"),
-                    data.get("partOfSpeech"),
+                    data.get("typeOfWord"),
                     data.get("level"),
                     data.get("definitionEn"),
                     data.get("definitionVi"),
@@ -141,7 +234,7 @@ public class ReadingDictionaryService {
             String rootWord,
             String ipaUk,
             String ipaUs,
-            String partOfSpeech,
+            String typeOfWord,
             String level,
             String definitionEn,
             String definitionVi,
@@ -178,7 +271,7 @@ public class ReadingDictionaryService {
         vocab.user = user;
         vocab.word = normalizedWord;
         vocab.pronunciation = truncate(trimToEmpty(request.pronunciation()), 100);
-        vocab.partOfSpeech = truncate(trimToEmpty(request.partOfSpeech()), 50);
+        vocab.typeOfWord = truncate(trimToEmpty(request.typeOfWord()), 50);
         vocab.meaningEn = trimToEmpty(request.meaningEn());
         vocab.meaningVi = trimToEmpty(request.meaningVi());
         vocab.example = trimToEmpty(request.example());
@@ -222,6 +315,7 @@ public class ReadingDictionaryService {
                     ? null
                     : response.selectedMeaningIndex().longValue();
             history.meaningVi = selectedMeaningVi(response);
+            history.contextTranslation = trimToEmpty(response.contextTranslation());
             history.createdAt = java.time.LocalDateTime.now();
 
             lookupHistoryRepository.save(history);

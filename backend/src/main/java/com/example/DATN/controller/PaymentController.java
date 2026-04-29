@@ -8,6 +8,7 @@ import com.example.DATN.entity.User;
 import com.example.DATN.repository.PremiumPlanRepository;
 import com.example.DATN.repository.TransactionRepository;
 import com.example.DATN.repository.UserRepository;
+import com.example.DATN.service.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -42,14 +43,17 @@ public class PaymentController {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final PremiumPlanRepository premiumPlanRepository;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PaymentController(TransactionRepository transactionRepository,
             UserRepository userRepository,
-            PremiumPlanRepository premiumPlanRepository) {
+            PremiumPlanRepository premiumPlanRepository,
+            NotificationService notificationService) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.premiumPlanRepository = premiumPlanRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/plans")
@@ -170,7 +174,21 @@ public class PaymentController {
             if ("INITIATED".equals(transaction.status)) {
                 transaction.status = "AWAITING"; // Đã thanh toán, chờ duyệt
                 transactionRepository.save(transaction);
-                // Không gọi premiumService.upgradeUserAfterPayment ở đây nữa
+                
+                // Thông báo realtime cho người dùng
+                notificationService.sendPrivateNotification(
+                        transaction.user.id,
+                        "PAYMENT_SUCCESS",
+                        "Thanh toán thành công! Giao dịch của bạn đang được xử lý.",
+                        transaction
+                );
+
+                // Thông báo realtime cho Admin
+                notificationService.sendAdminNotification(
+                        "NEW_PREMIUM_REQUEST",
+                        "Có yêu cầu nâng cấp Premium mới từ " + transaction.user.username,
+                        transaction
+                );
             }
             return ResponseEntity.ok(
                     Map.of("status", "SUCCESS", "message", "Thanh toán thành công! Vui lòng chờ quản trị viên duyệt."));

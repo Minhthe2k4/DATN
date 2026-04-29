@@ -518,6 +518,8 @@ export function VocabularyTest() {
 	const [failedQueue, setFailedQueue] = useState([])
 	const [isReviewPhase, setIsReviewPhase] = useState(false)
 	const [originalQuestions, setOriginalQuestions] = useState([])
+	const [allVocabPool, setAllVocabPool] = useState([])
+	const [notEnoughTotalWords, setNotEnoughTotalWords] = useState(false)
 	const startTimeRef = useRef(null)
 
 	const session = getUserSession()
@@ -548,6 +550,26 @@ export function VocabularyTest() {
 			setIsLoading(true)
 			const session = getUserSession();
 			const token = localStorage.getItem('token') || session?.userId;
+			
+			// 1. Fetch all words for distractors pool
+			const allResponse = await fetch('/api/user/learning/all-vocab', {
+				headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+				credentials: 'include'
+			})
+			let pool = []
+			if (allResponse.ok) {
+				pool = await allResponse.json()
+				setAllVocabPool(pool)
+			}
+
+			// 2. Check minimum pool size (at least 4 words saved total)
+			if (pool.length < 4) {
+				setNotEnoughTotalWords(true)
+				setIsLoading(false)
+				return
+			}
+
+			// 3. Fetch due reviews
 			const response = await fetch('/api/user/learning/review-queue', {
 				headers: token ? { 'Authorization': `Bearer ${token}` } : {},
 				credentials: 'include'
@@ -555,7 +577,7 @@ export function VocabularyTest() {
 			if (response.ok) {
 				const data = await response.json()
 				if (data.length > 0) {
-					const generated = generateQuestions(data)
+					const generated = generateQuestions(data, pool)
 					setQuestions(generated)
 					setOriginalQuestions(generated)
 					setAnswers(Array(generated.length).fill(null))
@@ -569,12 +591,14 @@ export function VocabularyTest() {
 		}
 	}
 
-	const generateQuestions = (vocabItems) => {
+	const generateQuestions = (vocabItems, pool) => {
+		const distractorPool = pool || []
+
 		return vocabItems.map((item, idx) => {
 			const type = TYPE_ARRAY[idx % TYPE_ARRAY.length]
 			
 			if (type === 'multiple-choice') {
-				const distractors = vocabItems
+				const distractors = distractorPool
 					.filter(v => v.word !== item.word)
 					.map(v => v.word)
 					.sort(() => 0.5 - Math.random())
@@ -597,7 +621,7 @@ export function VocabularyTest() {
 				const isCorrectChoice = Math.random() > 0.5
 				let displayDef = item.meaningVi
 				if (!isCorrectChoice) {
-					const other = vocabItems.find(v => v.word !== item.word)
+					const other = distractorPool.find(v => v.word !== item.word) || vocabItems.find(v => v.word !== item.word)
 					displayDef = other ? (other.meaningVi || other.meaningEn) : "A different meaning"
 				}
 				return {
@@ -614,11 +638,15 @@ export function VocabularyTest() {
 					? sentence.replace(new RegExp(item.word, 'gi'), '___')
 					: sentence + " (___)"
 				
-				const distractors = vocabItems
+				const distractors = distractorPool
 					.filter(v => v.word !== item.word)
 					.map(v => v.word)
 					.sort(() => 0.5 - Math.random())
 					.slice(0, 3)
+
+				while (distractors.length < 3) {
+					distractors.push("Unknown " + distractors.length)
+				}
 
 				return {
 					id: `q-${idx}`,
@@ -768,7 +796,19 @@ export function VocabularyTest() {
 	return (
 		<section className="vtest-page">
 			<div className="vtest-container">
-				{!isFinished ? (
+				{notEnoughTotalWords ? (
+					<div className="vtest-card" style={{ textAlign: 'center', padding: '60px 40px' }}>
+						<div style={{ fontSize: '4rem', marginBottom: '20px' }}>📚</div>
+						<h2 style={{ color: '#2d3436', marginBottom: '15px' }}>Chưa đủ từ vựng để bắt đầu</h2>
+						<p style={{ color: '#636e72', fontSize: '1.1rem', maxWidth: '500px', margin: '0 auto 30px' }}>
+							Hệ thống cần ít nhất <strong>4 từ vựng</strong> trong danh sách của bạn để tạo các câu hỏi trắc nghiệm chất lượng. 
+							Hãy học thêm từ mới để bắt đầu ôn tập nhé!
+						</p>
+						<button type="button" className="vtest-btn vtest-btn--retry" onClick={() => navigate('/vocabulary')}>
+							Đi tới Vocabulary
+						</button>
+					</div>
+				) : !isFinished ? (
 					questions.length > 0 ? (
 						<>
 							<ProgressBar

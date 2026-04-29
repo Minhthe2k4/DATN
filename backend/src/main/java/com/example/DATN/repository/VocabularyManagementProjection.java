@@ -10,7 +10,7 @@ public interface VocabularyManagementProjection {
 
     String getPronunciation();
 
-    String getPartOfSpeech();
+    String getTypeOfWord();
 
     String getMeaningEn();
 
@@ -21,9 +21,13 @@ public interface VocabularyManagementProjection {
 
     String getLevel();
 
-    Boolean getStatus();
+    String getStatus();
 
     Long getLessonId();
 
     Long getTopicId();
+    
+    java.util.Date getCreatedAt();
+    java.util.Date getUpdatedAt();
+    java.util.Date getDeletedAt();
 }

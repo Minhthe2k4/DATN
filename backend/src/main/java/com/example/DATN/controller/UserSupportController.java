@@ -4,11 +4,12 @@ import com.example.DATN.dto.CreateSupportTicketRequest;
 import com.example.DATN.entity.SupportResponse;
 import com.example.DATN.entity.SupportTicket;
 import com.example.DATN.service.UserSupportService;
+import com.example.DATN.util.AuthUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,16 +18,7 @@ public class UserSupportController {
     @Autowired
     private UserSupportService userSupportService;
 
-    private Long getUserIdFromAuth(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) {
-            return null;
-        }
-        try {
-            return Long.parseLong(auth.getName());
-        } catch (Exception e) {
-            return null;
-        }
-    }
+
 
     /**
      * Create a new support ticket
@@ -34,16 +26,17 @@ public class UserSupportController {
     @PostMapping("/tickets")
     public ResponseEntity<?> createTicket(
             @RequestBody CreateSupportTicketRequest request,
-            Authentication auth) {
+            HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth);
+            Long userId = AuthUtil.getUserId(httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
             }
 
             SupportTicket ticket = userSupportService.createTicket(
                     userId,
-                    null, // User is logged in, no guest email needed
+                    request.email(),
+                    request.name(),
                     request.topic(),
                     request.message()
             );
@@ -58,9 +51,9 @@ public class UserSupportController {
      * Get all support tickets for user
      */
     @GetMapping("/tickets")
-    public ResponseEntity<?> getUserTickets(Authentication auth) {
+    public ResponseEntity<?> getUserTickets(HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth);
+            Long userId = AuthUtil.getUserId(httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
             }
@@ -78,9 +71,9 @@ public class UserSupportController {
     @GetMapping("/tickets/{ticketId}")
     public ResponseEntity<?> getTicketById(
             @PathVariable Long ticketId,
-            Authentication auth) {
+            HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth);
+            Long userId = AuthUtil.getUserId(httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
             }
@@ -98,9 +91,9 @@ public class UserSupportController {
     @GetMapping("/tickets/{ticketId}/responses")
     public ResponseEntity<?> getTicketResponses(
             @PathVariable Long ticketId,
-            Authentication auth) {
+            HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth);
+            Long userId = AuthUtil.getUserId(httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
             }
@@ -118,9 +111,9 @@ public class UserSupportController {
     @PutMapping("/tickets/{ticketId}/close")
     public ResponseEntity<?> closeTicket(
             @PathVariable Long ticketId,
-            Authentication auth) {
+            HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth);
+            Long userId = AuthUtil.getUserId(httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
             }
@@ -138,9 +131,9 @@ public class UserSupportController {
     @PutMapping("/tickets/{ticketId}/reopen")
     public ResponseEntity<?> reopenTicket(
             @PathVariable Long ticketId,
-            Authentication auth) {
+            HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth);
+            Long userId = AuthUtil.getUserId(httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
             }
@@ -159,9 +152,9 @@ public class UserSupportController {
     public ResponseEntity<?> addReply(
             @PathVariable Long ticketId,
             @RequestBody CreateSupportTicketRequest.ReplyRequest request,
-            Authentication auth) {
+            HttpServletRequest httpRequest) {
         try {
-            Long userId = getUserIdFromAuth(auth);
+            Long userId = AuthUtil.getUserId(httpRequest);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
             }

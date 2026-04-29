@@ -8,11 +8,13 @@ import com.example.DATN.repository.LessonRepository;
 import com.example.DATN.repository.LessonVocabularyRepository;
 import com.example.DATN.repository.VocabularyRepository;
 import com.example.DATN.repository.VocabularyManagementProjection;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -42,21 +44,28 @@ public class AdminVocabularyService {
         Long lessonId = findLessonIdForVocabulary(id);
 
         return new AdminVocabularyDto(
-                toLong(Math.toIntExact(vocabulary.id)),
+                vocabulary.id,
                 defaultString(vocabulary.word, ""),
                 defaultString(vocabulary.pronunciation, ""),
-                defaultString(vocabulary.partOfSpeech, "noun"),
+                defaultString(vocabulary.typeOfWord, "noun"),
                 defaultString(vocabulary.meaningEn, ""),
                 defaultString(vocabulary.meaningVi, ""),
                 defaultString(vocabulary.example, ""),
                 defaultString(vocabulary.exampleVi, ""),
                 normalizeDifficulty(vocabulary.level),
-                "Đã duyệt",
+                defaultString(vocabulary.status, "Đã duyệt"),
                 lessonId,
-                null);
+                null,
+                vocabulary.createdAt,
+                vocabulary.updatedAt,
+                vocabulary.deletedAt);
     }
 
     public AdminVocabularyDto create(UpsertVocabularyRequest request) {
+        String word = request == null || request.word() == null ? "" : request.word().trim();
+        if (vocabularyRepository.existsByWordIgnoreCase(word)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Từ vựng này đã tồn tại trong hệ thống.");
+        }
         Vocabulary vocabulary = new Vocabulary();
         Long lessonId = request.lessonId();
         apply(vocabulary, request);
@@ -71,13 +80,22 @@ public class AdminVocabularyService {
                 lessonVocabularyRepository.save(lessonVocab);
             }
 
-            return findById(toLong(Math.toIntExact(saved.id)));
+            return findById(saved.id);
         } catch (DataIntegrityViolationException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vocabulary word already exists");
+            String msg = ex.getMessage();
+            if (msg != null && (msg.contains("Duplicate entry") || msg.contains("unique"))) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Từ vựng này đã tồn tại trong hệ thống.");
+            }
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lỗi dữ liệu: " + (ex.getMessage() != null ? ex.getMessage() : "Yêu cầu không hợp lệ"));
         }
     }
 
+    @Transactional
     public AdminVocabularyDto update(Long id, UpsertVocabularyRequest request) {
+        String word = request == null || request.word() == null ? "" : request.word().trim();
+        if (vocabularyRepository.existsByWordIgnoreCaseAndIdNot(word, id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Từ vựng này đã tồn tại trong hệ thống.");
+        }
         Vocabulary vocabulary = vocabularyRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vocabulary not found"));
 
@@ -88,11 +106,7 @@ public class AdminVocabularyService {
 
             // Update lesson-vocabulary relationship
             // First, remove vocabulary from all lessons
-            lessonVocabularyRepository.findAll().forEach(lv -> {
-                if (lv.vocabId.equals(id)) {
-                    lessonVocabularyRepository.delete(lv);
-                }
-            });
+            lessonVocabularyRepository.deleteByVocabId(id);
 
             // Then add to new lesson if specified
             if (newLessonId != null) {
@@ -104,24 +118,22 @@ public class AdminVocabularyService {
 
             return findById(id);
         } catch (DataIntegrityViolationException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vocabulary word already exists");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Có lỗi xảy ra khi lưu dữ liệu.");
         }
     }
 
-    public void delete(Long id) {
-        if (!vocabularyRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Vocabulary not found");
+    @Transactional
+    public void delete(Long id, boolean force) {
+        if (force) {
+            lessonVocabularyRepository.deleteByVocabId(id);
+            vocabularyRepository.hardDelete(id);
+        } else {
+            Vocabulary vocabulary = vocabularyRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vocabulary not found"));
+            vocabulary.status = "Từ chối"; // Soft delete
+            vocabulary.deletedAt = new Date();
+            vocabularyRepository.save(vocabulary);
         }
-
-        // Remove from all lessons first
-        lessonVocabularyRepository.findAll().forEach(lv -> {
-            if (lv.vocabId.equals(id)) {
-                lessonVocabularyRepository.delete(lv);
-            }
-        });
-
-        // Then delete the vocabulary
-        vocabularyRepository.deleteById(id);
     }
 
     private void apply(Vocabulary vocabulary, UpsertVocabularyRequest request) {
@@ -139,12 +151,13 @@ public class AdminVocabularyService {
 
         vocabulary.word = word;
         vocabulary.pronunciation = defaultString(request.pronunciation(), "").trim();
-        vocabulary.partOfSpeech = defaultString(request.partOfSpeech(), "noun").trim();
+        vocabulary.typeOfWord = defaultString(request.typeOfWord(), "noun").trim();
         vocabulary.meaningEn = defaultString(request.meaningEn(), "").trim();
         vocabulary.meaningVi = defaultString(request.meaningVi(), "").trim();
         vocabulary.example = defaultString(request.example(), "").trim();
         vocabulary.exampleVi = defaultString(request.exampleVi(), "").trim();
         vocabulary.level = normalizeDifficulty(request.level());
+        vocabulary.status = defaultString(request.status(), "Chờ duyệt").trim();
     }
 
     private AdminVocabularyDto toDto(VocabularyManagementProjection row) {
@@ -155,15 +168,18 @@ public class AdminVocabularyService {
                 row.getId(),
                 defaultString(row.getWord(), ""),
                 defaultString(row.getPronunciation(), ""),
-                defaultString(row.getPartOfSpeech(), "noun"),
+                defaultString(row.getTypeOfWord(), "noun"),
                 defaultString(row.getMeaningEn(), ""),
                 defaultString(row.getMeaningVi(), ""),
                 defaultString(row.getExample(), ""),
                 defaultString(row.getExampleVi(), ""),
                 normalizeDifficulty(row.getLevel()),
-                "Đã duyệt",
+                defaultString(row.getStatus(), "Đã duyệt"),
                 lessonId,
-                null);
+                null,
+                row.getCreatedAt(),
+                row.getUpdatedAt(),
+                row.getDeletedAt());
     }
 
     private String normalizeDifficulty(String value) {
@@ -182,10 +198,6 @@ public class AdminVocabularyService {
         return value;
     }
 
-    private Long toLong(Integer value) {
-        return value == null ? null : value.longValue();
-    }
-
     private Long findLessonIdForVocabulary(Long vocabId) {
         List<LessonVocabulary> lessonVocabs = lessonVocabularyRepository.findAll();
         for (LessonVocabulary lv : lessonVocabs) {
@@ -194,5 +206,14 @@ public class AdminVocabularyService {
             }
         }
         return null;
+    }
+
+    public List<VocabularyManagementProjection> getDeletedVocabulary() {
+        return vocabularyRepository.findDeletedRows();
+    }
+
+    @Transactional
+    public void restore(Long id) {
+        vocabularyRepository.restore(id);
     }
 }

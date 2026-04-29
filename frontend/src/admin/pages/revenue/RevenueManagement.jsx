@@ -12,7 +12,10 @@ import {
   LineTrend,
   SimpleTable,
   StatGrid,
+  Pagination,
+  FilterTabs
 } from '../../components/console/AdminUi'
+import { usePagination } from '../../hooks/usePagination'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -34,13 +37,26 @@ function formatDateTime(value) {
 }
 
 function formatCurrency(value) {
-  return `${value.toLocaleString('en-US')} đ`
+  if (value === undefined || value === null) return '0 đ'
+  return `${value.toLocaleString('vi-VN')} đ`
 }
 
 export function RevenueManagement() {
-  const [summary, setSummary] = useState(revenueSummary)
+  const [summary, setSummary] = useState({
+    ...revenueSummary,
+    totalRevenueToday: 0,
+    totalRevenueYesterday: 0,
+    totalAllTimeRevenue: 0
+  })
   const [planRows, setPlanRows] = useState(revenueByPlan.map((item) => ({ ...item, net: item.gross - item.refunds })))
-  const [trendRows, setTrendRows] = useState(monthlyRevenueTrend)
+  
+  // Trends
+  const [dailyTrend, setDailyTrend] = useState([])
+  const [monthlyTrend, setMonthlyTrend] = useState(monthlyRevenueTrend)
+  const [yearlyTrend, setYearlyTrend] = useState([])
+  
+  const [activeTrend, setActiveTrend] = useState('MONTH') // DAY, MONTH, YEAR
+
   const [transactionRows, setTransactionRows] = useState(revenueTransactions)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -56,10 +72,25 @@ export function RevenueManagement() {
     )
   }, [summary.totalRevenueLastMonth, summary.totalRevenueThisMonth])
 
+  const todayGrowth = useMemo(() => {
+    if (!summary.totalRevenueYesterday) {
+      return summary.totalRevenueToday > 0 ? 100 : 0
+    }
+    return Math.round(
+      ((summary.totalRevenueToday - summary.totalRevenueYesterday) / summary.totalRevenueYesterday) *
+        100
+    )
+  }, [summary.totalRevenueToday, summary.totalRevenueYesterday])
+
   const applyFallbackData = () => {
-    setSummary(revenueSummary)
+    setSummary({
+      ...revenueSummary,
+      totalRevenueToday: 0,
+      totalRevenueYesterday: 0,
+      totalAllTimeRevenue: 0
+    })
     setPlanRows(revenueByPlan.map((item) => ({ ...item, net: item.gross - item.refunds })))
-    setTrendRows(monthlyRevenueTrend)
+    setMonthlyTrend(monthlyRevenueTrend)
     setTransactionRows(revenueTransactions)
   }
 
@@ -72,9 +103,12 @@ export function RevenueManagement() {
     const payload = await response.json()
     const summaryPayload = payload?.summary
     setSummary({
+      totalRevenueToday: summaryPayload?.totalRevenueToday ?? 0,
+      totalRevenueYesterday: summaryPayload?.totalRevenueYesterday ?? 0,
       totalRevenueThisMonth: summaryPayload?.totalRevenueThisMonth ?? 0,
       totalRevenueLastMonth: summaryPayload?.totalRevenueLastMonth ?? 0,
       totalRefundThisMonth: summaryPayload?.totalRefundThisMonth ?? 0,
+      totalAllTimeRevenue: summaryPayload?.totalAllTimeRevenue ?? 0,
       arpu: summaryPayload?.arpu ?? 0,
       conversionRate: summaryPayload?.conversionRate ?? 0,
     })
@@ -91,14 +125,18 @@ export function RevenueManagement() {
         : []
     )
 
-    setTrendRows(
-      Array.isArray(payload?.monthlyRevenueTrend)
-        ? payload.monthlyRevenueTrend.map((item) => ({
-            label: item.label,
-            revenue: item.revenue,
-          }))
-        : []
+    setDailyTrend(
+      (payload?.dailyRevenueTrend || []).map((item) => {
+        const today = new Date()
+        const todayStr = `${today.getDate()}/${today.getMonth() + 1}`
+        return {
+          ...item,
+          label: item.label === todayStr ? `${item.label} (Hôm nay)` : item.label
+        }
+      })
     )
+    setMonthlyTrend(payload?.monthlyRevenueTrend || [])
+    setYearlyTrend(payload?.yearlyRevenueTrend || [])
 
     setTransactionRows(
       Array.isArray(payload?.transactions)
@@ -228,35 +266,44 @@ export function RevenueManagement() {
     return { total, success, refund, pending }
   }, [transactionRows])
 
-  const trendChartRows = useMemo(
-    () => trendRows.map((item) => ({ ...item, revenueInMillions: Number(item.revenue ?? 0) / 1000000 })),
-    [trendRows]
-  )
+  const currentTrendData = useMemo(() => {
+    let raw = []
+    if (activeTrend === 'DAY') raw = dailyTrend
+    else if (activeTrend === 'YEAR') raw = yearlyTrend
+    else raw = monthlyTrend
+
+    return raw.map((item) => ({ 
+        ...item, 
+        revenueInMillions: Number(item.revenue ?? 0) / 1000000 
+    }))
+  }, [activeTrend, dailyTrend, monthlyTrend, yearlyTrend])
+
+  const pagination = usePagination(transactionRows, 15)
 
   const stats = [
     {
-      label: 'Doanh thu tháng này',
-      value: formatCurrency(summary.totalRevenueThisMonth),
-      meta: `So với tháng trước: ${monthGrowth >= 0 ? '+' : ''}${monthGrowth}%`,
-      icon: 'iconoir-wallet-solid',
+      label: 'Tổng doanh thu',
+      value: formatCurrency(summary.totalAllTimeRevenue),
+      meta: 'Tổng doanh thu lũy kế toàn thời gian',
+      icon: 'iconoir-coins',
     },
     {
-      label: 'Hoàn tiền tháng này',
-      value: formatCurrency(summary.totalRefundThisMonth),
-      meta: 'Theo dõi rủi ro giao dịch và chất lượng vận hành',
-      icon: 'iconoir-undo-circle',
+      label: 'Doanh thu hôm nay',
+      value: formatCurrency(summary.totalRevenueToday),
+      meta: `So với hôm qua: ${todayGrowth >= 0 ? '+' : ''}${todayGrowth}%`,
+      icon: 'iconoir-flash',
     },
     {
-      label: 'ARPU ước tính',
-      value: formatCurrency(summary.arpu),
-      meta: 'Doanh thu trung bình trên mỗi người dùng trả phí',
-      icon: 'iconoir-coin-slash',
-    },
-    {
-      label: 'Tỷ lệ chuyển đổi Premium',
+      label: 'Tỷ lệ chuyển đổi',
       value: `${summary.conversionRate}%`,
-      meta: 'Tỷ lệ user free chuyển thành user trả phí',
+      meta: 'Tỷ lệ người dùng chuyển sang gói Premium',
       icon: 'iconoir-percentage-circle',
+    },
+    {
+      label: 'ARPU (Trung bình/User)',
+      value: formatCurrency(summary.arpu),
+      meta: 'Doanh thu trung bình mỗi khách hàng',
+      icon: 'iconoir-coin-slash',
     },
   ]
 
@@ -266,10 +313,10 @@ export function RevenueManagement() {
         <AdminPageHeader
           eyebrow="Revenue Ops"
           title="Quản lý doanh thu"
-          description="Theo dõi doanh thu Premium, hoàn tiền và hiệu quả chuyển đổi để ra quyết định vận hành thương mại."
+          description="Phân tích hiệu quả kinh doanh qua các biểu đồ tương tác theo ngày, tháng, năm."
           actions={
             <>
-              <button type="button" className="btn btn-primary revenue-btn" onClick={handleExportCsv}>Xuất báo cáo doanh thu</button>
+              <button type="button" className="btn btn-primary revenue-btn" onClick={handleExportCsv}>Xuất báo cáo</button>
               <button
                 type="button"
                 className="btn btn-outline-primary revenue-btn revenue-btn--ghost"
@@ -281,7 +328,7 @@ export function RevenueManagement() {
                     .finally(() => setIsLoading(false))
                 }}
               >
-                Làm mới dữ liệu
+                Làm mới
               </button>
             </>
           }
@@ -292,17 +339,42 @@ export function RevenueManagement() {
         {loadError ? <div className="alert alert-warning mt-3 mb-0">{loadError}</div> : null}
 
         <div className="row g-3 mt-1">
-          <div className="col-12 col-xl-6">
+          <div className="col-12 col-xl-8">
             <AdminSectionCard
-              title="Doanh thu theo gói Premium"
-              description="Đánh giá doanh thu gộp, hoàn tiền và doanh thu ròng theo từng gói dịch vụ."
+              title="Biểu đồ xu hướng doanh thu"
+              description="Xem chi tiết doanh thu theo từng mốc thời gian (Rê chuột vào điểm để xem số tiền cụ thể)."
+              actions={
+                <FilterTabs 
+                  items={[
+                    { label: 'Theo Ngày', value: 'DAY' },
+                    { label: 'Theo Tháng', value: 'MONTH' },
+                    { label: 'Theo Năm', value: 'YEAR' }
+                  ]}
+                  active={activeTrend}
+                  onChange={setActiveTrend}
+                />
+              }
+            >
+              <div className="admin-kicker mb-3">
+                Đơn vị: {activeTrend === 'YEAR' ? 'Triệu đồng' : 'VNĐ'}
+              </div>
+              <LineTrend 
+                data={currentTrendData} 
+                valueKey="revenueInMillions" 
+                label={activeTrend === 'DAY' ? 'Doanh thu ngày' : activeTrend === 'YEAR' ? 'Doanh thu năm' : 'Doanh thu tháng'}
+              />
+            </AdminSectionCard>
+          </div>
+
+          <div className="col-12 col-xl-4">
+            <AdminSectionCard
+              title="Gói Premium bán chạy"
+              description="Phân bổ doanh thu theo từng gói dịch vụ."
             >
               <SimpleTable
                 columns={[
                   { key: 'plan', label: 'Gói' },
-                  { key: 'subscribers', label: 'Số thuê bao' },
-                  { key: 'gross', label: 'Doanh thu gộp', render: (row) => formatCurrency(row.gross) },
-                  { key: 'refunds', label: 'Hoàn tiền', render: (row) => formatCurrency(row.refunds) },
+                  { key: 'subscribers', label: 'Lượt mua' },
                   {
                     key: 'net',
                     label: 'Doanh thu ròng',
@@ -314,33 +386,10 @@ export function RevenueManagement() {
             </AdminSectionCard>
           </div>
 
-          <div className="col-12 col-xl-6">
-            <AdminSectionCard
-              title="Xu hướng doanh thu 6 tháng"
-              description="Dữ liệu tổng hợp theo tháng, phục vụ theo dõi đà tăng trưởng doanh thu."
-            >
-              <div className="admin-kicker">Biểu đồ đường - đơn vị: triệu đồng</div>
-              <LineTrend data={trendChartRows} valueKey="revenueInMillions" />
-              <div className="mt-3">
-                <SimpleTable
-                  columns={[
-                    { key: 'label', label: 'Tháng' },
-                    {
-                      key: 'revenue',
-                      label: 'Doanh thu',
-                      render: (row) => formatCurrency(row.revenue),
-                    },
-                  ]}
-                  rows={trendRows}
-                />
-              </div>
-            </AdminSectionCard>
-          </div>
-
           <div className="col-12">
             <AdminSectionCard
-              title="Giao dịch gần đây"
-              description="Danh sách giao dịch gần nhất để theo dõi trạng thái thanh toán và xử lý bất thường."
+              title="Lịch sử giao dịch"
+              description="Danh sách các giao dịch thanh toán Premium gần đây trên hệ thống."
               className="revenue-transactions-card"
             >
               <div className="revenue-transactions-toolbar mb-3">
@@ -361,11 +410,11 @@ export function RevenueManagement() {
                     </select>
                   </div>
                   <div className="revenue-transactions-toolbar__field">
-                    <label htmlFor="revenue-email-filter" className="form-label">Email</label>
+                    <label htmlFor="revenue-email-filter" className="form-label">Email khách hàng</label>
                     <input
                       id="revenue-email-filter"
                       className="form-control form-control-sm"
-                      placeholder="Tìm email"
+                      placeholder="Tìm theo email"
                       value={transactionFilter.email}
                       onChange={(event) => setTransactionFilter((prev) => ({ ...prev, email: event.target.value }))}
                     />
@@ -392,10 +441,10 @@ export function RevenueManagement() {
                   </div>
                   <div className="revenue-transactions-toolbar__actions">
                     <button type="button" className="btn btn-sm btn-primary revenue-btn" onClick={handleApplyTransactionFilter}>
-                      Lọc
+                      Áp dụng
                     </button>
                     <button type="button" className="btn btn-sm btn-outline-primary revenue-btn revenue-btn--ghost" onClick={handleResetTransactionFilter}>
-                      Reset
+                      Làm mới
                     </button>
                   </div>
                 </div>
@@ -422,9 +471,9 @@ export function RevenueManagement() {
                 <SimpleTable
                   columns={[
                     { key: 'id', label: 'Mã giao dịch' },
-                    { key: 'email', label: 'Email' },
-                    { key: 'plan', label: 'Gói' },
-                    { key: 'amount', label: 'Số tiền', render: (row) => formatCurrency(row.amount) },
+                    { key: 'email', label: 'Email khách hàng' },
+                    { key: 'plan', label: 'Gói dịch vụ' },
+                    { key: 'amount', label: 'Số tiền', render: (row) => <strong>{formatCurrency(row.amount)}</strong> },
                     { key: 'gateway', label: 'Cổng thanh toán' },
                     {
                       key: 'status',
@@ -441,7 +490,12 @@ export function RevenueManagement() {
                     },
                     { key: 'createdAt', label: 'Thời gian' },
                   ]}
-                  rows={transactionRows}
+                  rows={pagination.paginatedData}
+                />
+                <Pagination
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={pagination.handlePageChange}
                 />
               </div>
             </AdminSectionCard>

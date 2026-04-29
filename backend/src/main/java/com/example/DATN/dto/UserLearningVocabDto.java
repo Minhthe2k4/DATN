@@ -15,5 +15,7 @@ public record UserLearningVocabDto(
     Integer masteryLevel,  // SRS Mastery Level (1-6)
     Integer streakCorrect,
     Date nextReview,
-    boolean isCustom
+    boolean isCustom,
+    Long lessonId,
+    String lessonName
 ) {}

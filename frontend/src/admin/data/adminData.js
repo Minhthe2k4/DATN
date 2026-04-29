@@ -150,7 +150,7 @@ export const vocabularyEntries = [
     id: 'VOC-1001',
     word: 'resilient',
     pronunciation: '/rɪˈzɪliənt/',
-    part_of_speech: 'adjective',
+    type_of_word: 'adjective',
     meaning_en: 'Able to recover quickly from difficulties.',
     meaning_vi: 'Kiên cường, bền bỉ, dẻo dai',
     example: 'The startup remained resilient during the downturn.',
@@ -676,6 +676,7 @@ export const adminNavGroups = [
       { to: '/admin/revenue', label: 'Quản lý doanh thu', icon: 'iconoir-wallet-solid' },
       { to: '/admin/spaced-repetition', label: 'Cấu hình Spaced Repetition', icon: 'iconoir-refresh-double' },
       { to: '/admin/support', label: 'Hỗ trợ người dùng', icon: 'iconoir-chat-lines' },
+      { to: '/admin/recycle-bin', label: 'Thùng rác', icon: 'iconoir-trash' },
     ],
   },
 ]

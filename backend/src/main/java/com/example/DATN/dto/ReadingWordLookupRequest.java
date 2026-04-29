@@ -5,6 +5,7 @@ public record ReadingWordLookupRequest(
         Long articleId,
         Long videoId,
         String word,
-        String sentence
+        String sentence,
+        Boolean forceRefresh
 ) {
 }

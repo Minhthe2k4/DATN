@@ -7,6 +7,9 @@ import com.example.DATN.entity.User;
 import com.example.DATN.entity.UserProfile;
 import com.example.DATN.repository.UserProfileRepository;
 import com.example.DATN.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.example.DATN.repository.UserManagementProjection;
 import java.util.Date;
 import java.util.List;
@@ -21,7 +24,8 @@ public class AdminUserService {
     private final UserProfileRepository userProfileRepository;
     private final AdminDashboardService adminDashboardService;
 
-    public AdminUserService(UserRepository userRepository, UserProfileRepository userProfileRepository, AdminDashboardService adminDashboardService) {
+    public AdminUserService(UserRepository userRepository, UserProfileRepository userProfileRepository,
+            AdminDashboardService adminDashboardService) {
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
         this.adminDashboardService = adminDashboardService;
@@ -48,6 +52,13 @@ public class AdminUserService {
         user.username = username;
         user.email = email;
         user.role = role;
+        user.avatar = defaultString(request == null ? null : request.avatar(), "").trim();
+        user.phoneNumber = defaultString(request == null ? null : request.phoneNumber(), "").trim();
+
+        if (request != null && request.password() != null && !request.password().isBlank()) {
+            user.password = request.password();
+        }
+
         userRepository.save(user);
 
         String fullName = defaultString(request == null ? null : request.fullName(), "").trim();
@@ -60,21 +71,28 @@ public class AdminUserService {
     }
 
     public AdminUserDto updateActivation(Long id, Boolean active) {
-        User user = userRepository.findActiveById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.deletedAt != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot update activation for a deleted user");
+        }
 
         user.isActive = Boolean.TRUE.equals(active);
         userRepository.save(user);
         return findById(id);
     }
 
-    public void softDelete(Long id) {
-        User user = userRepository.findActiveById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
-        user.isActive = false;
-        user.deletedAt = new Date();
-        userRepository.save(user);
+    public void delete(Long id, boolean force) {
+        if (force) {
+            userRepository.hardDelete(id);
+        } else {
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            user.isActive = false;
+            user.deletedAt = new Date();
+            userRepository.save(user);
+        }
     }
 
     public List<AdminDashboardOverviewResponse.UserActivityLeaderItem> getLeaders() {
@@ -82,7 +100,7 @@ public class AdminUserService {
     }
 
     private AdminUserDto toDto(UserManagementProjection row) {
-        boolean active = Boolean.TRUE.equals(row.getIsActive());
+        boolean isActive = Boolean.TRUE.equals(row.getIsActive());
         boolean premium = row.getIsPremium() != null && row.getIsPremium() != 0;
         return new AdminUserDto(
                 row.getId(),
@@ -90,14 +108,15 @@ public class AdminUserService {
                 defaultString(row.getEmail(), ""),
                 defaultString(row.getFullName(), ""),
                 normalizeRole(row.getRole()),
+                defaultString(row.getAvatar(), ""),
+                defaultString(row.getPhoneNumber(), ""),
+                isActive,
                 row.getCreatedAt(),
-                safeInt(Math.toIntExact(row.getLearnedWords())),
-                row.getLastReviewAt(),
+                row.getUpdatedAt(),
+                row.getDeletedAt(),
                 premium,
                 row.getPremiumUntil(),
-                active ? "Hoạt động" : "Bị khóa",
-                active
-        );
+                isActive ? "Hoạt động" : "Bị khóa");
     }
 
     private int safeInt(Integer value) {
@@ -122,5 +141,14 @@ public class AdminUserService {
             return fallback;
         }
         return value;
+    }
+
+    public List<UserManagementProjection> getDeletedUsers() {
+        return userRepository.findDeletedRows(new java.util.Date());
+    }
+
+    @Transactional
+    public void restore(Long id) {
+        userRepository.restore(id);
     }
 }

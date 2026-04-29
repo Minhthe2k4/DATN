@@ -5,11 +5,14 @@ import com.example.DATN.dto.AdminVideoDto;
 import com.example.DATN.dto.TranscriptResponseDto;
 import com.example.DATN.dto.UpsertVideoChannelRequest;
 import com.example.DATN.dto.UpsertVideoRequest;
+import com.example.DATN.repository.VideoManagementProjection;
+import com.example.DATN.repository.YouTubeChannelManagementProjection;
 import com.example.DATN.service.AdminVideoService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -50,8 +53,10 @@ public class AdminVideoController {
 
     @DeleteMapping("/video-channels/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteChannel(@PathVariable Long id) {
-        adminVideoService.deleteChannel(id);
+    public void deleteChannel(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminVideoService.deleteChannel(id, force);
     }
 
     @GetMapping("/videos")
@@ -77,8 +82,10 @@ public class AdminVideoController {
 
     @DeleteMapping("/videos/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteVideo(@PathVariable Long id) {
-        adminVideoService.deleteVideo(id);
+    public void deleteVideo(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminVideoService.deleteVideo(id, force);
     }
 
     /**
@@ -88,16 +95,16 @@ public class AdminVideoController {
      * 
      * Response:
      * {
-     *   "videoId": "...",
-     *   "title": "...",
-     *   "transcript": "full text...",
-     *   "segments": [
-     *     { "startSec": 0.5, "endSec": 3.2, "text": "...", "segmentOrder": 1 },
-     *     ...
-     *   ],
-     *   "language": "ko",
-     *   "sourceUrl": "...",
-     *   "error": null
+     * "videoId": "...",
+     * "title": "...",
+     * "transcript": "full text...",
+     * "segments": [
+     * { "startSec": 0.5, "endSec": 3.2, "text": "...", "segmentOrder": 1 },
+     * ...
+     * ],
+     * "language": "ko",
+     * "sourceUrl": "...",
+     * "error": null
      * }
      */
     @PostMapping("/videos/fetch-captions")
@@ -105,6 +112,31 @@ public class AdminVideoController {
         return adminVideoService.fetchYouTubeCaptions(request.youtubeUrl());
     }
 
-    public record CaptionRequest(String youtubeUrl) {}
-}
+    @PostMapping("/video-channels/fetch-info")
+    public java.util.Map<String, String> fetchChannelInfo(@RequestBody CaptionRequest request) {
+        return adminVideoService.fetchChannelInfo(request.youtubeUrl());
+    }
 
+    public record CaptionRequest(String youtubeUrl) {
+    }
+
+    @GetMapping("/videos/deleted")
+    public List<VideoManagementProjection> getDeletedVideos() {
+        return adminVideoService.getDeletedVideos();
+    }
+
+    @PatchMapping("/videos/{id}/restore")
+    public void restoreVideo(@PathVariable Long id) {
+        adminVideoService.restoreVideo(id);
+    }
+
+    @GetMapping("/video-channels/deleted")
+    public List<YouTubeChannelManagementProjection> getDeletedChannels() {
+        return adminVideoService.getDeletedChannels();
+    }
+
+    @PatchMapping("/video-channels/{id}/restore")
+    public void restoreChannel(@PathVariable Long id) {
+        adminVideoService.restoreChannel(id);
+    }
+}

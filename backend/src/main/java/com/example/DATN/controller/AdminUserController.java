@@ -4,6 +4,7 @@ import com.example.DATN.dto.AdminDashboardOverviewResponse;
 import com.example.DATN.dto.AdminUserDto;
 import com.example.DATN.dto.UpdateAdminUserRequest;
 import com.example.DATN.dto.UpdateUserActivationRequest;
+import com.example.DATN.repository.UserManagementProjection;
 import com.example.DATN.service.AdminUserService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -53,7 +54,19 @@ public class AdminUserController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void softDelete(@PathVariable Long id) {
-        adminUserService.softDelete(id);
+    public void delete(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminUserService.delete(id, force);
+    }
+
+    @GetMapping("/deleted")
+    public List<UserManagementProjection> getDeletedUsers() {
+        return adminUserService.getDeletedUsers();
+    }
+
+    @PatchMapping("/{id}/restore")
+    public void restore(@PathVariable Long id) {
+        adminUserService.restore(id);
     }
 }

@@ -5,7 +5,7 @@ public record SaveReadingWordRequest(
         Long articleId,
         String word,
         String pronunciation,
-        String partOfSpeech,
+        String typeOfWord,
         String meaningEn,
         String meaningVi,
         String example,

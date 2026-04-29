@@ -29,6 +29,10 @@ import PremiumCheckout from './user/pages/PremiumCheckout.jsx'
 import PaymentResult from './user/pages/PaymentResult.jsx'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ProtectedRoute } from './user/utils/ProtectedRoute'
+import { getUserSession, getAuthHeader } from './user/utils/authSession'
+import { getAdminSession } from './admin/utils/adminSession'
+import { WebSocketProvider } from './context/WebSocketContext'
+import NotificationToast from './components/NotificationToast'
 import './App.css'
 
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx').then((module) => ({ default: module.AdminApp })))
@@ -227,6 +231,39 @@ function App() {
     }
   }, [isSoundEnabled])
 
+  // Heartbeat to track web usage time
+  useEffect(() => {
+    const session = getUserSession()
+    if (!session) return
+
+    const sendHeartbeat = async () => {
+      // Only count usage if the tab is visible
+      if (document.visibilityState !== 'visible') return
+
+      try {
+        await fetch('/api/user/stats/heartbeat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          }
+        })
+      } catch (error) {
+        // Silent fail for heartbeat
+      }
+    }
+
+    // Initial heartbeat on mount/login
+    sendHeartbeat()
+
+    const intervalId = setInterval(sendHeartbeat, 60000) // Ping every 1 minute
+
+    return () => clearInterval(intervalId)
+  }, [location.pathname]) // Re-check on navigation to ensure session is still valid
+
+  const session = getUserSession()
+  const userId = session?.userId || session?.id || session?.user?.id
+
   if (isAdminLoginRoute) {
     return (
       <div className="admin-login-page">
@@ -239,13 +276,19 @@ function App() {
   }
 
   if (isAdminRoute) {
+    const adminSession = getAdminSession()
+    const currentAdminId = adminSession?.userId || adminSession?.id
+    
     return (
-      <Suspense fallback={<div className="admin-loading" />}>
-        <Routes>
-          <Route path="/admin/*" element={<AdminApp />} />
-          <Route path="*" element={<Navigate to="/admin" replace />} />
-        </Routes>
-      </Suspense>
+      <WebSocketProvider userId={currentAdminId} isAdmin={true}>
+        <Suspense fallback={<div className="admin-loading" />}>
+          <Routes>
+            <Route path="/admin/*" element={<AdminApp />} />
+            <Route path="*" element={<Navigate to="/admin" replace />} />
+          </Routes>
+        </Suspense>
+        <NotificationToast />
+      </WebSocketProvider>
     )
   }
 
@@ -263,52 +306,55 @@ function App() {
   }
 
   return (
-    <div className={`app-shell${isSidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}>
-      <Sidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
-      />
-
-      <div className="app-workspace">
-        <Header
-          isSoundEnabled={isSoundEnabled}
-          onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
-                  isDarkMode={isDarkMode}
-                  onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+    <WebSocketProvider userId={userId} isAdmin={false}>
+      <div className={`app-shell${isSidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}>
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
         />
 
-        <main className="app-main">
-          <div className={`route-stage${isRouteAnimating ? ' is-animating' : ''}`}>
-            <Routes>
-              <Route path="/" element={<Homepage />} />
-              <Route path="/vocabulary" element={<Vocabulary />} />
-              <Route path="/vocabulary-manager" element={<VocabularyManager />} />
-              <Route path="/vocabulary-lesson" element={<VocabularyLesson />} />
-              <Route path="/reading" element={<Reading />} />
-              <Route path="/reading/:topicId/:articleId" element={<ReadingDetail />} />
-              <Route path="/dictionary" element={<Dictionary />} />
-              <Route path="/video" element={<Video />} />
-              <Route path="/video/:channelSlug" element={<VideoChannel />} />
-              <Route path="/video/:channelSlug/watch/:videoId" element={<VideoWatch />} />
-              <Route path="/subscription" element={<Subscription />} />
-              <Route path="/vocabulary-test" element={<VocabularyTest />} />
-              <Route path="/vocabulary-saved" element={<VocabularySaved />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile" element={<ProtectedRoute><Profile/></ProtectedRoute>} />
-              <Route path="/flashcards" element={<ProtectedRoute><FlashcardManager/></ProtectedRoute>} />
-              <Route path="/flashcards/study/:deckId" element={<ProtectedRoute><FlashcardStudy/></ProtectedRoute>} />
-              <Route path="/flashcards/deck-editor/:deckId" element={<ProtectedRoute><FlashcardDeckEditor/></ProtectedRoute>} />
-              <Route path="/profile/manage" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />
-              <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />
-              <Route path="/premium-checkout" element={<ProtectedRoute><PremiumCheckout /></ProtectedRoute>} />
-              <Route path="/payment-result" element={<ProtectedRoute><PaymentResult /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </main>
+        <div className="app-workspace">
+          <Header
+            isSoundEnabled={isSoundEnabled}
+            onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
+                    isDarkMode={isDarkMode}
+                    onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+          />
+
+          <main className="app-main">
+            <div className={`route-stage${isRouteAnimating ? ' is-animating' : ''}`}>
+              <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/vocabulary" element={<Vocabulary />} />
+                <Route path="/vocabulary-manager" element={<VocabularyManager />} />
+                <Route path="/vocabulary-lesson" element={<VocabularyLesson />} />
+                <Route path="/reading" element={<Reading />} />
+                <Route path="/reading/:topicId/:articleId" element={<ReadingDetail />} />
+                <Route path="/dictionary" element={<Dictionary />} />
+                <Route path="/video" element={<Video />} />
+                <Route path="/video/:channelSlug" element={<VideoChannel />} />
+                <Route path="/video/:channelSlug/watch/:videoId" element={<VideoWatch />} />
+                <Route path="/subscription" element={<Subscription />} />
+                <Route path="/vocabulary-test" element={<VocabularyTest />} />
+                <Route path="/vocabulary-saved" element={<VocabularySaved />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/profile" element={<ProtectedRoute><Profile/></ProtectedRoute>} />
+                <Route path="/flashcards" element={<ProtectedRoute><FlashcardManager/></ProtectedRoute>} />
+                <Route path="/flashcards/study/:deckId" element={<ProtectedRoute><FlashcardStudy/></ProtectedRoute>} />
+                <Route path="/flashcards/deck-editor/:deckId" element={<ProtectedRoute><FlashcardDeckEditor/></ProtectedRoute>} />
+                <Route path="/profile/manage" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />
+                <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />
+                <Route path="/premium-checkout" element={<ProtectedRoute><PremiumCheckout /></ProtectedRoute>} />
+                <Route path="/payment-result" element={<ProtectedRoute><PaymentResult /></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+      <NotificationToast />
+    </WebSocketProvider>
   )
 }
 

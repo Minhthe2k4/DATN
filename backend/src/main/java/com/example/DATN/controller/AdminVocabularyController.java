@@ -4,12 +4,14 @@ import com.example.DATN.dto.AdminVocabularyDto;
 import com.example.DATN.dto.GeneratePronunciationRequest;
 import com.example.DATN.dto.GeneratePronunciationResponse;
 import com.example.DATN.dto.UpsertVocabularyRequest;
+import com.example.DATN.repository.VocabularyManagementProjection;
 import com.example.DATN.service.AdminVocabularyService;
 import com.example.DATN.service.PronunciationGeneratorService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -26,8 +28,7 @@ public class AdminVocabularyController {
 
     public AdminVocabularyController(
             AdminVocabularyService adminVocabularyService,
-            PronunciationGeneratorService pronunciationGeneratorService
-    ) {
+            PronunciationGeneratorService pronunciationGeneratorService) {
         this.adminVocabularyService = adminVocabularyService;
         this.pronunciationGeneratorService = pronunciationGeneratorService;
     }
@@ -50,13 +51,12 @@ public class AdminVocabularyController {
 
     @PostMapping("/pronunciation/generate")
     public GeneratePronunciationResponse generatePronunciation(@RequestBody GeneratePronunciationRequest request) {
-        PronunciationGeneratorService.GenerationResult result =
-            pronunciationGeneratorService.generateResult(request == null ? null : request.word());
+        PronunciationGeneratorService.GenerationResult result = pronunciationGeneratorService
+                .generateResult(request == null ? null : request.word());
         return new GeneratePronunciationResponse(
-            request == null ? "" : request.word(),
-            result.pronunciation(),
-            result.source()
-        );
+                request == null ? "" : request.word(),
+                result.pronunciation(),
+                result.source());
     }
 
     @PutMapping("/{id}")
@@ -66,7 +66,19 @@ public class AdminVocabularyController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        adminVocabularyService.delete(id);
+    public void delete(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "false") boolean force) {
+        adminVocabularyService.delete(id, force);
+    }
+
+    @GetMapping("/deleted")
+    public List<VocabularyManagementProjection> getDeletedVocabulary() {
+        return adminVocabularyService.getDeletedVocabulary();
+    }
+
+    @PatchMapping("/{id}/restore")
+    public void restore(@PathVariable Long id) {
+        adminVocabularyService.restore(id);
     }
 }

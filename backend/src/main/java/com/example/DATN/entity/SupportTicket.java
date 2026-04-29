@@ -29,6 +29,9 @@ public class SupportTicket {
     @Column(name = "email", length = 255)
     public String email;
 
+    @Column(name = "sender_name", length = 100)
+    public String senderName;
+
     @Column(name = "created_at")
     public Date createdAt;
 

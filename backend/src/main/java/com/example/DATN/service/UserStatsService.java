@@ -27,23 +27,35 @@ public class UserStatsService {
     @Autowired
     private com.example.DATN.repository.ReviewHistoryRepository reviewHistoryRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    private final java.util.Map<Long, Long> lastHeartbeats = new java.util.concurrent.ConcurrentHashMap<>();
+
     /**
      * Đồng bộ hóa hoặc khởi tạo thống kê người dùng.
      */
     @Transactional
     public void syncStats(Long userId) {
-        UserStats stats = userStatsRepository.findByUser_Id(userId)
-                .orElseGet(() -> {
-                    UserStats newStats = new UserStats();
-                    User user = new User();
-                    user.id = userId;
-                    newStats.user = user;
-                    newStats.learnedWords = 0;
-                    newStats.totalWords = 0;
-                    newStats.streakDays = 0;
-                    newStats.accuracy = 0.0f;
-                    return newStats;
-                });
+        UserStats stats = userStatsRepository.findFirstByUser_Id(userId).orElse(null);
+
+        if (stats == null) {
+            try {
+                UserStats newStats = new UserStats();
+                User user = new User();
+                user.id = userId;
+                newStats.user = user;
+                newStats.learnedWords = 0;
+                newStats.totalWords = 0;
+                newStats.streakDays = 0;
+                newStats.accuracy = 0.0f;
+                stats = userStatsRepository.save(newStats);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                stats = userStatsRepository.findFirstByUser_Id(userId).orElse(null);
+            }
+        }
+
+        if (stats == null) return;
 
         // 1. Tính tổng số từ đang học
         long totalWords = userVocabularyLearningRepository.countByUser_Id(userId);
@@ -62,20 +74,24 @@ public class UserStatsService {
                 .orElse(0.0);
         stats.accuracy = avgAccuracy.floatValue();
 
-        // 4. Tính tổng thời gian học (giờ)
-        Double totalResponseMs = reviewHistoryRepository.findByUser_Id(userId).stream()
-                .mapToDouble(h -> h.responseTime != null ? h.responseTime : 0.0)
-                .sum();
-        stats.totalStudyTime = totalResponseMs / (3600.0 * 1000.0);
+        // 4. Tính tổng thời gian học (chỉ khởi tạo nếu chưa có dữ liệu heartbeat)
+        if (stats.totalStudyTime == null || stats.totalStudyTime == 0.0) {
+            Double totalResponseMs = reviewHistoryRepository.findByUser_Id(userId).stream()
+                    .mapToDouble(h -> h.responseTime != null ? h.responseTime : 0.0)
+                    .sum();
+            stats.totalStudyTime = totalResponseMs / (3600.0 * 1000.0);
+        }
 
         userStatsRepository.save(stats);
 
         // 5. Cập nhật bảng Leaderboard (Điểm số)
         updateLeaderboardScore(userId, stats);
+        
+        notificationService.broadcastLeaderboardUpdate("Cập nhật mới từ người dùng " + userId);
     }
 
     private void updateLeaderboardScore(Long userId, UserStats stats) {
-        com.example.DATN.entity.Leaderboard lb = leaderboardRepository.findByUser_Id(userId)
+        com.example.DATN.entity.Leaderboard lb = leaderboardRepository.findFirstByUser_Id(userId)
                 .orElseGet(() -> {
                     com.example.DATN.entity.Leaderboard newLb = new com.example.DATN.entity.Leaderboard();
                     User user = new User();
@@ -105,6 +121,8 @@ public class UserStatsService {
             all.get(i).rank = i + 1;
         }
         leaderboardRepository.saveAll(all);
+        
+        notificationService.broadcastLeaderboardUpdate("Bảng xếp hạng đã được làm mới");
     }
 
     /**
@@ -112,18 +130,67 @@ public class UserStatsService {
      */
     @Transactional
     public void updateStreak(Long userId) {
-        UserStats stats = userStatsRepository.findByUser_Id(userId).orElse(null);
+        UserStats stats = userStatsRepository.findFirstByUser_Id(userId).orElse(null);
         if (stats == null) {
             syncStats(userId);
-            stats = userStatsRepository.findByUser_Id(userId).orElse(null);
+            stats = userStatsRepository.findFirstByUser_Id(userId).orElse(null);
         }
         if (stats == null)
             return;
 
-        if (stats.streakDays == null || stats.streakDays == 0) {
-            stats.streakDays = 1;
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate lastStudy = null;
+        if (stats.lastStudyDate != null) {
+            if (stats.lastStudyDate instanceof java.sql.Date) {
+                lastStudy = ((java.sql.Date) stats.lastStudyDate).toLocalDate();
+            } else {
+                lastStudy = stats.lastStudyDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            }
         }
 
+        if (lastStudy == null) {
+            stats.streakDays = 1;
+        } else if (lastStudy.isEqual(today.minusDays(1))) {
+            stats.streakDays = (stats.streakDays != null ? stats.streakDays : 0) + 1;
+        } else if (lastStudy.isBefore(today.minusDays(1))) {
+            stats.streakDays = 1;
+        }
+        
+        stats.lastStudyDate = java.util.Date.from(today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+
         userStatsRepository.save(stats);
+        
+        notificationService.broadcastLeaderboardUpdate("Cập nhật mới từ người dùng " + userId);
+    }
+
+    @Transactional
+    public void recordHeartbeat(Long userId) {
+        UserStats stats = userStatsRepository.findFirstByUser_Id(userId).orElse(null);
+        if (stats == null) {
+            syncStats(userId);
+            stats = userStatsRepository.findFirstByUser_Id(userId).orElse(null);
+        }
+
+        if (stats == null)
+            return;
+
+        long now = System.currentTimeMillis();
+        Long last = lastHeartbeats.get(userId);
+
+        if (last != null) {
+            long diffMs = now - last;
+            // Nếu khoảng cách giữa 2 heartbeat nhỏ hơn 5 phút (tránh treo máy hoặc đa luồng
+            // quá mức)
+            if (diffMs > 0 && diffMs < 5 * 60 * 1000) {
+                double diffHours = diffMs / (3600.0 * 1000.0);
+                stats.totalStudyTime = (stats.totalStudyTime != null ? stats.totalStudyTime : 0.0) + diffHours;
+            }
+        }
+
+        lastHeartbeats.put(userId, now);
+        userStatsRepository.save(stats);
+
+        // Phát tín hiệu cập nhật Leaderboard cho tất cả mọi người
+        notificationService.broadcastLeaderboardUpdate("Cập nhật mới từ người dùng " + userId);
     }
 }

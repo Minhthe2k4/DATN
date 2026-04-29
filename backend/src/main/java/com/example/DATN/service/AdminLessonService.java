@@ -6,7 +6,11 @@ import com.example.DATN.entity.Lesson;
 import com.example.DATN.entity.Topic;
 import com.example.DATN.repository.LessonRepository;
 import com.example.DATN.repository.TopicRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.example.DATN.repository.LessonManagementProjection;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.http.HttpStatus;
@@ -39,10 +43,18 @@ public class AdminLessonService {
                 normalizeDifficulty(lesson.difficulty),
                 defaultString(lesson.status, "Đang mở"),
                 lesson.lessonImage,
-                lesson.isPremium);
+                lesson.isPremium,
+                lesson.createdAt,
+                lesson.updatedAt,
+                lesson.deletedAt);
     }
 
     public AdminLessonDto create(UpsertLessonRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (lessonRepository.existsByNameIgnoreCase(name)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tên bài học đã tồn tại. Vui lòng chọn tên khác.");
+        }
         Lesson lesson = new Lesson();
         apply(lesson, request);
         Lesson saved = lessonRepository.save(lesson);
@@ -50,6 +62,11 @@ public class AdminLessonService {
     }
 
     public AdminLessonDto update(Long id, UpsertLessonRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (lessonRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tên bài học đã tồn tại. Vui lòng chọn tên khác.");
+        }
         Lesson lesson = lessonRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found"));
         apply(lesson, request);
@@ -57,11 +74,16 @@ public class AdminLessonService {
         return findById(id);
     }
 
-    public void delete(Long id) {
-        if (!lessonRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found");
+    public void delete(Long id, boolean force) {
+        if (force) {
+            lessonRepository.hardDelete(id);
+        } else {
+            Lesson lesson = lessonRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found"));
+            lesson.status = "Tạm dừng"; // Soft delete
+            lesson.deletedAt = new Date();
+            lessonRepository.save(lesson);
         }
-        lessonRepository.deleteById(id);
     }
 
     private void apply(Lesson lesson, UpsertLessonRequest request) {
@@ -94,7 +116,10 @@ public class AdminLessonService {
                 normalizeDifficulty(row.getDifficulty()),
                 defaultString(row.getStatus(), "Đang mở"),
                 row.getLessonImage(),
-                row.getIsPremium());
+                row.getIsPremium(),
+                row.getCreatedAt(),
+                row.getUpdatedAt(),
+                null); // deletedAt is usually NULL for management rows
     }
 
     private String normalizeDifficulty(String value) {
@@ -111,5 +136,14 @@ public class AdminLessonService {
             return fallback;
         }
         return value;
+    }
+
+    public List<LessonManagementProjection> getDeletedLessons() {
+        return lessonRepository.findDeletedRows();
+    }
+
+    @Transactional
+    public void restore(Long id) {
+        lessonRepository.restore(id);
     }
 }

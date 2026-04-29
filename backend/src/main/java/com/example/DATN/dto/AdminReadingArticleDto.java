@@ -9,6 +9,8 @@ public record AdminReadingArticleDto(
         String content,
         String articleImage,
         java.util.Date createdAt,
+        java.util.Date updatedAt,
+        java.util.Date deletedAt,
         int wordsHighlighted,
         String sourceUrl,
         String status

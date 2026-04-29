@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getAdminSession } from '../../utils/adminSession'
 import { supportTickets } from '../../data/adminData'
 import {
   AdminPageHeader,
@@ -7,7 +9,9 @@ import {
   FilterTabs,
   SimpleTable,
   StatGrid,
+  Pagination,
 } from '../../components/console/AdminUi'
+import { usePagination } from '../../hooks/usePagination'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -31,14 +35,10 @@ function formatDate(value) {
 }
 
 export function SupportManagement() {
+  const navigate = useNavigate()
   const [tickets, setTickets] = useState(supportTickets)
   const [activeFilter, setActiveFilter] = useState('Tất cả')
-  const [selectedTicket, setSelectedTicket] = useState(null)
-  const [replyText, setReplyText] = useState('')
-  const [replyError, setReplyError] = useState('')
   const [loadError, setLoadError] = useState('')
-
-  // Nâng cấp: Tìm kiếm
   const [searchTerm, setSearchTerm] = useState('')
 
   const normalizeRow = (item) => ({
@@ -73,6 +73,18 @@ export function SupportManagement() {
       .catch(() => setLoadError('Không thể tải ticket hỗ trợ từ backend, đang hiển thị dữ liệu mẫu.'))
   }, [])
 
+  useEffect(() => {
+    async function handleNewNotification(event) {
+      const notif = event.detail
+      if (notif && (notif.type === 'NEW_SUPPORT_TICKET' || notif.type === 'USER_SUPPORT_REPLY')) {
+        loadTickets(activeFilter).catch(() => {})
+      }
+    }
+
+    window.addEventListener('new-notification', handleNewNotification)
+    return () => window.removeEventListener('new-notification', handleNewNotification)
+  }, [activeFilter])
+
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       const matchesStatus = activeFilter === 'Tất cả' ? true : t.status === activeFilter
@@ -86,75 +98,12 @@ export function SupportManagement() {
     })
   }, [tickets, activeFilter, searchTerm])
 
+  const pagination = usePagination(filteredTickets, 10)
+
   const openTicket = (ticket) => {
-    setSelectedTicket(ticket)
-    setReplyText('')
-    setReplyError('')
+    navigate(`/admin/support/${ticket.id}`)
   }
 
-  const closeTicket = () => {
-    setSelectedTicket(null)
-    setReplyError('')
-  }
-
-  const handleStatusChange = async (ticketId, newStatus) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/support/tickets/${ticketId}/status`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status: newStatus }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Cannot update status')
-      }
-
-      const updated = normalizeRow(await response.json())
-      setTickets((prev) => prev.map((t) => (t.id === ticketId ? updated : t)))
-      if (selectedTicket?.id === ticketId) {
-        setSelectedTicket(updated)
-      }
-      setLoadError('')
-    } catch {
-      setLoadError('Không thể cập nhật trạng thái ticket.')
-    }
-  }
-
-  const handleSendReply = async () => {
-    if (!replyText.trim()) {
-      setReplyError('Vui lòng nhập nội dung phản hồi.')
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/support/tickets/${selectedTicket.id}/reply`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          adminEmail: window.localStorage.getItem('admin_actor') || '',
-          response: replyText.trim(),
-          status: 'Đã giải quyết',
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Cannot send reply')
-      }
-
-      const updated = normalizeRow(await response.json())
-      setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
-      closeTicket()
-      setLoadError('')
-    } catch {
-      setReplyError('Không thể gửi phản hồi cho ticket này.')
-    }
-  }
 
   const stats = [
     {
@@ -234,6 +183,7 @@ export function SupportManagement() {
                 columns={[
                   { key: 'id', label: 'Mã vé' },
                   { key: 'userName', label: 'Người dùng' },
+                  { key: 'email', label: 'Email' },
                   { key: 'topic', label: 'Chủ đề' },
                   {
                     key: 'message',
@@ -264,84 +214,18 @@ export function SupportManagement() {
                     ),
                   },
                 ]}
-                rows={filteredTickets}
+                rows={pagination.paginatedData}
+              />
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                onPageChange={pagination.handlePageChange}
               />
             </AdminSectionCard>
           </div>
         </div>
       </div>
 
-      {selectedTicket ? (
-        <>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-              <div className="modal-content topic-bulk-modal">
-                <div className="modal-header">
-                  <div>
-                    <h5 className="modal-title mb-1">Yêu cầu {selectedTicket.id}</h5>
-                    <div className="topic-bulk-modal__subtitle">
-                      {selectedTicket.userName} &middot; {selectedTicket.email} &middot; {selectedTicket.createdAt}
-                    </div>
-                  </div>
-                  <button type="button" className="btn-close" aria-label="Đóng" onClick={closeTicket}></button>
-                </div>
-                <div className="modal-body">
-                  <div className="topic-bulk-hero mb-4">
-                    <div className="d-flex justify-content-between align-items-start mb-2">
-                      <div className="fw-semibold">{selectedTicket.topic}</div>
-                      <Badge tone={statusTone(selectedTicket.status)}>{selectedTicket.status}</Badge>
-                    </div>
-                    <p className="mb-0" style={{ lineHeight: 1.65 }}>{selectedTicket.message}</p>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Cập nhật trạng thái</label>
-                    <select
-                      className="form-select"
-                      value={selectedTicket.status}
-                      onChange={(e) => handleStatusChange(selectedTicket.id, e.target.value)}
-                    >
-                      {STATUS_OPTIONS.map((s) => <option key={s}>{s}</option>)}
-                    </select>
-                  </div>
-
-                  {selectedTicket.responses?.length ? (
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold">Lịch sử phản hồi</label>
-                      <div className="border rounded p-3" style={{ maxHeight: 180, overflowY: 'auto' }}>
-                        {selectedTicket.responses.map((item) => (
-                          <div key={item.id} className="mb-2 pb-2 border-bottom">
-                            <div className="small text-muted">{item.adminEmail || 'system'} - {formatDate(item.createdAt)}</div>
-                            <div>{item.response}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Phản hồi tới người dùng</label>
-                    <textarea
-                      className="form-control"
-                      rows={5}
-                      placeholder="Nhập nội dung phản hồi cho người dùng..."
-                      value={replyText}
-                      onChange={(e) => { setReplyText(e.target.value); setReplyError('') }}
-                    />
-                  </div>
-
-                  {replyError ? <div className="text-danger">{replyError}</div> : null}
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={closeTicket}>Đóng</button>
-                  <button type="button" className="btn btn-primary" onClick={handleSendReply}>Gửi phản hồi & đóng vé</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="modal-backdrop fade show"></div>
-        </>
-      ) : null}
     </div>
   )
 }

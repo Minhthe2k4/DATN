@@ -23,5 +23,4 @@ public class DatnApplication {
 			System.exit(1);
 		}
 	}
-
 }

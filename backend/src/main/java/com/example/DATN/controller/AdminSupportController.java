@@ -2,8 +2,12 @@ package com.example.DATN.controller;
 
 import com.example.DATN.dto.AdminSupportReplyRequest;
 import com.example.DATN.dto.AdminSupportTicketDto;
+import com.example.DATN.entity.SupportResponse;
 import com.example.DATN.service.AdminSupportService;
+import com.example.DATN.util.AuthUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +35,11 @@ public class AdminSupportController {
         return adminSupportService.findTickets(status, email, limit);
     }
 
+    @GetMapping("/tickets/{ticketId}")
+    public AdminSupportTicketDto findTicketById(@PathVariable Long ticketId) {
+        return adminSupportService.findById(ticketId);
+    }
+
     @PatchMapping("/tickets/{ticketId}/status")
     public AdminSupportTicketDto updateStatus(
             @PathVariable Long ticketId,
@@ -43,14 +52,18 @@ public class AdminSupportController {
     public AdminSupportTicketDto reply(
             @PathVariable Long ticketId,
             @RequestBody AdminSupportReplyRequest request,
-            org.springframework.security.core.Authentication auth
+            Authentication auth,
+            HttpServletRequest httpRequest
     ) {
-        Long adminId = null;
-        if (auth != null && !auth.getName().equals("anonymousUser")) {
-            try {
-                adminId = Long.parseLong(auth.getName());
-            } catch (Exception ignored) {}
-        }
+        Long adminId = AuthUtil.getUserId(auth, httpRequest);
         return adminSupportService.reply(ticketId, request, adminId);
+    }
+
+    /**
+     * Get all responses for a ticket (Admin view - no ownership check)
+     */
+    @GetMapping("/tickets/{ticketId}/responses")
+    public List<SupportResponse> getTicketResponses(@PathVariable Long ticketId) {
+        return adminSupportService.getTicketResponses(ticketId);
     }
 }

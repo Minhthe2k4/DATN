@@ -11,8 +11,6 @@ public interface TopicManagementProjection {
 
     String getDescription();
 
-    String getLevel();
-
     Boolean getStatus();
 
     Long getLessonCount();
@@ -20,4 +18,8 @@ public interface TopicManagementProjection {
     Long getWordCount();
     
     String getTopicImage();
+
+    java.util.Date getCreatedAt();
+
+    java.util.Date getUpdatedAt();
 }

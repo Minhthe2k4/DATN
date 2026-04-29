@@ -9,7 +9,7 @@ public record UserVideoChannelDto(
         String url,
         String handle,
         String description,
-        Integer subscriberCount,
+        Long subscriberCount,
         Long videoCount
 ) {
 }

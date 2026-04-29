@@ -11,6 +11,9 @@ import com.example.DATN.entity.ArticleTopic;
 import com.example.DATN.repository.ArticleManagementProjection;
 import com.example.DATN.repository.ArticleRepository;
 import com.example.DATN.repository.ArticleTopicRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.example.DATN.repository.ArticleTopicManagementProjection;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -75,7 +78,7 @@ public class AdminReadingService {
         }
 
         return new AdminReadingArticleDto(
-                toLong(Math.toIntExact(article.id)),
+                article.id,
                 defaultString(article.title, ""),
                 topicId,
                 topicName,
@@ -83,12 +86,19 @@ public class AdminReadingService {
                 defaultString(article.content, ""),
                 defaultString(article.articleImage, ""),
                 article.createdAt,
+                article.updatedAt,
+                article.deletedAt,
                 normalizeWordsHighlighted(article.wordsHighlighted),
                 defaultString(article.source, ""),
                 normalizeArticleStatus(article.status));
     }
 
     public AdminReadingArticleDto createArticle(UpsertReadingArticleRequest request) {
+        String title = request == null || request.title() == null ? "" : request.title().trim();
+        if (articleRepository.existsByTitleIgnoreCase(title)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tiêu đề bài viết đã tồn tại. Vui lòng chọn tiêu đề khác.");
+        }
         Article article = new Article();
         applyArticle(article, request);
         // Đảm bảo words_highlighted không null
@@ -96,10 +106,15 @@ public class AdminReadingService {
             article.wordsHighlighted = 0;
         }
         Article saved = articleRepository.save(article);
-        return findArticleById(toLong(Math.toIntExact(saved.id)));
+        return findArticleById(saved.id);
     }
 
     public AdminReadingArticleDto updateArticle(Long id, UpsertReadingArticleRequest request) {
+        String title = request == null || request.title() == null ? "" : request.title().trim();
+        if (articleRepository.existsByTitleIgnoreCaseAndIdNot(title, id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tiêu đề bài viết đã tồn tại. Vui lòng chọn tiêu đề khác.");
+        }
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Article not found"));
         applyArticle(article, request);
@@ -176,11 +191,16 @@ public class AdminReadingService {
         }
     }
 
-    public void deleteArticle(Long id) {
-        if (!articleRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Article not found");
+    public void deleteArticle(Long id, boolean force) {
+        if (force) {
+            articleRepository.hardDelete(id);
+        } else {
+            Article article = articleRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Article not found"));
+            article.status = "Nháp"; // Soft delete
+            article.deletedAt = new Date();
+            articleRepository.save(article);
         }
-        articleRepository.deleteById(id);
     }
 
     public List<AdminReadingTopicDto> findAllTopics() {
@@ -196,23 +216,35 @@ public class AdminReadingService {
                 .count();
 
         return new AdminReadingTopicDto(
-                toLong(Math.toIntExact(topic.id)),
+                topic.id,
                 defaultString(topic.name, ""),
                 defaultString(topic.description, ""),
-                normalizeDifficulty(topic.level),
                 normalizeTopicStatus(topic.status),
                 defaultString(topic.articleTopicImage, ""),
-                articleCount);
+                articleCount,
+                topic.createdAt,
+                topic.updatedAt,
+                topic.deletedAt);
     }
 
     public AdminReadingTopicDto createTopic(UpsertReadingTopicRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (articleTopicRepository.existsByNameIgnoreCase(name)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tên chủ đề bài đọc đã tồn tại. Vui lòng chọn tên khác.");
+        }
         ArticleTopic topic = new ArticleTopic();
         applyTopic(topic, request);
         ArticleTopic saved = articleTopicRepository.save(topic);
-        return findTopicById(toLong(Math.toIntExact(saved.id)));
+        return findTopicById(saved.id);
     }
 
     public AdminReadingTopicDto updateTopic(Long id, UpsertReadingTopicRequest request) {
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (articleTopicRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tên chủ đề bài đọc đã tồn tại. Vui lòng chọn tên khác.");
+        }
         ArticleTopic topic = articleTopicRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading topic not found"));
         applyTopic(topic, request);
@@ -220,17 +252,16 @@ public class AdminReadingService {
         return findTopicById(id);
     }
 
-    public void deleteTopic(Long id) {
-        long linkedArticles = articleRepository.findArticleManagementRows().stream()
-                .filter(row -> id.equals(row.getTopicId()))
-                .count();
-        if (linkedArticles > 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete topic with linked articles");
+    public void deleteTopic(Long id, boolean force) {
+        if (force) {
+            articleTopicRepository.hardDelete(id);
+        } else {
+            ArticleTopic topic = articleTopicRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading topic not found"));
+            topic.status = false; // Soft delete
+            topic.deletedAt = new Date();
+            articleTopicRepository.save(topic);
         }
-        if (!articleTopicRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading topic not found");
-        }
-        articleTopicRepository.deleteById(id);
     }
 
     private void applyArticle(Article article, UpsertReadingArticleRequest request) {
@@ -278,7 +309,6 @@ public class AdminReadingService {
         }
         topic.name = name;
         topic.description = request == null ? "" : defaultString(request.description(), "").trim();
-        topic.level = normalizeDifficulty(request == null ? null : request.defaultDifficulty());
         topic.articleTopicImage = request == null ? "" : defaultString(request.articleTopicImage(), "").trim();
         if (request != null && request.status() != null) {
             topic.status = normalizeTopicStatusValue(request.status());
@@ -297,6 +327,8 @@ public class AdminReadingService {
                 defaultString(row.getContent(), ""),
                 defaultString(row.getArticleImage(), ""),
                 row.getCreatedAt(),
+                row.getUpdatedAt(),
+                row.getDeletedAt(),
                 normalizeWordsHighlighted(row.getWordsHighlighted()),
                 defaultString(row.getSource(), ""),
                 normalizeArticleStatus(row.getStatus()));
@@ -307,10 +339,12 @@ public class AdminReadingService {
                 row.getId(),
                 defaultString(row.getName(), ""),
                 defaultString(row.getDescription(), ""),
-                normalizeDifficulty(row.getLevel()),
                 normalizeTopicStatus(row.getStatus()),
                 defaultString(row.getArticleTopicImage(), ""),
-                row.getArticleCount() == null ? 0 : row.getArticleCount());
+                row.getArticleCount() == null ? 0 : row.getArticleCount(),
+                row.getCreatedAt(),
+                row.getUpdatedAt(),
+                row.getDeletedAt());
     }
 
     private String normalizeTopicStatus(Boolean value) {
@@ -356,10 +390,6 @@ public class AdminReadingService {
             return fallback;
         }
         return value;
-    }
-
-    private Long toLong(Integer value) {
-        return value == null ? null : value.longValue();
     }
 
     private String extractMetaContent(String html, String key) {
@@ -692,5 +722,23 @@ public class AdminReadingService {
             }
         }
         return "";
+    }
+
+    public List<ArticleManagementProjection> getDeletedArticles() {
+        return articleRepository.findDeletedRows();
+    }
+
+    @Transactional
+    public void restoreArticle(Long id) {
+        articleRepository.restore(id);
+    }
+
+    public List<ArticleTopicManagementProjection> getDeletedTopics() {
+        return articleTopicRepository.findDeletedRows();
+    }
+
+    @Transactional
+    public void restoreTopic(Long id) {
+        articleTopicRepository.restore(id);
     }
 }

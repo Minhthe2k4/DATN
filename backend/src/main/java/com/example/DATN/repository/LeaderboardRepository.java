@@ -10,6 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface LeaderboardRepository extends JpaRepository<Leaderboard, Long> {
+    Optional<Leaderboard> findFirstByUser_Id(Long userId);
     Optional<Leaderboard> findByUser_Id(Long userId);
 
     @Modifying

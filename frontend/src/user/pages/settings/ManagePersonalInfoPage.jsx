@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserSession } from '../../utils/authSession'
 import './Settings.css'
@@ -7,11 +7,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080
 
 export default function ManagePersonalInfoPage() {
   const navigate = useNavigate()
+  const fileInputRef = useRef(null)
   const [profile, setProfile] = useState(null)
   const [fullName, setFullName] = useState('')
   const [avatar, setAvatar] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function ManagePersonalInfoPage() {
           setProfile(data)
           setFullName(data.fullName || '')
           setAvatar(data.avatar || '')
+          setPhoneNumber(data.phoneNumber || '')
         }
       } catch (error) {
         console.error('Error fetching profile:', error)
@@ -43,6 +47,44 @@ export default function ManagePersonalInfoPage() {
 
     fetchProfile()
   }, [navigate])
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setMessage({ type: '', text: '' })
+    const session = getUserSession()
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/profile/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.userId}`
+        },
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAvatar(data.url)
+        setMessage({ type: 'success', text: 'Tải ảnh lên thành công!' })
+      } else {
+        setMessage({ type: 'error', text: 'Lỗi khi tải ảnh lên.' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Không thể kết nối đến máy chủ.' })
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -56,7 +98,7 @@ export default function ManagePersonalInfoPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.userId}`
         },
-        body: JSON.stringify({ fullName, avatar })
+        body: JSON.stringify({ fullName, avatar, phoneNumber })
       })
 
       if (response.ok) {
@@ -96,16 +138,23 @@ export default function ManagePersonalInfoPage() {
         <div className="horizontal-form-group">
           <label>Ảnh đại diện</label>
           <div className="avatar-upload-wrap">
-            <div className="avatar-preview">
+            <div className="avatar-preview" onClick={handleAvatarClick} style={{ cursor: 'pointer' }}>
               {avatar ? <img src={avatar} alt="Avatar" /> : userInitial}
+              {isUploading && <div className="avatar-loading-overlay"><span className="spinner-border spinner-border-sm"></span></div>}
             </div>
-            <input 
-              type="text" 
-              className="input-field" 
-              placeholder="Dán link ảnh tại đây" 
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-            />
+            <div className="avatar-upload-info">
+              <button className="btn-upload" onClick={handleAvatarClick} disabled={isUploading}>
+                {isUploading ? 'Đang tải...' : 'Tải ảnh lên'}
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                accept="image/*" 
+                style={{ display: 'none' }} 
+              />
+              <p className="upload-tip">Nhấp vào ảnh hoặc nút để thay đổi (JPG, PNG)</p>
+            </div>
           </div>
         </div>
 
@@ -117,6 +166,17 @@ export default function ManagePersonalInfoPage() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Nhập họ và tên"
+          />
+        </div>
+
+        <div className="horizontal-form-group">
+          <label>Số điện thoại</label>
+          <input 
+            type="text" 
+            className="input-field" 
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="Nhập số điện thoại"
           />
         </div>
 
@@ -155,7 +215,7 @@ export default function ManagePersonalInfoPage() {
 
       <div className="settings-actions">
         <button className="btn-cancel" onClick={() => navigate('/profile')}>Hủy</button>
-        <button className="btn-save" onClick={handleSave} disabled={isSaving}>
+        <button className="btn-save" onClick={handleSave} disabled={isSaving || isUploading}>
           {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
         </button>
       </div>

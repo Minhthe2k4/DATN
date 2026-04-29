@@ -7,12 +7,18 @@ public record AdminRevenueOverviewResponse(
         RevenueSummary summary,
         List<RevenueByPlanItem> revenueByPlan,
         List<RevenueTrendItem> monthlyRevenueTrend,
+        List<RevenueTrendItem> dailyRevenueTrend,
+        List<RevenueTrendItem> weeklyRevenueTrend,
+        List<RevenueTrendItem> yearlyRevenueTrend,
         List<RevenueTransactionItem> transactions
 ) {
     public record RevenueSummary(
+            double totalRevenueToday,
+            double totalRevenueYesterday,
             double totalRevenueThisMonth,
             double totalRevenueLastMonth,
             double totalRefundThisMonth,
+            double totalAllTimeRevenue,
             double arpu,
             int conversionRate
     ) {

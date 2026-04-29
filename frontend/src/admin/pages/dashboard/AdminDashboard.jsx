@@ -13,7 +13,6 @@ import {
   AdminPageHeader,
   AdminSectionCard,
   Badge,
-  Checklist,
   MetricList,
   QuickLinks,
   SimpleTable,
@@ -146,7 +145,7 @@ export function AdminDashboard() {
         <StatGrid items={dashboardData.stats} />
 
         <div className="row g-3 mt-1">
-          <div className="col-12 col-xl-7">
+          <div className="col-12">
             <AdminSectionCard title="Điều phối nhanh" description="Lối tắt vào các khu vực bạn phải thao tác thường xuyên trong ca trực.">
               <QuickLinks
                 links={[
@@ -170,17 +169,12 @@ export function AdminDashboard() {
                   },
                   {
                     to: '/admin/spaced-repetition',
-                    title: 'Cấu hình SRS',
+                    title: 'Cấu hình thuật toán',
                     description: 'Kiểm tra tham số ôn tập trước giờ cao điểm.',
                     icon: 'iconoir-refresh-double',
                   },
                 ]}
               />
-            </AdminSectionCard>
-          </div>
-          <div className="col-12 col-xl-5">
-            <AdminSectionCard title="Checklist ca trực" description="Danh sách kiểm tra trước khi kết thúc ca để tránh bỏ sót tác vụ quan trọng.">
-              <Checklist items={dashboardData.governanceChecklist} />
             </AdminSectionCard>
           </div>
         </div>
@@ -243,7 +237,7 @@ export function AdminDashboard() {
         </div>
 
         <div className="row g-3 mt-1">
-          <div className="col-12 col-xl-6">
+          <div className="col-12">
             <AdminSectionCard title="Nhịp vận hành trong ngày" description="Các chỉ số nhịp độ để cân đối nguồn lực và thời gian phản hồi.">
               <MetricList items={dashboardData.dailyOperations} />
             </AdminSectionCard>

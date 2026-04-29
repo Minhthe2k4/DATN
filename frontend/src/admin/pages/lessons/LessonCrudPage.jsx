@@ -120,7 +120,16 @@ export function LessonCrudPage({ mode }) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  const onSubmit = async () => {
+  const extractError = async (res, defaultMsg) => {
+    try {
+      const data = await res.json()
+      return data.message || defaultMsg
+    } catch {
+      return defaultMsg
+    }
+  }
+
+  const onSubmit = async (force = false) => {
     if (mode !== 'delete') {
       if (!form.name.trim()) { setError('Vui lòng nhập tên bài học'); return }
       if (!form.description.trim()) { setError('Vui lòng nhập mô tả bài học'); return }
@@ -143,10 +152,11 @@ export function LessonCrudPage({ mode }) {
           }),
         })
         if (!response.ok) {
-          throw new Error(`Create lesson failed: ${response.status}`)
+          throw new Error(await extractError(response, 'Tạo mới thất bại'))
         }
         setError('')
         setSuccess(`Đã thêm bài "${form.name}" thành công.`)
+        window.setTimeout(() => navigate('/admin/lessons'), 1500)
         return
       }
 
@@ -165,26 +175,27 @@ export function LessonCrudPage({ mode }) {
           }),
         })
         if (!response.ok) {
-          throw new Error(`Update lesson failed: ${response.status}`)
+          throw new Error(await extractError(response, 'Cập nhật thất bại'))
         }
         setError('')
         setSuccess(`Đã cập nhật bài "${form.name}" thành công.`)
+        window.setTimeout(() => navigate('/admin/lessons'), 1500)
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/lessons/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/lessons/${id}${force ? '?force=true' : ''}`, {
         method: 'DELETE',
       })
       if (!response.ok && response.status !== 204) {
-        throw new Error(`Delete lesson failed: ${response.status}`)
+        throw new Error(await extractError(response, 'Xóa thất bại'))
       }
 
       setError('')
-      setSuccess(`Đã xóa bài "${currentRow.name}" thành công.`)
-      window.setTimeout(() => navigate('/admin/lessons'), 600)
+      setSuccess(force ? `Đã xóa vĩnh viễn bài "${currentRow.name}".` : `Đã xóa tạm thời bài "${currentRow.name}".`)
+      window.setTimeout(() => navigate('/admin/lessons'), 1500)
     } catch (submitError) {
       setSuccess('')
-      setError('Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
+      setError(submitError.message || 'Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
     }
   }
 
@@ -204,14 +215,21 @@ export function LessonCrudPage({ mode }) {
 
         <div className="row g-3">
           <div className="col-12 col-lg-8">
-            <AdminSectionCard title={title} description={mode === 'delete' ? 'Hành động này không thể hoàn tác.' : 'Điền thông tin bài học.'}>
+            <AdminSectionCard title={title} description={mode === 'delete' ? 'Dữ liệu sẽ được ẩn hoặc xóa hoàn toàn.' : 'Điền thông tin bài học.'}>
               {mode === 'delete' ? (
                 <div>
                   <div className="alert alert-danger" role="alert">
-                    Bạn chuẩn bị xóa bài học <strong>{currentRow?.name}</strong> (ID: {id}). Hành động này không thể hoàn tác.
+                    Bạn chuẩn bị xóa bài học <strong>{currentRow?.name}</strong> (ID: {id}).
+                    <br /><br />
+                    - <strong>Xóa tạm thời:</strong> Bài học sẽ được chuyển sang trạng thái "Tạm dừng" và ẩn khỏi website, nhưng dữ liệu vẫn được giữ lại để quản lý.
+                    <br />
+                    - <strong>Xóa vĩnh viễn:</strong> Toàn bộ thông tin về bài học này sẽ bị xóa bỏ hoàn toàn khỏi hệ thống.
                   </div>
-                  <button type="button" className="btn btn-danger me-2" onClick={onSubmit}>Xác nhận xóa</button>
-                  <Link to="/admin/lessons" className="btn btn-outline-secondary">Hủy</Link>
+                  <div className="d-flex gap-2">
+                    <button type="button" className="btn btn-warning" onClick={() => onSubmit(false)}>Xóa tạm thời</button>
+                    <button type="button" className="btn btn-danger" onClick={() => onSubmit(true)}>Xóa vĩnh viễn</button>
+                    <Link to="/admin/lessons" className="btn btn-outline-secondary">Hủy</Link>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={(e) => { e.preventDefault(); onSubmit() }}>

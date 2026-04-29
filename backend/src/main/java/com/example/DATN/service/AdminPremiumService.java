@@ -147,11 +147,11 @@ public class AdminPremiumService {
         int pageSize = limit == null || limit <= 0 ? 50 : Math.min(limit, 200);
         return premiumAuditLogRepository.findRecent(PageRequest.of(0, pageSize)).stream()
                 .map(log -> new AdminPremiumAuditLogDto(
-                        toLong(Math.toIntExact(log.id)),
-                        log.user == null ? null : toLong(Math.toIntExact(log.user.id)),
+                        log.id,
+                        log.user == null ? null : log.user.id,
                         log.user == null ? "" : defaultString(log.user.email, ""),
-                        log.transaction == null ? null : toLong(Math.toIntExact(log.transaction.id)),
-                        log.subscription == null ? null : toLong(Math.toIntExact(log.subscription.id)),
+                        log.transaction == null ? null : log.transaction.id,
+                        log.subscription == null ? null : log.subscription.id,
                         defaultString(log.action, ""),
                         defaultString(log.statusBefore, ""),
                         defaultString(log.statusAfter, ""),
@@ -447,7 +447,7 @@ public class AdminPremiumService {
     private UserSubscription grantOrExtendSubscription(User user, PremiumPlan plan, int durationDays) {
         Date now = new Date();
         List<UserSubscription> activeSubs = userSubscriptionRepository
-                .findActiveSubscriptionsByUserId(toLong(Math.toIntExact(user.id)), now);
+                .findActiveSubscriptionsByUserId(user.id, now);
         UserSubscription target = activeSubs.stream().findFirst().orElse(null);
 
         if (target == null) {
@@ -457,7 +457,10 @@ public class AdminPremiumService {
         }
 
         if (plan != null) {
-            target.plan = plan;
+            // Chỉ cập nhật lên gói mới nếu gói cũ đã hết hạn hoặc gói mới có giá cao hơn (tier cao hơn)
+            if (target.plan == null || target.endDate == null || target.endDate.before(now) || plan.price > target.plan.price) {
+                target.plan = plan;
+            }
         }
 
         if (target.plan == null) {
@@ -646,9 +649,5 @@ public class AdminPremiumService {
             return fallback;
         }
         return value;
-    }
-
-    private Long toLong(Integer value) {
-        return value == null ? null : value.longValue();
     }
 }

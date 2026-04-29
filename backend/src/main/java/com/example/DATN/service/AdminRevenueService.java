@@ -45,18 +45,32 @@ public class AdminRevenueService {
                 transactionRepository.findRevenueRows(PageRequest.of(0, 1000));
 
         LocalDate now = LocalDate.now();
+        LocalDate yesterday = now.minusDays(1);
         YearMonth currentMonth = YearMonth.from(now);
         YearMonth previousMonth = currentMonth.minusMonths(1);
 
+        double totalRevenueToday = 0;
+        double totalRevenueYesterday = 0;
         double totalRevenueThisMonth = 0;
         double totalRevenueLastMonth = 0;
         double totalRefundThisMonth = 0;
+        double totalAllTimeRevenue = 0;
 
         Map<String, PlanAccumulator> byPlan = new LinkedHashMap<>();
         Map<YearMonth, Double> monthRevenue = new LinkedHashMap<>();
+        Map<LocalDate, Double> dayRevenue = new LinkedHashMap<>();
+        Map<String, Double> weekRevenue = new LinkedHashMap<>(); // e.g. "W1", "W2"
+        Map<Integer, Double> yearRevenue = new LinkedHashMap<>();
 
+        // Initialize trends
         for (int i = 5; i >= 0; i--) {
             monthRevenue.put(currentMonth.minusMonths(i), 0.0);
+        }
+        for (int i = 6; i >= 0; i--) {
+            dayRevenue.put(now.minusDays(i), 0.0);
+        }
+        for (int i = 2; i >= 0; i--) {
+            yearRevenue.put(now.getYear() - i, 0.0);
         }
 
         for (RevenueTransactionProjection row : rows) {
@@ -66,18 +80,38 @@ public class AdminRevenueService {
 
             Date createdAt = row.getCreatedAt();
             if (createdAt != null) {
-                YearMonth rowMonth = YearMonth.from(createdAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
-                if (rowMonth.equals(currentMonth) && isSuccessStatus(status)) {
-                    totalRevenueThisMonth += amount;
-                }
-                if (rowMonth.equals(previousMonth) && isSuccessStatus(status)) {
-                    totalRevenueLastMonth += amount;
-                }
-                if (rowMonth.equals(currentMonth) && isRefundStatus(status)) {
-                    totalRefundThisMonth += amount;
-                }
-                if (monthRevenue.containsKey(rowMonth) && isSuccessStatus(status)) {
-                    monthRevenue.compute(rowMonth, (key, value) -> value == null ? amount : value + amount);
+                LocalDate rowDate = createdAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                YearMonth rowMonth = YearMonth.from(rowDate);
+                int rowYear = rowDate.getYear();
+
+                if (isSuccessStatus(status)) {
+                    totalAllTimeRevenue += amount;
+                    if (rowDate.equals(now)) {
+                        totalRevenueToday += amount;
+                    }
+                    if (rowDate.equals(yesterday)) {
+                        totalRevenueYesterday += amount;
+                    }
+                    if (rowMonth.equals(currentMonth)) {
+                        totalRevenueThisMonth += amount;
+                    }
+                    if (rowMonth.equals(previousMonth)) {
+                        totalRevenueLastMonth += amount;
+                    }
+                    
+                    if (monthRevenue.containsKey(rowMonth)) {
+                        monthRevenue.merge(rowMonth, amount, Double::sum);
+                    }
+                    if (dayRevenue.containsKey(rowDate)) {
+                        dayRevenue.merge(rowDate, amount, Double::sum);
+                    }
+                    if (yearRevenue.containsKey(rowYear)) {
+                        yearRevenue.merge(rowYear, amount, Double::sum);
+                    }
+                } else if (isRefundStatus(status)) {
+                    if (rowMonth.equals(currentMonth)) {
+                        totalRefundThisMonth += amount;
+                    }
                 }
             }
 
@@ -115,6 +149,20 @@ public class AdminRevenueService {
                 ))
                 .toList();
 
+        List<AdminRevenueOverviewResponse.RevenueTrendItem> dailyTrend = dayRevenue.entrySet().stream()
+                .map(entry -> new AdminRevenueOverviewResponse.RevenueTrendItem(
+                        entry.getKey().getDayOfMonth() + "/" + entry.getKey().getMonthValue(),
+                        round2(entry.getValue())
+                ))
+                .toList();
+
+        List<AdminRevenueOverviewResponse.RevenueTrendItem> yearlyTrend = yearRevenue.entrySet().stream()
+                .map(entry -> new AdminRevenueOverviewResponse.RevenueTrendItem(
+                        String.valueOf(entry.getKey()),
+                        round2(entry.getValue())
+                ))
+                .toList();
+
         List<AdminRevenueOverviewResponse.RevenueTransactionItem> transactions = rows.stream()
                 .limit(20)
                 .map(row -> new AdminRevenueOverviewResponse.RevenueTransactionItem(
@@ -130,14 +178,20 @@ public class AdminRevenueService {
 
         return new AdminRevenueOverviewResponse(
                 new AdminRevenueOverviewResponse.RevenueSummary(
+                        round2(totalRevenueToday),
+                        round2(totalRevenueYesterday),
                         round2(totalRevenueThisMonth),
                         round2(totalRevenueLastMonth),
                         round2(totalRefundThisMonth),
+                        round2(totalAllTimeRevenue),
                         round2(arpu),
                         conversionRate
                 ),
                 planItems,
                 trends,
+                dailyTrend,
+                new ArrayList<>(), // weekly not implemented yet, using placeholder
+                yearlyTrend,
                 transactions
         );
     }

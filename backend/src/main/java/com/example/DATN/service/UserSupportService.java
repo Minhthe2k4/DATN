@@ -6,6 +6,7 @@ import com.example.DATN.entity.User;
 import com.example.DATN.repository.SupportResponseRepository;
 import com.example.DATN.repository.SupportTicketRepository;
 import com.example.DATN.repository.UserRepository;
+import com.example.DATN.repository.UserProfileRepository;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -24,11 +25,17 @@ public class UserSupportService {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private UserProfileRepository userProfileRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * Create a new support ticket (for both registered users and guests)
      */
-    public SupportTicket createTicket(Long userId, String email, String title, String message) {
+    public SupportTicket createTicket(Long userId, String email, String name, String title, String message) {
         SupportTicket ticket = new SupportTicket();
         
         if (userId != null) {
@@ -36,9 +43,18 @@ public class UserSupportService {
             if (userOpt.isPresent()) {
                 ticket.user = userOpt.get();
                 ticket.email = userOpt.get().email; // Use user's email if logged in
+                
+                // Fetch full name from profile using optimized repository method
+                userProfileRepository.findByUserId(userId)
+                    .ifPresent(p -> ticket.senderName = p.fullName);
+                    
+                if (ticket.senderName == null || ticket.senderName.isBlank()) {
+                    ticket.senderName = userOpt.get().username;
+                }
             }
         } else if (email != null && !email.isBlank()) {
             ticket.email = email.trim();
+            ticket.senderName = (name != null && !name.isBlank()) ? name.trim() : "Khách";
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email or Login is required to submit a ticket");
         }
@@ -56,7 +72,16 @@ public class UserSupportService {
         ticket.status = "open";
         ticket.createdAt = new Date();
 
-        return supportTicketRepository.save(ticket);
+        SupportTicket savedTicket = supportTicketRepository.save(ticket);
+        
+        // Notify Admin
+        notificationService.sendAdminNotification(
+            "NEW_SUPPORT_TICKET",
+            "Có yêu cầu hỗ trợ mới từ " + (ticket.user != null ? ticket.user.username : ticket.email),
+            savedTicket
+        );
+
+        return savedTicket;
     }
 
     /**
@@ -77,7 +102,7 @@ public class UserSupportService {
      * Get single ticket details with responses
      */
     public SupportTicket getTicketById(Long ticketId, Long userId) {
-        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId.intValue());
+        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId);
 
         if (ticketOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found");
@@ -98,7 +123,7 @@ public class UserSupportService {
      */
     public List<SupportResponse> getTicketResponses(Long ticketId, Long userId) {
         // First verify user owns the ticket
-        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId.intValue());
+        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId);
 
         if (ticketOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found");
@@ -117,7 +142,7 @@ public class UserSupportService {
      * Close a support ticket
      */
     public SupportTicket closeTicket(Long ticketId, Long userId) {
-        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId.intValue());
+        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId);
 
         if (ticketOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found");
@@ -137,7 +162,7 @@ public class UserSupportService {
      * Reopen a closed ticket
      */
     public SupportTicket reopenTicket(Long ticketId, Long userId) {
-        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId.intValue());
+        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId);
 
         if (ticketOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found");
@@ -157,7 +182,7 @@ public class UserSupportService {
      * Add reply to support ticket (user replying to admin)
      */
     public SupportResponse addTicketReply(Long ticketId, Long userId, String message) {
-        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId.intValue());
+        Optional<SupportTicket> ticketOpt = supportTicketRepository.findById(ticketId);
 
         if (ticketOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found");
@@ -178,6 +203,20 @@ public class UserSupportService {
         response.admin = null; // User response, not admin
         response.response = message.trim();
 
-        return supportResponseRepository.save(response);
+        SupportResponse saved = supportResponseRepository.save(response);
+
+        // Notify Admin: user has replied to a ticket
+        notificationService.sendAdminNotification(
+            "USER_SUPPORT_REPLY",
+            "Người dùng " + ticket.senderName + " đã phản hồi yêu cầu: " + ticket.title,
+            java.util.Map.of(
+                "ticketId", ticket.id,
+                "ticketTitle", ticket.title,
+                "senderName", ticket.senderName,
+                "message", message.trim()
+            )
+        );
+
+        return saved;
     }
 }

@@ -12,6 +12,11 @@ public interface LessonVocabularyRepository extends JpaRepository<LessonVocabula
     @Query("SELECT lv.vocabId FROM LessonVocabulary lv WHERE lv.lessonId = :lessonId")
     List<Long> findVocabIdsByLessonId(@Param("lessonId") Long lessonId);
 
+    @Query("SELECT lv FROM LessonVocabulary lv WHERE lv.vocabId IN :vocabIds")
+    List<LessonVocabulary> findByVocabIdIn(@Param("vocabIds") List<Long> vocabIds);
+
     @Query("SELECT COUNT(lv) FROM LessonVocabulary lv WHERE lv.lessonId = :lessonId")
     long countByLessonId(@Param("lessonId") Long lessonId);
+
+    void deleteByVocabId(Long vocabId);
 }

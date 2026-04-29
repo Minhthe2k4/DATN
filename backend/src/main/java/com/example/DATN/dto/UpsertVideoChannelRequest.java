@@ -3,7 +3,10 @@ package com.example.DATN.dto;
 public record UpsertVideoChannelRequest(
         String name,
         String handle,
-        String topic,
-        String status
+        String url,
+        String description,
+        Long subscriberCount,
+        String status,
+        String avatar
 ) {
 }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { premiumMembers, premiumRequests } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, FilterTabs } from '../../components/console/AdminUi'
+import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, FilterTabs, Pagination } from '../../components/console/AdminUi'
+import { usePagination } from '../../hooks/usePagination'
 import './premium-management.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
@@ -74,19 +76,6 @@ function normalizePlanRow(row) {
 const DEFAULT_REQUEST_FILTER = { status: 'PENDING', email: '', fromDate: '', toDate: '' }
 const DEFAULT_MEMBER_FILTER = { status: 'ALL', email: '', expiringInDays: '' }
 
-const CONFIGURABLE_FEATURES = [
-  { id: 'SAVED_VOCABULARY', label: 'Lưu từ vựng', description: 'Giới hạn số lượng từ có thể lưu', defaultLimit: 50 },
-  { id: 'DICTIONARY_LOOKUP', label: 'Tra cứu từ điển', description: 'Giới hạn lượt tra từ mỗi ngày', defaultLimit: 5 },
-  { id: 'ARTICLE_DOWNLOADS', label: 'Tải bài báo', description: 'Cho phép tải nội dung bài báo về máy', defaultLimit: 0 },
-  { id: 'VIDEO_TRANSCRIPT_DOWNLOADS', label: 'Tải phụ đề video', description: 'Cho phép tải phụ đề video về máy', defaultLimit: 0 },
-  { id: 'SAVED_ARTICLES', label: 'Lưu bài báo', description: 'Giới hạn số lượng bài báo có thể lưu', defaultLimit: 10 },
-  { id: 'CUSTOM_VOCABULARY_SETS', label: 'Bộ từ vựng tùy chỉnh', description: 'Giới hạn số lượng bộ từ vựng cá nhân', defaultLimit: 2 },
-  { id: 'MONTHLY_VOCABULARY_TESTS', label: 'Bài kiểm tra tháng', description: 'Giới hạn số lượng bài kiểm tra mỗi tháng', defaultLimit: 5 },
-  { id: 'VOCABULARY_REVIEW', label: 'Ôn tập từ vựng', description: 'Quyền sử dụng tính năng ôn tập (Review)', defaultLimit: 0, lockOnly: true },
-  { id: 'FLASHCARD_DECKS', label: 'Số lượng bộ thẻ Flashcard', description: 'Giới hạn số bộ thẻ Flashcard người dùng có thể tạo', defaultLimit: 2 },
-  { id: 'FLASHCARDS_PER_DECK', label: 'Số lượng thẻ mỗi bộ', description: 'Giới hạn số thẻ tối đa trong một bộ Flashcard', defaultLimit: 20 },
-  { id: 'SRS_GOLDEN_TIME', label: 'Tính năng Thời điểm vàng (SRS)', description: 'Cho phép sử dụng tính năng học theo thời điểm vàng', defaultLimit: 0, lockOnly: true },
-]
 
 function requestStatusTone(status) {
   if (status === 'Chờ duyệt') {
@@ -123,6 +112,7 @@ function auditActionTone(action) {
 }
 
 export function PremiumManagement() {
+  const navigate = useNavigate()
   const [requestRows, setRequestRows] = useState(premiumRequests)
   const [memberRows, setMemberRows] = useState(premiumMembers)
   const [planRows, setPlanRows] = useState([])
@@ -136,25 +126,9 @@ export function PremiumManagement() {
   const [memberFilter, setMemberFilter] = useState(DEFAULT_MEMBER_FILTER)
   const [selectedMembers, setSelectedMembers] = useState(new Set())
 
-  // Modal states
-  const [showPlanModal, setShowPlanModal] = useState(false)
-  const [editingPlan, setEditingPlan] = useState(null)
-  const [currentStep, setCurrentStep] = useState(1) // 1: Basic, 2: Features
-  const [planForm, setPlanForm] = useState({
-    name: '',
-    price: '',
-    durationDays: '',
-    description: '',
-    limits: []
-  })
-
-  const [showGrantModal, setShowGrantModal] = useState(false)
-  const [grantForm, setGrantForm] = useState({
-    email: '',
-    planId: '',
-    durationDays: '30',
-    reason: ''
-  })
+  // Pagination using custom hook
+  const requestsPagination = usePagination(requestRows, 10)
+  const membersPagination = usePagination(memberRows, 10)
 
   useEffect(() => {
     let disposed = false
@@ -364,194 +338,24 @@ export function PremiumManagement() {
     }
   }
 
-  const handleExtendPremium = async (row) => {
-    const daysText = window.prompt('Số ngày gia hạn:', '30') || '30'
-    const days = Number(daysText)
-    if (!Number.isFinite(days) || days <= 0) {
-      setActionError('Số ngày gia hạn không hợp lệ.')
-      return
-    }
-
-    const reason = window.prompt('Lý do gia hạn (bắt buộc):', '') || ''
-    if (!reason.trim()) {
-      setActionError('Bạn cần nhập lý do khi gia hạn Premium.')
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/members/${row.userId}/extend`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ durationDays: days, reason: reason.trim(), adminActor: getAdminActor() }),
-      })
-
-      if (!response.ok && response.status !== 204) {
-        throw new Error('Cannot extend premium')
-      }
-
-      await reloadData()
-      setActionError('')
-    } catch {
-      setActionError('Không thể gia hạn Premium cho người dùng này.')
-    }
+  const handleExtendPremium = (row) => {
+    navigate(`/admin/premium/members/${row.userId}/extend?email=${encodeURIComponent(row.email)}`)
   }
 
   const handleManualGrant = () => {
-    setGrantForm({
-      email: '',
-      planId: planRows.length > 0 ? planRows[0].id.toString() : '',
-      durationDays: planRows.length > 0 ? planRows[0].durationDays.toString() : '30',
-      reason: ''
-    })
-    setShowGrantModal(true)
+    navigate('/admin/premium/grant')
   }
 
-  const handleGrantFormChange = (field, value) => {
-    setGrantForm(prev => {
-      const next = { ...prev, [field]: value }
-
-      // Auto-fill duration if plan changes
-      if (field === 'planId') {
-        const plan = planRows.find(p => p.id.toString() === value)
-        if (plan) {
-          next.durationDays = plan.durationDays.toString()
-        }
-      }
-
-      return next
-    })
-  }
-
-  const submitManualGrant = async () => {
-    if (!grantForm.email.trim()) {
-      setActionError('Cần nhập email người dùng để cấp Premium thủ công.')
-      return
-    }
-    const days = Number(grantForm.durationDays)
-    if (!Number.isFinite(days) || days <= 0) {
-      setActionError('Số ngày cấp Premium không hợp lệ.')
-      return
-    }
-    if (!grantForm.reason.trim()) {
-      setActionError('Bạn cần nhập lý do cấp Premium thủ công.')
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/grant`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: grantForm.email.trim(),
-          planId: grantForm.planId ? Number(grantForm.planId) : null,
-          durationDays: days,
-          reason: grantForm.reason.trim(),
-          adminActor: getAdminActor(),
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || 'Cannot grant premium')
-      }
-
-      setShowGrantModal(false)
-      await reloadData()
-      setActionError('')
-      alert('Cấp quyền Premium thành công!')
-    } catch (error) {
-      setActionError(error.message || 'Không thể cấp Premium thủ công.')
-    }
-  }
 
   // ============= PLAN MANAGEMENT =============
   const handleAddPlan = () => {
-    setEditingPlan(null)
-    setCurrentStep(1)
-    setPlanForm({
-      name: '',
-      price: '',
-      durationDays: '',
-      description: '',
-      limits: CONFIGURABLE_FEATURES.map(f => ({
-        featureName: f.id,
-        isLocked: !!f.lockOnly,
-        usageLimit: f.defaultLimit
-      }))
-    })
-    setShowPlanModal(true)
+    navigate('/admin/premium/new')
   }
 
   const handleEditPlan = (plan) => {
-    setEditingPlan(plan)
-    setCurrentStep(1)
-
-    // Merge plan limits with CONFIGURABLE_FEATURES to ensure all are present
-    const planLimitsMap = new Map((plan.limits || []).map(l => [l.featureName, l]))
-    const mergedLimits = CONFIGURABLE_FEATURES.map(f => {
-      const existing = planLimitsMap.get(f.id)
-      return existing || {
-        featureName: f.id,
-        isLocked: !!f.lockOnly,
-        usageLimit: f.defaultLimit
-      }
-    })
-
-    setPlanForm({
-      name: plan.name,
-      price: plan.price.toString(),
-      durationDays: plan.durationDays.toString(),
-      description: plan.description || '',
-      limits: mergedLimits
-    })
-    setShowPlanModal(true)
+    navigate(`/admin/premium/${plan.id}/edit`)
   }
 
-  const handleSavePlan = async () => {
-    if (!planForm.name.trim()) {
-      setActionError('Tên gói là bắt buộc.')
-      return
-    }
-    const price = Number(planForm.price)
-    const days = Number(planForm.durationDays)
-    if (!Number.isFinite(price) || price < 0) {
-      setActionError('Giá phải lớn hơn 0.')
-      return
-    }
-    if (!Number.isFinite(days) || days <= 0) {
-      setActionError('Thời hạn phải > 0 ngày.')
-      return
-    }
-
-    try {
-      const method = editingPlan ? 'PUT' : 'POST'
-      const url = editingPlan
-        ? `${API_BASE_URL}/api/admin/premium/plans/${editingPlan.id}`
-        : `${API_BASE_URL}/api/admin/premium/plans`
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: planForm.name.trim(),
-          price: price,
-          durationDays: days,
-          description: planForm.description.trim(),
-          limits: planForm.limits
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to save plan')
-      }
-
-      setShowPlanModal(false)
-      await reloadData()
-      setActionError('')
-    } catch {
-      setActionError('Lưu gói Premium thất bại.')
-    }
-  }
 
   const handleDeletePlan = async (plan) => {
     if (!window.confirm(`Xóa gói "${plan.name}"?`)) {
@@ -694,8 +498,8 @@ export function PremiumManagement() {
     },
     {
       label: 'Gói đang lưu hành',
-      value: '3',
-      meta: '1 tháng, 6 tháng và 12 tháng',
+      value: planRows.length.toString(),
+      meta: 'Số lượng các gói cước đang được hệ thống hỗ trợ',
       icon: 'iconoir-package',
     },
   ], [memberRows, requestRows])
@@ -712,7 +516,7 @@ export function PremiumManagement() {
               <button type="button" className="btn btn-primary" onClick={handleManualGrant}>
                 ➕ Cấp Premium
               </button>
-              <button type="button" className="btn btn-outline-secondary" onClick={reloadData}>
+              <button type="button" className="btn btn-outline-secondary" onClick={() => reloadData()}>
                 🔄 Làm mới
               </button>
             </div>
@@ -736,7 +540,7 @@ export function PremiumManagement() {
           <div className="col-12 col-lg-6 col-xl-6">
             <AdminSectionCard>
               <h5><span className="section-header-icon">📋</span> Yêu cầu nâng cấp</h5>
-              <p>Duyệt các yêu cầu từ người dùng ({requestRows.length} chờ xử lý)</p>
+              <p>Duyệt các yêu cầu từ người dùng ({requestRows.length} bản ghi)</p>
 
               <div className="mb-3">
                 <FilterTabs
@@ -764,15 +568,26 @@ export function PremiumManagement() {
                   { key: 'status', label: 'Trạng thái', render: r => <Badge tone={requestStatusTone(r.status)}>{r.status}</Badge> },
                   {
                     key: 'actions', label: '', render: r => (
-                      <div className="premium-row-actions">
-                        <button className="btn btn-sm btn-success" onClick={() => handleApprove(r)} title="Duyệt">✓</button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleReject(r)} title="Từ chối">✕</button>
-                      </div>
+                      r.status === 'Chờ duyệt' ? (
+                        <div className="premium-row-actions">
+                          <button className="btn btn-sm btn-success" onClick={() => handleApprove(r)} title="Duyệt">✓</button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleReject(r)} title="Từ chối">✕</button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-muted" title="Đã xử lý">
+                          <small><i className="iconoir-check-circle"></i></small>
+                        </div>
+                      )
                     )
                   },
                 ]}
-                rows={requestRows}
-                emptyMessage="✨ Không có yêu cầu chờ duyệt"
+                rows={requestsPagination.paginatedData}
+                emptyMessage="✨ Không có yêu cầu nào trùng khớp"
+              />
+              <Pagination
+                currentPage={requestsPagination.currentPage}
+                totalPages={requestsPagination.totalPages}
+                onPageChange={requestsPagination.handlePageChange}
               />
             </AdminSectionCard>
           </div>
@@ -813,8 +628,13 @@ export function PremiumManagement() {
                     )
                   },
                 ]}
-                rows={memberRows}
+                rows={membersPagination.paginatedData}
                 emptyMessage="✨ Không có thành viên Premium"
+              />
+              <Pagination
+                currentPage={membersPagination.currentPage}
+                totalPages={membersPagination.totalPages}
+                onPageChange={membersPagination.handlePageChange}
               />
             </AdminSectionCard>
           </div>
@@ -874,239 +694,6 @@ export function PremiumManagement() {
             </AdminSectionCard>
           </div>
         </div>
-
-        {/* PLAN MODAL */}
-        {showPlanModal && (
-          <>
-            <div className="modal fade show d-block" role="dialog" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-              <div className="modal-dialog" role="document">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title">
-                      {editingPlan ? '✏️ Chỉnh sửa Gói Premium' : '➕ Tạo Gói Premium Mới'}
-                    </h5>
-                    <button type="button" className="btn-close" onClick={() => setShowPlanModal(false)}></button>
-                  </div>
-                  <div className="modal-body premium-modal-body">
-                    {/* Step Indicator */}
-                    <div className="premium-step-indicator mb-4">
-                      <div className={`step-item ${currentStep === 1 ? 'active' : 'completed'}`}>
-                        <div className="step-number">1</div>
-                        <div className="step-label">Thông tin cơ bản</div>
-                      </div>
-                      <div className="step-line"></div>
-                      <div className={`step-item ${currentStep === 2 ? 'active' : ''}`}>
-                        <div className="step-number">2</div>
-                        <div className="step-label">Tính năng & Giới hạn</div>
-                      </div>
-                    </div>
-
-                    {currentStep === 1 ? (
-                      <div className="step-content-fade-in">
-                        <div className="mb-3">
-                          <label className="premium-form-label">Tên gói <span style={{ color: '#dc2626' }}>*</span></label>
-                          <input
-                            type="text"
-                            className="form-control premium-input"
-                            value={planForm.name}
-                            onChange={e => setPlanForm({ ...planForm, name: e.target.value })}
-                            placeholder="VD: Premium 1 tháng"
-                          />
-                        </div>
-                        <div className="mb-3">
-                          <label className="premium-form-label">Giá (VND) <span style={{ color: '#dc2626' }}>*</span></label>
-                          <input
-                            type="number"
-                            className="form-control premium-input"
-                            value={planForm.price}
-                            onChange={e => setPlanForm({ ...planForm, price: e.target.value })}
-                            placeholder="99000"
-                          />
-                        </div>
-                        <div className="mb-3">
-                          <label className="premium-form-label">Kỳ hạn (ngày) <span style={{ color: '#dc2626' }}>*</span></label>
-                          <input
-                            type="number"
-                            className="form-control premium-input"
-                            value={planForm.durationDays}
-                            onChange={e => setPlanForm({ ...planForm, durationDays: e.target.value })}
-                            placeholder="30"
-                          />
-                        </div>
-                        <div className="mb-3">
-                          <label className="premium-form-label">Mô tả</label>
-                          <textarea
-                            className="form-control premium-input"
-                            rows="3"
-                            value={planForm.description}
-                            onChange={e => setPlanForm({ ...planForm, description: e.target.value })}
-                            placeholder="Nội dung chi tiết về gói này..."
-                          ></textarea>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="step-content-fade-in">
-                        <p className="mb-3 text-muted small">Thiết lập quyền truy cập và hạn mức sử dụng cho gói này.</p>
-                        <div className="feature-limits-list">
-                          {CONFIGURABLE_FEATURES.map((feat) => {
-                            const currentLimit = planForm.limits.find(l => l.featureName === feat.id) || { isLocked: false, usageLimit: 0 }
-                            return (
-                              <div key={feat.id} className="feature-limit-item p-3 mb-2 rounded border">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                  <div>
-                                    <strong className="d-block">{feat.label}</strong>
-                                    <small className="text-muted">{feat.description}</small>
-                                  </div>
-                                  <div className="form-check form-switch">
-                                    <input
-                                      className="form-check-input"
-                                      type="checkbox"
-                                      checked={!currentLimit.isLocked}
-                                      onChange={(e) => {
-                                        const newLimits = planForm.limits.map(l =>
-                                          l.featureName === feat.id ? { ...l, isLocked: !e.target.checked } : l
-                                        )
-                                        setPlanForm({ ...planForm, limits: newLimits })
-                                      }}
-                                    />
-                                    <label className="form-check-label small">{currentLimit.isLocked ? '🔒 Khóa' : '🔓 Mở'}</label>
-                                  </div>
-                                </div>
-                                {!currentLimit.isLocked && !feat.lockOnly && (
-                                  <div className="d-flex align-items-center gap-2 mt-2">
-                                    <label className="small text-nowrap">Hạn mức:</label>
-                                    <div className="input-group input-group-sm" style={{ width: '180px' }}>
-                                      <input
-                                        type="number"
-                                        className="form-control"
-                                        disabled={currentLimit.usageLimit >= 999999}
-                                        value={currentLimit.usageLimit >= 999999 ? '' : currentLimit.usageLimit}
-                                        placeholder={currentLimit.usageLimit >= 999999 ? "∞ Vô hạn" : "0"}
-                                        onChange={(e) => {
-                                          const val = parseInt(e.target.value) || 0
-                                          const newLimits = planForm.limits.map(l =>
-                                            l.featureName === feat.id ? { ...l, usageLimit: val } : l
-                                          )
-                                          setPlanForm({ ...planForm, limits: newLimits })
-                                        }}
-                                      />
-                                      <button
-                                        className={`btn ${currentLimit.usageLimit >= 999999 ? 'btn-success' : 'btn-outline-secondary'}`}
-                                        type="button"
-                                        title="Chuyển sang Vô hạn"
-                                        onClick={() => {
-                                          const isCurrentlyUnlimited = currentLimit.usageLimit >= 999999
-                                          const newLimit = isCurrentlyUnlimited ? feat.defaultLimit : 999999
-                                          const newLimits = planForm.limits.map(l =>
-                                            l.featureName === feat.id ? { ...l, usageLimit: newLimit } : l
-                                          )
-                                          setPlanForm({ ...planForm, limits: newLimits })
-                                        }}
-                                      >
-                                        {currentLimit.usageLimit >= 999999 ? '✅ Vô hạn' : '∞'}
-                                      </button>
-                                    </div>
-                                    <span className="small text-muted">
-                                      {currentLimit.usageLimit >= 999999 ? '(Không giới hạn)' : '(0 = không dùng)'}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPlanModal(false)}>Hủy</button>
-                    {currentStep === 1 ? (
-                      <button type="button" className="btn btn-primary" onClick={() => setCurrentStep(2)}>Tiếp theo: Tính năng ➡️</button>
-                    ) : (
-                      <>
-                        <button type="button" className="btn btn-outline-primary" onClick={() => setCurrentStep(1)}>⬅️ Quay lại</button>
-                        <button type="button" className="btn btn-primary" onClick={handleSavePlan}>💾 Lưu Gói</button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-backdrop fade show"></div>
-          </>
-        )}
-
-        {/* GRANT PREMIUM MODAL */}
-        {showGrantModal && (
-          <>
-            <div className="modal fade show d-block" role="dialog" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-              <div className="modal-dialog" role="document">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title">➕ Cấp quyền Premium thủ công</h5>
-                    <button type="button" className="btn-close" onClick={() => setShowGrantModal(false)}></button>
-                  </div>
-                  <div className="modal-body">
-                    <div className="mb-3">
-                      <label className="premium-form-label">Email người dùng <span style={{ color: '#dc2626' }}>*</span></label>
-                      <input
-                        type="email"
-                        className="form-control premium-input"
-                        value={grantForm.email}
-                        onChange={e => handleGrantFormChange('email', e.target.value)}
-                        placeholder="VD: user@example.com"
-                      />
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="premium-form-label">Chọn Gói cước <span style={{ color: '#dc2626' }}>*</span></label>
-                      <select
-                        className="form-select premium-input"
-                        value={grantForm.planId}
-                        onChange={e => handleGrantFormChange('planId', e.target.value)}
-                      >
-                        <option value="">-- Không sử dụng gói (Chỉ gia hạn ngày) --</option>
-                        {planRows.map(plan => (
-                          <option key={plan.id} value={plan.id}>
-                            {plan.name} ({plan.durationDays} ngày)
-                          </option>
-                        ))}
-                      </select>
-                      <small className="text-muted">Việc chọn gói sẽ tự động điền thời hạn bên dưới.</small>
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="premium-form-label">Thời hạn cấp (ngày) <span style={{ color: '#dc2626' }}>*</span></label>
-                      <input
-                        type="number"
-                        className="form-control premium-input"
-                        value={grantForm.durationDays}
-                        onChange={e => handleGrantFormChange('durationDays', e.target.value)}
-                        placeholder="30"
-                      />
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="premium-form-label">Lý do cấp quyền <span style={{ color: '#dc2626' }}>*</span></label>
-                      <textarea
-                        className="form-control premium-input"
-                        rows="3"
-                        value={grantForm.reason}
-                        onChange={e => handleGrantFormChange('reason', e.target.value)}
-                        placeholder="VD: Tặng quà sự kiện tháng 10..."
-                      ></textarea>
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-outline-secondary" onClick={() => setShowGrantModal(false)}>Hủy</button>
-                    <button type="button" className="btn btn-primary" onClick={submitManualGrant}>🚀 Cấp quyền</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-backdrop fade show"></div>
-          </>
-        )}
       </div>
     </div>
   )

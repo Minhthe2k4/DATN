@@ -8,6 +8,9 @@ public record AdminLessonDto(
         String difficulty,
         String status,
         String lessonImage,
-        Boolean isPremium
+        Boolean isPremium,
+        java.util.Date createdAt,
+        java.util.Date updatedAt,
+        java.util.Date deletedAt
 ) {
 }

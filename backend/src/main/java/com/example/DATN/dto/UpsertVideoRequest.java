@@ -11,6 +11,9 @@ public record UpsertVideoRequest(
         String duration,
         String status,
         String transcript,
+        String thumbnail,
+        String filePath,
+        String subtitleStatus,
         List<SegmentDto> segments
 ) {
 }

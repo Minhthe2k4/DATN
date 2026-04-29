@@ -106,7 +106,7 @@ public class UserHomepageService {
         // 5. Stats from UserStats
         dashboard.put("totalLearned", (long) userWords.size()); // Use actual learning records count
 
-        Optional<UserStats> statsOpt = userStatsRepository.findByUser_Id(userId);
+        Optional<UserStats> statsOpt = userStatsRepository.findFirstByUser_Id(userId);
         if (statsOpt.isPresent()) {
             UserStats stats = statsOpt.get();
             dashboard.put("streak", stats.streakDays != null ? stats.streakDays : 0);
@@ -138,7 +138,7 @@ public class UserHomepageService {
             map.put("meaningEn", v.meaningEn);
             map.put("meaningVi", v.meaningVi);
             map.put("example", v.example);
-            map.put("pos", v.partOfSpeech);
+            map.put("pos", v.typeOfWord);
             return map;
         }).collect(Collectors.toList());
     }

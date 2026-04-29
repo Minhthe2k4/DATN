@@ -37,12 +37,13 @@ export function VocabularySaved() {
 	const userId = session?.userId ? Number(session.userId) : null
 	const isLoggedIn = !!session
 	const premiumStatus = usePremiumStatus(userId)
-	
+
 	const [items, setItems] = useState(() => readSavedVocabulary())
 	const [searchTerm, setSearchTerm] = useState('')
 	const [editingId, setEditingId] = useState(null)
 	const [draft, setDraft] = useState(null)
 	const [isLoading, setIsLoading] = useState(false)
+	const [filterLesson, setFilterLesson] = useState('all')
 
 	// Check if user has reached vocabulary limit
 	const vocabLimit = useMemo(() => {
@@ -50,19 +51,38 @@ export function VocabularySaved() {
 	}, [items.length, premiumStatus?.isPremium, premiumStatus?.featureLimits])
 
 	const filteredItems = useMemo(() => {
+		let result = items
 		const q = searchTerm.trim().toLowerCase()
-		if (!q) {
-			return items
+
+		if (q) {
+			result = result.filter((item) => {
+				const text = [item.word, item.pronunciation, item.meaningEn, item.meaningVi, item.example]
+					.filter(Boolean)
+					.join(' ')
+					.toLowerCase()
+				return text.includes(q)
+			})
 		}
 
-		return items.filter((item) => {
-			const text = [item.word, item.pronunciation, item.meaningEn, item.meaningVi, item.example]
-				.filter(Boolean)
-				.join(' ')
-				.toLowerCase()
-			return text.includes(q)
+		if (filterLesson !== 'all') {
+			result = result.filter(item => {
+				if (filterLesson === 'custom') return item.isCustom || !item.lessonId
+				return String(item.lessonId) === filterLesson
+			})
+		}
+
+		return result
+	}, [items, searchTerm, filterLesson])
+
+	const availableLessons = useMemo(() => {
+		const lessonMap = new Map()
+		items.forEach(item => {
+			if (item.lessonId && item.lessonName) {
+				lessonMap.set(String(item.lessonId), item.lessonName)
+			}
 		})
-	}, [items, searchTerm])
+		return Array.from(lessonMap.entries()).map(([id, name]) => ({ id, name }))
+	}, [items])
 
 	const fetchLearningVocab = async () => {
 		if (!isLoggedIn) {
@@ -175,36 +195,70 @@ export function VocabularySaved() {
 		setDraft(null)
 	}
 
-	const saveEdit = () => {
+	const saveEdit = async () => {
 		if (!draft?.word?.trim()) {
 			return
 		}
 
-		// Check if user has reached limit (when creating new words)
-		if (editingId === null && vocabLimit.isLimited && !premiumStatus?.isPremium) {
-			alert(`❌ Bạn đã đạt giới hạn lưu từ (${vocabLimit.limit} từ). Nâng cấp Premium để lưu không giới hạn!`)
-			return
+		const itemToEdit = items.find(item => item.id === editingId)
+		if (!itemToEdit) return
+
+		try {
+			setIsLoading(true)
+			
+			if (itemToEdit.isCustom) {
+				// Persist custom word changes to backend
+				const response = await fetch(`${API_BASE_URL}/api/user/vocab-custom/${itemToEdit.vocabId}`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${getUserSession()?.token}`
+					},
+					body: JSON.stringify({
+						word: draft.word.trim(),
+						pronunciation: draft.pronunciation?.trim() || '',
+						meaningVi: draft.meaningVi?.trim() || '',
+						meaningEn: draft.meaningEn?.trim() || '',
+						example: draft.example?.trim() || '',
+						level: normalizeLevel(draft.level)
+					})
+				})
+
+				if (!response.ok) {
+					throw new Error('Failed to update custom vocabulary')
+				}
+			} else {
+				// System words cannot be edited by students (database doesn't support personal overrides yet)
+				alert('Từ vựng hệ thống hiện chưa hỗ trợ chỉnh sửa cá nhân. Bạn chỉ có thể sửa các từ tự thêm.')
+				cancelEdit()
+				return
+			}
+
+			const nextItems = items.map((item) => {
+				if (item.id !== editingId) {
+					return item
+				}
+
+				return {
+					...item,
+					word: draft.word.trim(),
+					pronunciation: draft.pronunciation || '',
+					meaningEn: draft.meaningEn || '',
+					meaningVi: draft.meaningVi || '',
+					example: draft.example || '',
+					level: normalizeLevel(draft.level),
+				}
+			})
+
+			setItems(nextItems)
+			writeSavedVocabulary(nextItems)
+			cancelEdit()
+		} catch (err) {
+			console.error('Error saving edit:', err)
+			alert('Không thể lưu thay đổi. Vui lòng thử lại sau.')
+		} finally {
+			setIsLoading(false)
 		}
-
-		const nextItems = items.map((item) => {
-			if (item.id !== editingId) {
-				return item
-			}
-
-			return {
-				...item,
-				word: draft.word.trim(),
-				pronunciation: draft.pronunciation || '',
-				meaningEn: draft.meaningEn || '',
-				meaningVi: draft.meaningVi || '',
-				example: draft.example || '',
-				level: normalizeLevel(draft.level),
-			}
-		})
-
-		setItems(nextItems)
-		writeSavedVocabulary(nextItems)
-		cancelEdit()
 	}
 
 	const removeWord = (id) => {
@@ -228,18 +282,18 @@ export function VocabularySaved() {
 						</p>
 					</div>
 					<div className="saved-vocab-header__actions">
-						<button 
-							type="button" 
-							className="saved-vocab-sync-btn" 
+						<button
+							type="button"
+							className="saved-vocab-sync-btn"
 							onClick={syncLocalToCloud}
 							disabled={isLoading}
 							title="Đưa từ vựng từ máy này vào hệ thống học SRS"
 						>
 							☁️ Đồng bộ SRS
 						</button>
-						<button 
-							type="button" 
-							className="saved-vocab-refresh-btn" 
+						<button
+							type="button"
+							className="saved-vocab-refresh-btn"
 							onClick={fetchLearningVocab}
 							disabled={isLoading}
 						>
@@ -255,7 +309,7 @@ export function VocabularySaved() {
 				{!premiumStatus?.isPremium && (
 					<div className="premium-storage-info">
 						<div className="storage-bar">
-							<div 
+							<div
 								className={`storage-fill ${vocabLimit.isWarning ? 'warning' : ''} ${vocabLimit.isLimited ? 'limited' : ''}`}
 								style={{ width: `${Math.min(100, (items.length / vocabLimit.limit) * 100)}%` }}
 							></div>
@@ -277,13 +331,28 @@ export function VocabularySaved() {
 				)}
 
 				<div className="saved-vocab-toolbar">
-					<input
-						type="search"
-						placeholder="Tìm từ muốn sửa hoặc xóa..."
-						value={searchTerm}
-						onChange={(event) => setSearchTerm(event.target.value)}
-					/>
-					<span>{filteredItems.length} từ phù hợp</span>
+					<div className="search-group">
+						<input
+							type="search"
+							placeholder="Tìm từ muốn sửa hoặc xóa..."
+							value={searchTerm}
+							onChange={(event) => setSearchTerm(event.target.value)}
+						/>
+					</div>
+					<div className="filter-group">
+						<select
+							value={filterLesson}
+							onChange={(e) => setFilterLesson(e.target.value)}
+							className="lesson-filter-select"
+						>
+							<option value="all">Tất cả bài học</option>
+							<option value="custom">Từ vựng cá nhân</option>
+							{availableLessons.map(lesson => (
+								<option key={lesson.id} value={lesson.id}>{lesson.name}</option>
+							))}
+						</select>
+					</div>
+					<span className="results-count">{filteredItems.length} từ phù hợp</span>
 				</div>
 
 				<div className="saved-vocab-grid">

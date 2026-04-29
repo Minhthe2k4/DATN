@@ -34,6 +34,9 @@ public class LookupHistory {
     @Column(name = "meaning_vi", columnDefinition = "TEXT")
     public String meaningVi;
 
+    @Column(name = "context_translation", columnDefinition = "TEXT")
+    public String contextTranslation;
+
     @Column(name = "created_at")
     public java.time.LocalDateTime createdAt;
 

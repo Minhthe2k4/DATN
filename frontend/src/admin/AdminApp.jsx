@@ -14,16 +14,34 @@ const SystemReports = lazy(() => import('./pages/reports/SystemReports').then((m
 const TopicManagement = lazy(() => import('./pages/topics/TopicManagement').then((module) => ({ default: module.TopicManagement })))
 const LessonManagement = lazy(() => import('./pages/lessons/LessonManagement').then((module) => ({ default: module.LessonManagement })))
 const LessonCrudPage = lazy(() => import('./pages/lessons/LessonCrudPage').then((module) => ({ default: module.LessonCrudPage })))
+const LessonDetailPage = lazy(() => import('./pages/lessons/LessonDetailPage').then((module) => ({ default: module.LessonDetailPage })))
 const VocabularyManagement = lazy(() => import('./pages/vocabulary/VocabularyManagement').then((module) => ({ default: module.VocabularyManagement })))
 const VocabularyCrudPage = lazy(() => import('./pages/vocabulary/VocabularyCrudPage').then((module) => ({ default: module.VocabularyCrudPage })))
+const VocabularyDetailPage = lazy(() => import('./pages/vocabulary/VocabularyDetailPage').then((module) => ({ default: module.VocabularyDetailPage })))
 const ReadingManagement = lazy(() => import('./pages/readings/ReadingManagement').then((module) => ({ default: module.ReadingManagement })))
+const ReadingCrudPage = lazy(() => import('./pages/readings/ReadingCrudPage').then((module) => ({ default: module.ReadingCrudPage })))
+const ArticleDetailPage = lazy(() => import('./pages/readings/ArticleDetailPage').then((module) => ({ default: module.ArticleDetailPage })))
 const VideoManagement = lazy(() => import('./pages/videos/VideoManagement').then((module) => ({ default: module.VideoManagement })))
+const VideoCrudPage = lazy(() => import('./pages/videos/VideoCrudPage').then((module) => ({ default: module.VideoCrudPage })))
+const VideoDetailPage = lazy(() => import('./pages/videos/VideoDetailPage').then((module) => ({ default: module.VideoDetailPage })))
+const VideoChannelDetailPage = lazy(() => import('./pages/videos/VideoChannelDetailPage').then((module) => ({ default: module.VideoChannelDetailPage })))
 const UserManagement = lazy(() => import('./pages/users/UserManagement').then((module) => ({ default: module.UserManagement })))
-const PremiumManagement = lazy(() => import('./pages/premium/PremiumManagement').then((module) => ({ default: module.PremiumManagement })))
+const UserDetailPage = lazy(() => import('./pages/users/UserDetailPage').then((module) => ({ default: module.UserDetailPage })))
+const UserCrudPage = lazy(() => import('./pages/users/UserCrudPage').then((module) => ({ default: module.UserCrudPage })))
 const RevenueManagement = lazy(() => import('./pages/revenue/RevenueManagement').then((module) => ({ default: module.RevenueManagement })))
+const PremiumManagement = lazy(() => import('./pages/premium/PremiumManagement').then((module) => ({ default: module.PremiumManagement })))
+const PremiumPlanCrud = lazy(() => import('./pages/premium/PremiumPlanCrud').then((module) => ({ default: module.PremiumPlanCrud })))
+const PremiumGrantPage = lazy(() => import('./pages/premium/PremiumGrantPage').then((module) => ({ default: module.PremiumGrantPage })))
+const PremiumExtendPage = lazy(() => import('./pages/premium/PremiumExtendPage').then((module) => ({ default: module.PremiumExtendPage })))
 const SpacedRepetitionManagement = lazy(() => import('./pages/spaced-repetition/SpacedRepetitionManagement').then((module) => ({ default: module.SpacedRepetitionManagement })))
 const SupportManagement = lazy(() => import('./pages/support/SupportManagement').then((module) => ({ default: module.SupportManagement })))
-const AdminCrudPage = lazy(() => import('./pages/crud/AdminCrudPage').then((module) => ({ default: module.AdminCrudPage })))
+const SupportDetailPage = lazy(() => import('./pages/support/SupportDetailPage').then((module) => ({ default: module.SupportDetailPage })))
+const TopicCrudPage = lazy(() => import('./pages/topics/TopicCrudPage').then((module) => ({ default: module.TopicCrudPage })))
+const TopicDetailPage = lazy(() => import('./pages/topics/TopicDetailPage').then((module) => ({ default: module.TopicDetailPage })))
+const ReadingTopicCrudPage = lazy(() => import('./pages/readings/ReadingTopicCrudPage').then((module) => ({ default: module.ReadingTopicCrudPage })))
+const ReadingTopicDetailPage = lazy(() => import('./pages/readings/ReadingTopicDetailPage').then((module) => ({ default: module.ReadingTopicDetailPage })))
+const VideoChannelCrudPage = lazy(() => import('./pages/videos/VideoChannelCrudPage').then((module) => ({ default: module.VideoChannelCrudPage })))
+const RecycleBin = lazy(() => import('./pages/RecycleBin'))
 
 function isAdminAllowed() {
   // Check if user has admin session
@@ -92,27 +110,52 @@ export function AdminApp() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="reports" element={<SystemReports />} />
                 <Route path="topics" element={<TopicManagement />} />
-                <Route path="topics/new" element={<AdminCrudPage entity="topics" mode="create" />} />
-                <Route path="topics/:id/edit" element={<AdminCrudPage entity="topics" mode="edit" />} />
-                <Route path="topics/:id/delete" element={<AdminCrudPage entity="topics" mode="delete" />} />
+                <Route path="topics/new" element={<TopicCrudPage mode="create" />} />
+                <Route path="topics/:id" element={<TopicDetailPage />} />
+                <Route path="topics/:id/edit" element={<TopicCrudPage mode="edit" />} />
+                <Route path="topics/:id/delete" element={<TopicCrudPage mode="delete" />} />
                 <Route path="lessons" element={<LessonManagement />} />
                 <Route path="lessons/new" element={<LessonCrudPage mode="create" />} />
+                <Route path="lessons/:id" element={<LessonDetailPage />} />
                 <Route path="lessons/:id/edit" element={<LessonCrudPage mode="edit" />} />
                 <Route path="lessons/:id/delete" element={<LessonCrudPage mode="delete" />} />
                 <Route path="vocabulary" element={<VocabularyManagement />} />
                 <Route path="vocabulary/new" element={<VocabularyCrudPage mode="create" />} />
+                <Route path="vocabulary/:id" element={<VocabularyDetailPage />} />
                 <Route path="vocabulary/:id/edit" element={<VocabularyCrudPage mode="edit" />} />
                 <Route path="vocabulary/:id/delete" element={<VocabularyCrudPage mode="delete" />} />
                 <Route path="readings" element={<ReadingManagement />} />
+                <Route path="readings/new" element={<ReadingCrudPage mode="create" />} />
+                <Route path="readings/:id" element={<ArticleDetailPage />} />
+                <Route path="readings/:id/edit" element={<ReadingCrudPage mode="edit" />} />
+                <Route path="readings/:id/delete" element={<ReadingCrudPage mode="delete" />} />
+                <Route path="reading-topics/new" element={<ReadingTopicCrudPage mode="create" />} />
+                <Route path="reading-topics/:id" element={<ReadingTopicDetailPage />} />
+                <Route path="reading-topics/:id/edit" element={<ReadingTopicCrudPage mode="edit" />} />
+                <Route path="reading-topics/:id/delete" element={<ReadingTopicCrudPage mode="delete" />} />
                 <Route path="videos" element={<VideoManagement />} />
-                <Route path="videos/new" element={<AdminCrudPage entity="videos" mode="create" />} />
-                <Route path="videos/:id/edit" element={<AdminCrudPage entity="videos" mode="edit" />} />
-                <Route path="videos/:id/delete" element={<AdminCrudPage entity="videos" mode="delete" />} />
+                <Route path="videos/new" element={<VideoCrudPage mode="create" />} />
+                <Route path="videos/:id" element={<VideoDetailPage />} />
+                <Route path="videos/:id/edit" element={<VideoCrudPage mode="edit" />} />
+                <Route path="videos/:id/delete" element={<VideoCrudPage mode="delete" />} />
+                <Route path="video-channels/new" element={<VideoChannelCrudPage mode="create" />} />
+                <Route path="video-channels/:id" element={<VideoChannelDetailPage />} />
+                <Route path="video-channels/:id/edit" element={<VideoChannelCrudPage mode="edit" />} />
+                <Route path="video-channels/:id/delete" element={<VideoChannelCrudPage mode="delete" />} />
                 <Route path="users" element={<UserManagement />} />
+                <Route path="users/:id" element={<UserDetailPage />} />
+                <Route path="users/:id/edit" element={<UserCrudPage mode="edit" />} />
+                <Route path="users/:id/delete" element={<UserCrudPage mode="delete" />} />
                 <Route path="premium" element={<PremiumManagement />} />
+                <Route path="premium/new" element={<PremiumPlanCrud />} />
+                <Route path="premium/:id/edit" element={<PremiumPlanCrud />} />
+                <Route path="premium/grant" element={<PremiumGrantPage />} />
+                <Route path="premium/members/:userId/extend" element={<PremiumExtendPage />} />
                 <Route path="revenue" element={<RevenueManagement />} />
                 <Route path="spaced-repetition" element={<SpacedRepetitionManagement />} />
                 <Route path="support" element={<SupportManagement />} />
+                <Route path="support/:id" element={<SupportDetailPage />} />
+                <Route path="recycle-bin" element={<RecycleBin />} />
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>
             </Suspense>

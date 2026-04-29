@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "User_Vocabulary_Custom")
+@Table(name = "user_vocabulary_custom")
 public class UserVocabularyCustom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,8 +23,8 @@ public class UserVocabularyCustom {
     @Column(name = "pronunciation", length = 100)
     public String pronunciation;
 
-    @Column(name = "part_of_speech", length = 50)
-    public String partOfSpeech;
+    @Column(name = "type_of_word", length = 50)
+    public String typeOfWord;
 
     @Column(name = "meaning_en", columnDefinition = "TEXT")
     public String meaningEn;

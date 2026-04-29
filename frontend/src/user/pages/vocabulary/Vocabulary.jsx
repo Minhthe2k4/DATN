@@ -4,14 +4,7 @@ import { getUserSession } from '../../utils/authSession'
 import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
 import './vocabulary.css'
 
-function QuestionCircleIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
-			<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.5" />
-			<path d="M12 16v.01M12 13a2 2 0 002-2c0-1.1-.9-2-2-2s-2 .9-2 2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-		</svg>
-	)
-}
+import { HelpCircle, CheckCircle, Lock } from 'lucide-react'
 
 export function Vocabulary() {
 	const navigate = useNavigate()
@@ -34,32 +27,31 @@ export function Vocabulary() {
 	const reviewLoadingIntervalRef = useRef(null)
 	const reviewLoadingTimeoutRef = useRef(null)
 
-	// Fetch dashboard data
-	useEffect(() => {
-		const fetchDashboard = async () => {
-			try {
-				const response = await fetch('/api/user/dashboard', {
-					headers: {
-						'Authorization': `Bearer ${localStorage.getItem('token') || session?.userId}`
-					}
-				})
-				if (response.ok) {
-					const data = await response.json()
-					setDashboard(data)
-
-					// Calculate remaining seconds for countdown
-					if (data.nextReviewTime) {
-						const next = new Date(data.nextReviewTime).getTime()
-						const now = new Date().getTime()
-						const diff = Math.max(0, Math.floor((next - now) / 1000))
-						setRemainingSeconds(diff)
-					}
+	const fetchDashboard = async () => {
+		try {
+			const response = await fetch('/api/user/dashboard', {
+				headers: {
+					'Authorization': `Bearer ${localStorage.getItem('token') || session?.userId}`
 				}
-			} catch (error) {
-				console.error('Error fetching dashboard:', error)
-			}
-		}
+			})
+			if (response.ok) {
+				const data = await response.json()
+				setDashboard(data)
 
+				if (data.nextReviewTime) {
+					const next = new Date(data.nextReviewTime).getTime()
+					const now = new Date().getTime()
+					const diff = Math.max(0, Math.floor((next - now) / 1000))
+					setRemainingSeconds(diff)
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching dashboard:', error)
+		}
+	}
+
+	// Fetch dashboard data on mount
+	useEffect(() => {
 		fetchDashboard()
 	}, [session?.userId])
 
@@ -68,7 +60,21 @@ export function Vocabulary() {
 		if (remainingSeconds <= 0) return undefined
 
 		const timerId = window.setInterval(() => {
-			setRemainingSeconds((prev) => Math.max(0, prev - 1))
+			setRemainingSeconds((prev) => {
+				if (prev <= 1) {
+					// Trigger notification and refresh
+					window.dispatchEvent(new CustomEvent('new-notification', {
+						detail: {
+							message: "✨ Đã đến giờ ôn tập! Hãy bắt đầu ngay để đạt hiệu quả cao nhất.",
+							type: "REVIEW_REMINDER"
+						}
+					}));
+					// Refetch dashboard to update reviewCount
+					fetchDashboard();
+					return 0;
+				}
+				return prev - 1;
+			})
 		}, 1000)
 
 		return () => window.clearInterval(timerId)
@@ -169,7 +175,7 @@ export function Vocabulary() {
 									Xem từ đã lưu
 								</button>
 								<button className="help-btn" type="button" aria-label="Trợ giúp">
-									<QuestionCircleIcon />
+									<HelpCircle size={20} />
 								</button>
 							</div>
 						</div>
@@ -183,10 +189,7 @@ export function Vocabulary() {
 											<span className="big-number">{dashboard.totalLearned || 0}</span>
 											<span className="fraction">/{dashboard.totalPossible || 0}</span>
 											<span className="percentage">
-												<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-													<circle cx="12" cy="12" r="10" fill="none" stroke="#10b981" strokeWidth="2" />
-													<path d="M12 6v6l4 2" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
-												</svg>
+												<CheckCircle size={16} color="#10b981" />
 												{statsPercentage}%
 											</span>
 										</div>
@@ -291,10 +294,7 @@ export function Vocabulary() {
 							) : (
 								<div className="stats-login-prompt">
 									<div className="stats-login-prompt__icon">
-										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-											<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-											<path d="M7 11V7a5 5 0 0110 0v4" />
-										</svg>
+										<Lock size={40} />
 									</div>
 									<h3 className="stats-login-prompt__title">Đăng nhập để xem thống kê</h3>
 									<p className="stats-login-prompt__text">Hãy đăng nhập để theo dõi tiến độ học tập và biểu đồ thành thạo từ vựng của bạn.</p>
@@ -311,7 +311,7 @@ export function Vocabulary() {
 						<div className="training-card__header">
 							<h2 className="training-card__title">Luyện tập</h2>
 							<button className="help-btn" type="button" aria-label="Trợ giúp">
-								<QuestionCircleIcon />
+								<HelpCircle size={20} />
 							</button>
 						</div>
 						<div className="training-card__body">

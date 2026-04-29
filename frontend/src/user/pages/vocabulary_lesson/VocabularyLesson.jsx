@@ -548,7 +548,11 @@ export function VocabularyLesson() {
 						<div className="vlesson-grid">
 							{topicData.map((topic) => (
 								<button key={topic.id} type="button" className="vlesson-tile" onClick={() => handlePickTopic(topic.id)}>
-									<img src={topic.image} alt={topic.title} className="vlesson-tile__image" />
+									{topic.image ? (
+										<img src={topic.image} alt={topic.title} className="vlesson-tile__image" />
+									) : (
+										<div className="vlesson-tile__image vlesson-tile__image--placeholder" />
+									)}
 									<div className="vlesson-tile__overlay" />
 									<div className="vlesson-tile__content">
 										<h3>{topic.title}</h3>
@@ -580,6 +584,11 @@ export function VocabularyLesson() {
 						<div className="vlesson-grid vlesson-grid--lessons">
 							{selectedTopic.lessons.map((lesson) => (
 								<button key={lesson.id} type="button" className={`vlesson-lesson ${lesson.isPremium && !isUserPremium ? 'is-locked' : ''}`} onClick={() => handlePickLesson(lesson.id)}>
+									{lesson.image && lesson.image !== "" && (
+										<div className="vlesson-lesson__image-container">
+											<img src={lesson.image} alt={lesson.title} className="vlesson-lesson__image" />
+										</div>
+									)}
 									<div className="vlesson-lesson__header">
 										<h3>{lesson.title}</h3>
 										{lesson.isPremium && (
@@ -618,10 +627,17 @@ export function VocabularyLesson() {
 
 						{studyStep === 'card' && (
 							<>
-								<button
-									type="button"
+								<div
+									role="button"
+									tabIndex={0}
 									className={`flashcard${isFlipped ? ' is-flipped' : ''}`}
 									onClick={() => setIsFlipped((prev) => !prev)}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											setIsFlipped((prev) => !prev);
+										}
+									}}
 									aria-label="Lat flashcard"
 								>
 									<div className="flashcard__face flashcard__face--front">
@@ -655,7 +671,7 @@ export function VocabularyLesson() {
 										<p className="flashcard__meaning">Nghĩa tiếng Anh: {currentWord.meaningEn}</p>
 										<p className="flashcard__meaning">Nghĩa tiếng Việt: {currentWord.meaningVi}</p>
 									</div>
-								</button>
+								</div>
 
 								<div className="study-actions">
 									<button type="button" className="vlesson-skip" onClick={handleSkipKnownWord}>

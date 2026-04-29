@@ -2,12 +2,9 @@ package com.example.DATN.entity;
 
 import jakarta.persistence.*;
 import java.util.Date;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-
 @Entity
 @Table(name = "lessons")
-@SQLDelete(sql = "UPDATE lessons SET deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Lesson {
     @Id
@@ -37,8 +34,25 @@ public class Lesson {
     @Column(name = "is_premium")
     public Boolean isPremium = false;
 
+    @Column(name = "created_at")
+    public Date createdAt;
+
+    @Column(name = "updated_at")
+    public Date updatedAt;
+
     @Column(name = "deleted_at")
     public Date deletedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Date();
+        updatedAt = new Date();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = new Date();
+    }
 
     public Lesson() {
     }
