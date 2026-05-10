@@ -1,58 +1,45 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { lessons as lessonSeed, topics } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, Pagination } from '../../components/console/AdminUi'
+import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
 import { usePagination } from '../../hooks/usePagination'
+import { adminFetch } from '../../utils/api'
+import { modal } from '../../../utils/modalUtils'
+import { 
+  normalizeLessonRow, 
+  normalizeTopicRow 
+} from './utils/lessonUtils'
+import { Plus } from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
-
-function normalizeLessonRow(row) {
-  return {
-    id: row.id,
-    name: row.name ?? '',
-    description: row.description ?? '',
-    topic_id: row.topicId ?? row.topic_id ?? '',
-    difficulty: row.difficulty ?? 'Trung bình',
-    status: row.status ?? 'Đang mở',
-    lessonImage: row.lessonImage ?? '',
-    isPremium: !!row.isPremium,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  }
-}
-
-function normalizeTopicRow(row) {
-  return {
-    id: row.id,
-    name: row.name ?? '',
-  }
-}
-
-function formatDate(dateString) {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-}
+// Sub-components
+import { LessonStats } from './components/LessonStats'
+import { LessonFilters } from './components/LessonFilters'
+import { LessonTable } from './components/LessonTable'
+import { LessonSidebars } from './components/LessonSidebars'
 
 export function LessonManagement() {
   const [lessonRows, setLessonRows] = useState(lessonSeed)
   const [topicRows, setTopicRows] = useState(topics)
   const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTopicId, setFilterTopicId] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState('')
   const [filterPremium, setFilterPremium] = useState('All')
   const [filterStatus, setFilterStatus] = useState('')
 
+  const [statsData, setStatsData] = useState(null)
+
   useEffect(() => {
     let isDisposed = false
 
-    async function loadLessonsAndTopics() {
+    async function loadData() {
       try {
-        const [lessonResponse, topicResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/admin/lessons`),
-          fetch(`${API_BASE_URL}/api/admin/topics`),
+        const [lessonResponse, topicResponse, statsResponse] = await Promise.all([
+          adminFetch(`/api/admin/lessons`),
+          adminFetch(`/api/admin/topics`),
+          adminFetch(`/api/admin/reports/content-summary`),
         ])
 
         if (!lessonResponse.ok || !topicResponse.ok) {
@@ -63,74 +50,55 @@ export function LessonManagement() {
           lessonResponse.json(),
           topicResponse.json(),
         ])
+        
+        let statsPayload = null
+        if (statsResponse.ok) {
+          statsPayload = await statsResponse.json()
+        }
 
         if (isDisposed) return
 
         setLessonRows(Array.isArray(lessonPayload) ? lessonPayload.map(normalizeLessonRow) : lessonSeed)
         setTopicRows(Array.isArray(topicPayload) ? topicPayload.map(normalizeTopicRow) : topics)
-        setLoadError('')
+        if (statsPayload) {
+          setStatsData(statsPayload.lesson)
+        }
       } catch (error) {
         if (isDisposed) return
         setLessonRows(lessonSeed)
         setTopicRows(topics)
-        setLoadError('Không thể tải bài học/chủ đề từ backend, đang hiển thị dữ liệu mẫu.')
+        modal.error('Không thể tải bài học/chủ đề từ backend, đang hiển thị dữ liệu mẫu.')
       } finally {
         if (!isDisposed) setIsLoading(false)
       }
     }
 
-    loadLessonsAndTopics()
+    loadData()
     return () => { isDisposed = true }
   }, [])
 
-  const stats = [
-    {
-      label: 'Tổng số bài học',
-      value: lessonRows.length.toString(),
-      meta: 'Có thể gán vào các chủ đề cụ thể',
-      icon: 'iconoir-page',
-    },
-    {
-      label: 'Đang mở',
-      value: lessonRows.filter((lesson) => lesson.status === 'Đang mở').length.toString(),
-      meta: 'Đang xuất hiện trên hệ thống học',
-      icon: 'iconoir-play',
-    },
-    {
-      label: 'Premium',
-      value: lessonRows.filter((lesson) => lesson.isPremium).length.toString(),
-      meta: 'Dành cho người dùng trả phí',
-      icon: 'iconoir-star',
-    },
-    {
-      label: 'Độ khó trung bình',
-      value: lessonRows.filter((lesson) => lesson.difficulty === 'Trung bình').length.toString(),
-      meta: 'Bài học ở mức trung bình',
-      icon: 'iconoir-stats',
-    },
-  ]
-
   const difficultyDistribution = useMemo(() => {
     const total = lessonRows.length
-    const DIFFICULTIES = ['Cơ bản', 'Trung bình', 'Nâng cao']
-
-    return DIFFICULTIES.map((difficulty) => {
-      const count = lessonRows.filter((lesson) => lesson.difficulty === difficulty).length
-      const ratio = total > 0 ? (count / total) * 100 : 0
-      const tone =
-        difficulty === 'Cơ bản'
-          ? 'is-basic'
-          : difficulty === 'Trung bình'
-            ? 'is-mid'
-            : 'is-advanced'
+    const DIFFICULTIES = ['Dễ', 'Trung bình', 'Khó']
+    
+    return DIFFICULTIES.map((diff) => {
+      const count = lessonRows.filter((l) => l.difficulty === diff).length
+      const percentage = total > 0 ? Math.round((count / total) * 100) : 0
+      const tone = diff === 'Dễ' ? 'is-basic' : diff === 'Trung bình' ? 'is-mid' : 'is-advanced'
 
       return {
-        difficulty,
+        difficulty: diff,
         count,
-        ratio,
+        ratio: percentage,
         tone,
       }
     })
+  }, [lessonRows])
+
+  const topLessons = useMemo(() => {
+    return [...lessonRows]
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5)
   }, [lessonRows])
 
   const filteredLessons = useMemo(() => {
@@ -174,163 +142,46 @@ export function LessonManagement() {
           title="Quản lý bài học"
           description="Thiết lập cấu trúc bài học theo chủ đề, độ khó và khối lượng học tập phù hợp."
           actions={
-            <>
-              <Link to="/admin/lessons/new" className="btn btn-primary">Thêm bài học</Link>
-            </>
+            <div className="d-flex gap-2">
+              <Link to="/admin/lessons/new" className="btn btn-primary d-flex align-items-center gap-2">
+                <Plus size={18} /> Thêm bài học
+              </Link>
+            </div>
           }
         />
 
         {isLoading ? <div className="alert alert-light border">Đang tải dữ liệu bài học từ backend...</div> : null}
-        {loadError ? <div className="alert alert-warning border">{loadError}</div> : null}
 
-        <StatGrid items={stats} />
+        <LessonStats statsData={statsData} lessonRows={lessonRows} />
 
         <div className="row g-3 mt-1">
           <div className="col-12 col-xl-9">
             <AdminSectionCard title="Danh sách bài học" actions={<span className="badge bg-light text-primary border">{filteredLessons.length} bài học</span>}>
-              <div className="mb-4">
-                <div className="row g-2 mb-2">
-                  <div className="col-12 col-md-4">
-                    <div className="input-group">
-                      <span className="input-group-text bg-white border-end-0">
-                        <i className="iconoir-search"></i>
-                      </span>
-                      <input
-                        type="text"
-                        className="form-control border-start-0 ps-0"
-                        placeholder="Tìm theo tên bài..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-12 col-md-4">
-                    <select
-                      className="form-select"
-                      value={filterTopicId}
-                      onChange={(e) => setFilterTopicId(e.target.value)}
-                    >
-                      <option value="">— Tất cả chủ đề —</option>
-                      {topicRows.map(topic => (
-                        <option key={topic.id} value={topic.id}>{topic.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-12 col-md-4">
-                    <select
-                      className="form-select"
-                      value={filterDifficulty}
-                      onChange={(e) => setFilterDifficulty(e.target.value)}
-                    >
-                      <option value="">— Độ khó —</option>
-                      <option value="Cơ bản">Cơ bản</option>
-                      <option value="Trung bình">Trung bình</option>
-                      <option value="Nâng cao">Nâng cao</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="row g-2">
-                  <div className="col-12 col-md-6">
-                    <select
-                      className="form-select"
-                      value={filterPremium}
-                      onChange={(e) => setFilterPremium(e.target.value)}
-                    >
-                      <option value="All">Tất cả gói</option>
-                      <option value="Free">Miễn phí</option>
-                      <option value="Premium">Premium</option>
-                    </select>
-                  </div>
-                  <div className="col-12 col-md-6">
-                    <select
-                      className="form-select"
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value)}
-                    >
-                      <option value="">— Trạng thái —</option>
-                      <option value="Đang mở">Đang mở</option>
-                      <option value="Tạm dừng">Tạm dừng</option>
-                      <option value="Nháp">Bản nháp</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              
-              <SimpleTable
-                columns={[
-                  {
-                    key: 'lessonImage',
-                    label: 'Ảnh',
-                    render: (row) => (
-                      <img
-                        src={row.lessonImage || 'https://via.placeholder.com/40'}
-                        alt={row.name}
-                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
-                      />
-                    )
-                  },
-                  { 
-                    key: 'name', 
-                    label: 'Tên bài',
-                    render: (row) => <span className="fw-bold">{row.name}</span>
-                  },
-                  {
-                    key: 'topic',
-                    label: 'Chủ đề',
-                    render: (row) => {
-                      const topicName = topicRows.find((t) => t.id === row.topic_id)?.name || '...'
-                      return topicName
-                    },
-                  },
-                  { key: 'difficulty', label: 'Độ khó' },
-                  {
-                    key: 'isPremium',
-                    label: 'Loại',
-                    render: (row) => row.isPremium ? <Badge tone="info">Premium</Badge> : <Badge tone="neutral">Free</Badge>
-                  },
-                  {
-                    key: 'status',
-                    label: 'Trạng thái',
-                    render: (row) => <Badge tone={row.status === 'Đang mở' ? 'success' : 'warning'}>{row.status}</Badge>,
-                  },
-                  {
-                    key: 'actions',
-                    label: 'Hành động',
-                    render: (row) => (
-                      <div className="d-flex flex-wrap gap-2">
-                        <Link to={`/admin/lessons/${row.id}`} className="btn btn-sm btn-soft-info">Chi tiết</Link>
-                        <Link to={`/admin/lessons/${row.id}/edit`} className="btn btn-sm btn-soft-primary">Sửa</Link>
-                        <Link to={`/admin/lessons/${row.id}/delete`} className="btn btn-sm btn-soft-danger">Xóa</Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                rows={pagination.paginatedData}
+              <LessonFilters 
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                filterTopicId={filterTopicId}
+                setFilterTopicId={setFilterTopicId}
+                filterDifficulty={filterDifficulty}
+                setFilterDifficulty={setFilterDifficulty}
+                filterPremium={filterPremium}
+                setFilterPremium={setFilterPremium}
+                filterStatus={filterStatus}
+                setFilterStatus={setFilterStatus}
+                topicRows={topicRows}
               />
-              <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={pagination.handlePageChange}
+              
+              <LessonTable 
+                pagination={pagination}
+                topicRows={topicRows}
               />
             </AdminSectionCard>
           </div>
           <div className="col-12 col-xl-3">
-            <AdminSectionCard title="Phân bộ độ khó" description="Thống kê bài học">
-              <div className="lesson-difficulty-grid">
-                {difficultyDistribution.map((item) => (
-                  <div className={`lesson-difficulty-item ${item.tone}`} key={item.difficulty}>
-                    <div className="lesson-difficulty-item__header">
-                      <span className="lesson-difficulty-item__label">{item.difficulty}</span>
-                      <span className="lesson-difficulty-item__count">{item.count}</span>
-                    </div>
-                    <div className="lesson-difficulty-item__track" role="progressbar">
-                      <div className="lesson-difficulty-item__fill" style={{ width: `${item.ratio}%` }}></div>
-                    </div>
-                    <div className="lesson-difficulty-item__meta">{Math.round(item.ratio)}%</div>
-                  </div>
-                ))}
-              </div>
-            </AdminSectionCard>
+            <LessonSidebars 
+              topLessons={topLessons}
+              difficultyDistribution={difficultyDistribution}
+            />
           </div>
         </div>
       </div>

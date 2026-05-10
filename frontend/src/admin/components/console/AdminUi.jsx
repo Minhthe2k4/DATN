@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export function AdminPageHeader({ eyebrow, title, description, actions }) {
   return (
@@ -26,7 +28,7 @@ export function StatGrid({ items }) {
           <div className="card admin-stat-card h-100">
             <div className="card-body">
               <div className="admin-stat-card__icon">
-                <i className={item.icon}></i>
+                {typeof item.icon === 'string' ? <i className={item.icon}></i> : item.icon}
               </div>
               <div className="admin-stat-card__label">{item.label}</div>
               <div className="admin-stat-card__value">{item.value}</div>
@@ -174,7 +176,7 @@ export function QuickLinks({ links }) {
   )
 }
 
-export function LineTrend({ data, valueKey, label = 'Doanh thu' }) {
+export function LineTrend({ data, valueKey, label = 'Giá trị', suffix = '' }) {
   const [hoveredIndex, setHoveredIndex] = useState(null)
 
   if (!Array.isArray(data) || data.length === 0) {
@@ -192,15 +194,10 @@ export function LineTrend({ data, valueKey, label = 'Doanh thu' }) {
     const x = paddingX + (index * (width - paddingX * 2)) / Math.max(data.length - 1, 1)
     const ratio = Number(item[valueKey] ?? 0) / maxValue
     const y = height - paddingY - ratio * (height - paddingY * 2)
-    return { x, y, label: item.label, value: item[valueKey], original: item.revenue }
+    return { x, y, label: item.label, value: item[valueKey] }
   })
 
   const polyline = points.map((point) => `${point.x},${point.y}`).join(' ')
-
-  const formatValue = (val) => {
-    if (val >= 1) return val.toLocaleString('vi-VN') + 'M'
-    return (val * 1000).toLocaleString('vi-VN') + 'K'
-  }
 
   return (
     <div className="admin-line-chart-container" style={{ position: 'relative' }}>
@@ -283,7 +280,7 @@ export function LineTrend({ data, valueKey, label = 'Doanh thu' }) {
                     fontSize="15"
                     fontWeight="700"
                   >
-                    {(point.original || 0).toLocaleString('vi-VN')} đ
+                    {(point.value || 0).toLocaleString('vi-VN')}{suffix}
                   </text>
                   {/* Vertical guide line */}
                   <line 
@@ -331,7 +328,9 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
     <nav className="admin-pagination d-flex justify-content-center mt-3">
       <ul className="pagination pagination-sm mb-0 shadow-sm">
         <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-          <button className="page-link" onClick={() => onPageChange(currentPage - 1)}>&laquo;</button>
+          <button className="page-link d-flex align-items-center justify-content-center" onClick={() => onPageChange(currentPage - 1)} aria-label="Previous">
+            <ChevronLeft size={14} />
+          </button>
         </li>
         {start > 1 && (
           <>
@@ -351,9 +350,53 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
           </>
         )}
         <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-          <button className="page-link" onClick={() => onPageChange(currentPage + 1)}>&raquo;</button>
+          <button className="page-link d-flex align-items-center justify-content-center" onClick={() => onPageChange(currentPage + 1)} aria-label="Next">
+            <ChevronRight size={14} />
+          </button>
         </li>
       </ul>
     </nav>
+  )
+}
+
+export function PieDistribution({ data, nameKey = 'name', valueKey = 'value', height = 300 }) {
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
+
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="d-flex align-items-center justify-content-center text-muted small" style={{ height }}>
+        Không có dữ liệu phân bổ.
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ width: '100%', height }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={80}
+            paddingAngle={5}
+            dataKey={valueKey}
+            nameKey={nameKey}
+            animationBegin={0}
+            animationDuration={1200}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip 
+            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+            itemStyle={{ fontWeight: 700 }}
+          />
+          <Legend verticalAlign="bottom" height={36}/>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   )
 }

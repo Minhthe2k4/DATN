@@ -2,10 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { lessons, topics } from '../../data/adminData'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
+import { modal } from '../../../utils/modalUtils'
+import { 
+  ArrowLeft, 
+  Trash2, 
+  AlertTriangle, 
+  XCircle 
+} from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
-const DIFFICULTIES = ['Cơ bản', 'Trung bình', 'Nâng cao']
-const STATUSES = ['Đang mở', 'Nháp']
+import { adminFetch } from '../../utils/api'
+import { LessonForm } from './components/LessonForm'
 
 function getInitialForm(row, mode) {
   if (mode === 'create') {
@@ -37,16 +43,18 @@ export function LessonCrudPage({ mode }) {
   const [topicOptions, setTopicOptions] = useState(topics)
   const [currentRow, setCurrentRow] = useState(() => (mode === 'create' ? null : lessons.find((lesson) => String(lesson.id) === String(id)) || null))
   const [form, setForm] = useState(() => getInitialForm(currentRow, mode))
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(mode !== 'create')
+  
+  const topicName = useMemo(() => {
+    return topicOptions.find((t) => String(t.id) === String(form.topic_id))?.name || ''
+  }, [form.topic_id, topicOptions])
 
   useEffect(() => {
     let isDisposed = false
 
     async function loadData() {
       try {
-        const topicResponse = await fetch(`${API_BASE_URL}/api/admin/topics`)
+        const topicResponse = await adminFetch(`/api/admin/topics`)
         if (topicResponse.ok) {
           const topicPayload = await topicResponse.json()
           if (!isDisposed && Array.isArray(topicPayload)) {
@@ -61,7 +69,7 @@ export function LessonCrudPage({ mode }) {
           return
         }
 
-        const lessonResponse = await fetch(`${API_BASE_URL}/api/admin/lessons/${id}`)
+        const lessonResponse = await adminFetch(`/api/admin/lessons/${id}`)
         if (!lessonResponse.ok) {
           throw new Error(`Cannot fetch lesson: ${lessonResponse.status}`)
         }
@@ -81,10 +89,9 @@ export function LessonCrudPage({ mode }) {
           lessonImage: lessonPayload.lessonImage,
           isPremium: lessonPayload.isPremium,
         }, mode))
-        setError('')
-      } catch (loadDataError) {
+      } catch (err) {
         if (!isDisposed) {
-          setError('Không thể tải dữ liệu bài học từ backend.')
+          modal.error('Không thể tải dữ liệu bài học từ backend.')
         }
       } finally {
         if (!isDisposed) {
@@ -112,10 +119,6 @@ export function LessonCrudPage({ mode }) {
     )
   }
 
-  const topicName = useMemo(() => {
-    return topicOptions.find((t) => String(t.id) === String(form.topic_id))?.name || ''
-  }, [form.topic_id, topicOptions])
-
   const setField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
@@ -131,16 +134,15 @@ export function LessonCrudPage({ mode }) {
 
   const onSubmit = async (force = false) => {
     if (mode !== 'delete') {
-      if (!form.name.trim()) { setError('Vui lòng nhập tên bài học'); return }
-      if (!form.description.trim()) { setError('Vui lòng nhập mô tả bài học'); return }
-      if (!form.topic_id) { setError('Vui lòng chọn chủ đề'); return }
+      if (!form.name.trim()) { modal.warning('Vui lòng nhập tên bài học'); return }
+      if (!form.description.trim()) { modal.warning('Vui lòng nhập mô tả bài học'); return }
+      if (!form.topic_id) { modal.warning('Vui lòng chọn chủ đề'); return }
     }
 
     try {
       if (mode === 'create') {
-        const response = await fetch(`${API_BASE_URL}/api/admin/lessons`, {
+        const response = await adminFetch(`/api/admin/lessons`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: form.name,
             description: form.description,
@@ -154,16 +156,14 @@ export function LessonCrudPage({ mode }) {
         if (!response.ok) {
           throw new Error(await extractError(response, 'Tạo mới thất bại'))
         }
-        setError('')
-        setSuccess(`Đã thêm bài "${form.name}" thành công.`)
-        window.setTimeout(() => navigate('/admin/lessons'), 1500)
+        modal.success(`Đã thêm bài "${form.name}" thành công.`)
+        navigate('/admin/lessons')
         return
       }
 
       if (mode === 'edit') {
-        const response = await fetch(`${API_BASE_URL}/api/admin/lessons/${id}`, {
+        const response = await adminFetch(`/api/admin/lessons/${id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: form.name,
             description: form.description,
@@ -177,25 +177,22 @@ export function LessonCrudPage({ mode }) {
         if (!response.ok) {
           throw new Error(await extractError(response, 'Cập nhật thất bại'))
         }
-        setError('')
-        setSuccess(`Đã cập nhật bài "${form.name}" thành công.`)
-        window.setTimeout(() => navigate('/admin/lessons'), 1500)
+        modal.success(`Đã cập nhật bài "${form.name}" thành công.`)
+        navigate('/admin/lessons')
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/lessons/${id}${force ? '?force=true' : ''}`, {
+      const response = await adminFetch(`/api/admin/lessons/${id}${force ? '?force=true' : ''}`, {
         method: 'DELETE',
       })
       if (!response.ok && response.status !== 204) {
         throw new Error(await extractError(response, 'Xóa thất bại'))
       }
 
-      setError('')
-      setSuccess(force ? `Đã xóa vĩnh viễn bài "${currentRow.name}".` : `Đã xóa tạm thời bài "${currentRow.name}".`)
-      window.setTimeout(() => navigate('/admin/lessons'), 1500)
+      modal.success(force ? `Đã xóa vĩnh viễn bài "${currentRow.name}".` : `Đã xóa tạm thời bài "${currentRow.name}".`)
+      navigate('/admin/lessons')
     } catch (submitError) {
-      setSuccess('')
-      setError(submitError.message || 'Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
+      modal.error(submitError.message || 'Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
     }
   }
 
@@ -208,7 +205,11 @@ export function LessonCrudPage({ mode }) {
           eyebrow="Lesson Management"
           title={title}
           description={mode === 'delete' ? 'Xác nhận xóa bài học.' : 'Tạo bài học mới với mô tả chi tiết.'}
-          actions={<Link to="/admin/lessons" className="btn btn-outline-secondary">Quay lại danh sách</Link>}
+          actions={
+            <Link to="/admin/lessons" className="btn btn-outline-secondary d-flex align-items-center gap-2">
+              <ArrowLeft size={18} /> Quay lại danh sách
+            </Link>
+          }
         />
 
         {isLoading ? <div className="alert alert-light border">Đang tải dữ liệu bài học...</div> : null}
@@ -226,77 +227,27 @@ export function LessonCrudPage({ mode }) {
                     - <strong>Xóa vĩnh viễn:</strong> Toàn bộ thông tin về bài học này sẽ bị xóa bỏ hoàn toàn khỏi hệ thống.
                   </div>
                   <div className="d-flex gap-2">
-                    <button type="button" className="btn btn-warning" onClick={() => onSubmit(false)}>Xóa tạm thời</button>
-                    <button type="button" className="btn btn-danger" onClick={() => onSubmit(true)}>Xóa vĩnh viễn</button>
-                    <Link to="/admin/lessons" className="btn btn-outline-secondary">Hủy</Link>
+                    <button type="button" className="btn btn-warning d-flex align-items-center gap-2" onClick={() => onSubmit(false)}>
+                      <Trash2 size={18} /> Xóa tạm thời
+                    </button>
+                    <button type="button" className="btn btn-danger d-flex align-items-center gap-2" onClick={() => onSubmit(true)}>
+                      <AlertTriangle size={18} /> Xóa vĩnh viễn
+                    </button>
+                    <Link to="/admin/lessons" className="btn btn-outline-secondary d-flex align-items-center gap-2">
+                      <XCircle size={18} /> Hủy
+                    </Link>
                   </div>
                 </div>
               ) : (
-                <form onSubmit={(e) => { e.preventDefault(); onSubmit() }}>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Tên bài học <span className="text-danger">*</span></label>
-                    <input className="form-control" value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="Ví dụ: Email Negotiation Basics" />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Mô tả bài học <span className="text-danger">*</span></label>
-                    <textarea className="form-control" rows="3" value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="Mô tả nội dung bài học, các chủ đề và mục tiêu học tập..."></textarea>
-                  </div>
-
-                  <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Chủ đề <span className="text-danger">*</span></label>
-                      <select className="form-select" value={form.topic_id} onChange={(e) => setField('topic_id', e.target.value)}>
-                        <option value="">— Chọn chủ đề —</option>
-                        {topicOptions.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Độ khó</label>
-                      <select className="form-select" value={form.difficulty} onChange={(e) => setField('difficulty', e.target.value)}>
-                        {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Trạng thái</label>
-                    <select className="form-select" value={form.status} onChange={(e) => setField('status', e.target.value)}>
-                      {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <small className="form-text text-muted">Đang mở: Xuất hiện trong hệ thống | Nháp: Chưa sẵn sàng</small>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Ảnh bài học (URL)</label>
-                    <input className="form-control" value={form.lessonImage} onChange={(e) => setField('lessonImage', e.target.value)} placeholder="https://example.com/lesson.png" />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Loại bài học</label>
-                    <div className="form-check form-switch">
-                      <input 
-                        className="form-check-input" 
-                        type="checkbox" 
-                        id="isPremiumSwitch"
-                        checked={form.isPremium} 
-                        onChange={(e) => setField('isPremium', e.target.checked)}
-                      />
-                      <label className="form-check-label" htmlFor="isPremiumSwitch">
-                        {form.isPremium ? '👑 Chỉ dành cho Premium' : 'Mọi người (Miễn phí)'}
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="d-flex gap-2 mt-4">
-                    <button type="submit" className="btn btn-primary">{mode === 'create' ? 'Thêm bài học' : 'Lưu thay đổi'}</button>
-                    <Link to="/admin/lessons" className="btn btn-outline-secondary">Hủy</Link>
-                  </div>
-                </form>
+                <LessonForm 
+                  form={form}
+                  setField={setField}
+                  onSubmit={onSubmit}
+                  mode={mode}
+                  topicOptions={topicOptions}
+                />
               )}
 
-              {error && <div className="alert alert-danger mt-3">{error}</div>}
-              {success && <div className="alert alert-success mt-3">{success}</div>}
             </AdminSectionCard>
           </div>
 

@@ -216,6 +216,7 @@ export const lessons = [
     description: 'Học cách viết email chuyên nghiệp, đàm phán và thuyết trình trong công việc.',
     difficulty: 'Trung bình',
     status: 'Đang mở',
+    views: 1250,
   },
   {
     id: 'LES-202',
@@ -224,6 +225,7 @@ export const lessons = [
     description: 'Các cụm từ cần thiết khi đi máy bay, ra sân bay và xin hỗ trợ từ nhân viên.',
     difficulty: 'Cơ bản',
     status: 'Đang mở',
+    views: 890,
   },
   {
     id: 'LES-203',
@@ -232,6 +234,7 @@ export const lessons = [
     description: 'Phân tích và hiểu các tuyên bố khoa học, đoán nghĩa từ ngữ cảnh.',
     difficulty: 'Nâng cao',
     status: 'Nháp',
+    views: 120,
   },
   {
     id: 'LES-204',
@@ -240,6 +243,7 @@ export const lessons = [
     description: 'Thuật ngữ liên quan đến AI, máy học, và công nghệ sản phẩm hiện đại.',
     difficulty: 'Trung bình',
     status: 'Đang mở',
+    views: 2100,
   },
   {
     id: 'LES-205',
@@ -248,6 +252,7 @@ export const lessons = [
     description: 'Từ vựng khi đặt phòng, check-in, check-out và yêu cầu dịch vụ tại khách sạn.',
     difficulty: 'Cơ bản',
     status: 'Đang mở',
+    views: 670,
   },
 ]
 
@@ -259,6 +264,7 @@ export const readingArticles = [
     difficulty: 'Trung bình',
     wordsHighlighted: 18,
     status: 'Đã xuất bản',
+    views: 1540,
   },
   {
     id: 'ART-32',
@@ -267,6 +273,7 @@ export const readingArticles = [
     difficulty: 'Cơ bản',
     wordsHighlighted: 14,
     status: 'Đã xuất bản',
+    views: 3200,
   },
   {
     id: 'ART-33',
@@ -275,6 +282,7 @@ export const readingArticles = [
     difficulty: 'Nâng cao',
     wordsHighlighted: 21,
     status: 'Chờ biên tập',
+    views: 450,
   },
   {
     id: 'ART-34',
@@ -283,6 +291,7 @@ export const readingArticles = [
     difficulty: 'Trung bình',
     wordsHighlighted: 16,
     status: 'Nháp',
+    views: 120,
   },
 ]
 
@@ -333,6 +342,7 @@ export const videoLessons = [
     youtubeUrl: '',
     wordsHighlighted: 26,
     status: 'Đã xuất bản',
+    views: 4200,
   },
   {
     id: 'VID-12',
@@ -345,6 +355,7 @@ export const videoLessons = [
     youtubeUrl: '',
     wordsHighlighted: 18,
     status: 'Đã xuất bản',
+    views: 8500,
   },
   {
     id: 'VID-13',
@@ -357,6 +368,7 @@ export const videoLessons = [
     youtubeUrl: '',
     wordsHighlighted: 31,
     status: 'Chờ biên tập',
+    views: 1200,
   },
   {
     id: 'VID-14',
@@ -369,45 +381,88 @@ export const videoLessons = [
     youtubeUrl: '',
     wordsHighlighted: 24,
     status: 'Nháp',
+    views: 3100,
   },
 ]
 
 export const users = [
   {
     id: 'USR-01',
+    username: 'linhnguyen',
+    fullname: 'Linh Nguyễn',
     email: 'linh.nguyen@example.com',
-    registeredAt: '14/02/2026',
-    learnedWords: 1820,
+    registeredAt: '2026-02-14',
+    learnedWords: 2850,
     status: 'Hoạt động',
-    premium: 'Premium',
-    dailyLogin: '7 ngày liên tiếp',
+    premium: true,
+    isActive: true,
+    role: 'USER',
+    avatar: '',
   },
   {
     id: 'USR-02',
+    username: 'namtran',
+    fullname: 'Nam Trần',
     email: 'nam.tran@example.com',
-    registeredAt: '03/03/2026',
+    registeredAt: '2026-03-03',
     learnedWords: 934,
     status: 'Bị khóa',
-    premium: 'Free',
-    dailyLogin: '2 ngày liên tiếp',
+    premium: false,
+    isActive: false,
+    role: 'USER',
+    avatar: '',
   },
   {
     id: 'USR-03',
+    username: 'thule',
+    fullname: 'Thu Lê',
     email: 'thu.le@example.com',
-    registeredAt: '22/01/2026',
+    registeredAt: '2026-01-22',
     learnedWords: 1458,
     status: 'Hoạt động',
-    premium: 'Premium',
-    dailyLogin: '15 ngày liên tiếp',
+    premium: true,
+    isActive: true,
+    role: 'USER',
+    avatar: '',
   },
   {
     id: 'USR-04',
+    username: 'baophan',
+    fullname: 'Bảo Phan',
     email: 'bao.phan@example.com',
-    registeredAt: '11/03/2026',
+    registeredAt: '2026-03-11',
     learnedWords: 210,
-    status: 'Chờ xác minh',
-    premium: 'Free',
-    dailyLogin: 'Mới đăng ký',
+    status: 'Hoạt động',
+    premium: false,
+    isActive: true,
+    role: 'USER',
+    avatar: '',
+  },
+  {
+    id: 'USR-05',
+    username: 'minhhoang',
+    fullname: 'Minh Hoàng',
+    email: 'hoang.minh@example.com',
+    registeredAt: '2026-01-05',
+    learnedWords: 3200,
+    status: 'Hoạt động',
+    premium: true,
+    isActive: true,
+    role: 'ADMIN',
+    avatar: '',
+  },
+  {
+    id: 'USR-06',
+    username: 'anhthu',
+    fullname: 'Anh Thư',
+    email: 'thu.anh@example.com',
+    registeredAt: '2026-02-20',
+    learnedWords: 1820,
+    status: 'Hoạt động',
+    premium: false,
+    isActive: true,
+    role: 'USER',
+    avatar: '',
   },
 ]
 
@@ -652,10 +707,9 @@ export const revenueTransactions = [
 
 export const adminNavGroups = [
   {
-    label: 'Tổng quan',
+    label: 'Trung tâm học thuật',
     items: [
-      { to: '/admin', label: 'Tổng quan điều hành', icon: 'iconoir-report-columns' },
-      { to: '/admin/reports', label: 'Phân tích & báo cáo', icon: 'iconoir-stats-report' },
+      { to: '/admin', label: 'Quản lý học tập', icon: 'iconoir-brain' },
     ],
   },
   {
@@ -674,8 +728,6 @@ export const adminNavGroups = [
       { to: '/admin/users', label: 'Quản lý người dùng', icon: 'iconoir-community' },
       { to: '/admin/premium', label: 'Tài khoản Premium', icon: 'iconoir-star' },
       { to: '/admin/revenue', label: 'Quản lý doanh thu', icon: 'iconoir-wallet-solid' },
-      { to: '/admin/spaced-repetition', label: 'Cấu hình Spaced Repetition', icon: 'iconoir-refresh-double' },
-      { to: '/admin/support', label: 'Hỗ trợ người dùng', icon: 'iconoir-chat-lines' },
       { to: '/admin/recycle-bin', label: 'Thùng rác', icon: 'iconoir-trash' },
     ],
   },

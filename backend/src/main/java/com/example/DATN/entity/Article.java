@@ -40,6 +40,9 @@ public class Article {
     @Column(name = "status", length = 255)
     public String status;
 
+    @Column(name = "views")
+    public Integer views = 0;
+
     @Column(name = "article_image", columnDefinition = "TEXT")
     public String articleImage;
 

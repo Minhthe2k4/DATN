@@ -17,7 +17,7 @@ public class Leaderboard {
     @Column(name = "score")
     public Integer score;
 
-    @Column(name = "rank")
+    @Column(name = "`rank`")
     public Integer rank;
 
     public Leaderboard() {}

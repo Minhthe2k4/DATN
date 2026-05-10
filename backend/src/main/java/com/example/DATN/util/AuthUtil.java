@@ -3,23 +3,32 @@ package com.example.DATN.util;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 
+import com.example.DATN.service.common.CustomUserDetails;
+
 /**
  * Utility class for extracting the authenticated user's ID from a request.
  *
- * <p>This project uses a custom "Bearer {userId}" Authorization scheme where
+ * <p>
+ * This project uses a custom "Bearer {userId}" Authorization scheme where
  * the token payload is simply the numeric user ID. This helper centralizes
- * the extraction logic so that every controller uses the same approach.</p>
+ * the extraction logic so that every controller uses the same approach.
+ * </p>
  *
- * <p>Extraction order:
+ * <p>
+ * Extraction order:
  * <ol>
- *   <li>Spring {@link Authentication} principal name (set by the security filter chain)</li>
- *   <li>Raw "Authorization: Bearer {userId}" HTTP header (fallback for unauthenticated contexts)</li>
+ * <li>Spring {@link Authentication} principal name (set by the security filter
+ * chain)</li>
+ * <li>Raw "Authorization: Bearer {userId}" HTTP header (fallback for
+ * unauthenticated contexts)</li>
  * </ol>
- * Returns {@code null} when neither source yields a valid ID.</p>
+ * Returns {@code null} when neither source yields a valid ID.
+ * </p>
  */
 public final class AuthUtil {
 
-    private AuthUtil() {}
+    private AuthUtil() {
+    }
 
     /**
      * Extract a user ID from the Spring {@link Authentication} object or from the
@@ -30,24 +39,30 @@ public final class AuthUtil {
      * @return the numeric user ID, or {@code null} if it cannot be resolved
      */
     public static Long getUserId(Authentication auth, HttpServletRequest request) {
-        // 1. Try Spring Security principal (works when the security filter populates it)
-        if (auth != null && auth.isAuthenticated()
-                && auth.getName() != null
+        // 1. Try Spring Security principal (populated by JwtFilter)
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof CustomUserDetails) {
+            return ((CustomUserDetails) auth.getPrincipal()).getUserId();
+        }
+
+        // 2. Fallback: if auth name is set but not as CustomUserDetails (rare but
+        // possible if principal is string)
+        if (auth != null && auth.isAuthenticated() && auth.getName() != null
                 && !auth.getName().equals("anonymousUser")) {
             try {
                 return Long.parseLong(auth.getName());
             } catch (NumberFormatException ignored) {
-                // principal is not a numeric ID, fall through
             }
         }
 
-        // 2. Fallback: read directly from Authorization header
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            try {
-                return Long.parseLong(bearerToken.substring(7).trim());
-            } catch (NumberFormatException ignored) {
-                // token is not a numeric ID
+        // 3. Fallback: Raw "Authorization: Bearer {userId}" HTTP header
+        if (request != null) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7).trim();
+                try {
+                    return Long.parseLong(token);
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
 

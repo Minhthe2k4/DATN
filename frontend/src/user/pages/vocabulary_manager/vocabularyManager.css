@@ -147,6 +147,36 @@
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
 }
 
+.sparkle-icon {
+	color: #3b82f6;
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0% { opacity: 0.6; transform: scale(1); }
+	50% { opacity: 1; transform: scale(1.1); }
+	100% { opacity: 0.6; transform: scale(1); }
+}
+
+.spin-slow {
+	animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+.status-badge {
+	background: #dcfce7;
+	color: #166534;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+}
+
 .vmanager-stat-box {
 	min-width: 110px;
 	padding: 10px 12px;
@@ -355,14 +385,23 @@
 }
 
 .vmanager-mini-btn {
-	border: 1px solid #cbd5e1;
+	border: 1px solid #e2e8f0;
 	background: #ffffff;
-	color: #334155;
+	color: #475569;
 	border-radius: 9px;
-	padding: 6px 10px;
+	padding: 6px 12px;
 	font-size: 11px;
 	font-weight: 700;
 	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	transition: all 0.2s;
+}
+
+.vmanager-mini-btn:hover {
+	background: #f8fafc;
+	border-color: #cbd5e1;
 }
 
 .vmanager-mini-btn.is-danger {

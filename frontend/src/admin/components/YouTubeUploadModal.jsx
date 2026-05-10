@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './YouTubeUploadModal.css'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../utils/api'
 
 export function YouTubeUploadModal({ isOpen, onClose, onSuccess }) {
   const [youtubeUrl, setYoutubeUrl] = useState('')
@@ -33,9 +33,8 @@ export function YouTubeUploadModal({ isOpen, onClose, onSuccess }) {
     setError('')
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/videos/fetch-captions`, {
+      const res = await adminFetch(`/api/admin/videos/fetch-captions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtubeUrl }),
       })
 
@@ -127,9 +126,8 @@ export function YouTubeUploadModal({ isOpen, onClose, onSuccess }) {
         segmentOrder: seg.segmentOrder,
       }))
 
-      const res = await fetch(`${API_BASE_URL}/api/admin/videos`, {
+      const res = await adminFetch(`/api/admin/videos`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           youtubeUrl: youtubeUrl.trim(),

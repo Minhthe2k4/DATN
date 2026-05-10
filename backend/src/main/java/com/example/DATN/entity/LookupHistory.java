@@ -22,6 +22,10 @@ public class LookupHistory {
     @JoinColumn(name = "article_id")
     public Article article;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "video_id")
+    public Video video;
+
     @Column(name = "sentence", columnDefinition = "TEXT")
     public String sentence;
 

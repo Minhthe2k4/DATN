@@ -395,9 +395,21 @@
   margin-bottom: 4px !important;
 }
 
-.dict-example-vi {
-  font-size: 0.85rem !important;
-  color: #64748b;
+.dict-save-notice {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+}
+
+.dict-save-notice p {
+  font-size: 0.85rem;
+  color: #0369a1;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1.5;
 }
 
 .dict-close {
@@ -412,7 +424,7 @@
 .dict-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .dict-section label {

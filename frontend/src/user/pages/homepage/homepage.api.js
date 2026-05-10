@@ -1,10 +1,5 @@
-import { getUserSession } from '../../utils/authSession';
+import { getUserSession, getAuthHeader } from '../../utils/authSession';
 
-function getAuthHeader() {
-    const session = getUserSession();
-    const token = localStorage.getItem('token') || session?.userId;
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-}
 
 export async function fetchDashboard() {
     try {

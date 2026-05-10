@@ -14,16 +14,12 @@ import { Dictionary } from './user/pages/dictionary/Dictionary.jsx'
 import { Subscription } from './user/pages/subscription/Subscription.jsx'
 import { VocabularyTest } from './user/pages/vocabulary_test/VocabularyTest.jsx'
 import { VocabularySaved } from './user/pages/vocabulary_saved/VocabularySaved.jsx'
-import { Support } from './user/pages/support/Support.jsx'
 import { Leaderboard } from './user/pages/leaderboard/Leaderboard.jsx'
 import { Login } from './user/pages/auth/Login.jsx'
 import { Register } from './user/pages/auth/Register.jsx'
 import { ForgotPassword } from './user/pages/auth/ForgotPassword.jsx'
 import ManagePersonalInfoPage from './user/pages/settings/ManagePersonalInfoPage.jsx'
 import Profile from './user/pages/profile/Profile.jsx'
-import FlashcardManager from './user/pages/flashcard/FlashcardManager.jsx'
-import FlashcardStudy from './user/pages/flashcard/FlashcardStudy.jsx'
-import FlashcardDeckEditor from './user/pages/flashcard/FlashcardDeckEditor.jsx'
 import AdminLogin from './admin/pages/auth/AdminLogin.jsx'
 import PremiumCheckout from './user/pages/PremiumCheckout.jsx'
 import PaymentResult from './user/pages/PaymentResult.jsx'
@@ -33,6 +29,7 @@ import { getUserSession, getAuthHeader } from './user/utils/authSession'
 import { getAdminSession } from './admin/utils/adminSession'
 import { WebSocketProvider } from './context/WebSocketContext'
 import NotificationToast from './components/NotificationToast'
+import { ModalNotification } from './utils/modalUtils'
 import './App.css'
 
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx').then((module) => ({ default: module.AdminApp })))
@@ -68,6 +65,30 @@ function App() {
     document.documentElement.style.setProperty('--app-shell-background', '#ffffff')
     document.documentElement.style.setProperty('--app-page-background', '#ffffff')
     document.documentElement.style.setProperty('--app-page-background-rgb', '255, 255, 255')
+
+    // Verify session on startup
+    const verifySession = async () => {
+      const session = getUserSession()
+      if (!session) return
+
+      try {
+        const response = await fetch('/api/auth/verify', {
+          headers: getAuthHeader()
+        })
+        
+        if (response.status === 401) {
+          // Session is invalid (likely server restarted or user deleted)
+          console.warn('Session expired or invalid. Logging out...')
+          window.localStorage.removeItem('user-session')
+          window.localStorage.removeItem('token')
+          window.location.reload()
+        }
+      } catch (error) {
+        console.error('Session verification failed:', error)
+      }
+    }
+    
+    verifySession()
   }, [])
 
   useEffect(() => {
@@ -288,6 +309,7 @@ function App() {
           </Routes>
         </Suspense>
         <NotificationToast />
+        <ModalNotification />
       </WebSocketProvider>
     )
   }
@@ -339,11 +361,7 @@ function App() {
                 <Route path="/vocabulary-saved" element={<VocabularySaved />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/profile" element={<ProtectedRoute><Profile/></ProtectedRoute>} />
-                <Route path="/flashcards" element={<ProtectedRoute><FlashcardManager/></ProtectedRoute>} />
-                <Route path="/flashcards/study/:deckId" element={<ProtectedRoute><FlashcardStudy/></ProtectedRoute>} />
-                <Route path="/flashcards/deck-editor/:deckId" element={<ProtectedRoute><FlashcardDeckEditor/></ProtectedRoute>} />
                 <Route path="/profile/manage" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />
-                <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><ManagePersonalInfoPage/></ProtectedRoute>} />
                 <Route path="/premium-checkout" element={<ProtectedRoute><PremiumCheckout /></ProtectedRoute>} />
                 <Route path="/payment-result" element={<ProtectedRoute><PaymentResult /></ProtectedRoute>} />
@@ -354,6 +372,7 @@ function App() {
         </div>
       </div>
       <NotificationToast />
+      <ModalNotification />
     </WebSocketProvider>
   )
 }

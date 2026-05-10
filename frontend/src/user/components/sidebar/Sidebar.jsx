@@ -1,17 +1,15 @@
 import './sidebar.css'
 import { NavLink } from 'react-router-dom'
 
-import { Home, BookOpen, Layout, PlayCircle, Search, Gem, HelpCircle } from 'lucide-react'
+import { Home, BookOpen, Layout, PlayCircle, Search, Gem } from 'lucide-react'
 
 const navItems = [
 	{ key: 'home', label: 'Trang chủ', icon: Home, to: '/' },
 	{ key: 'vocabulary', label: 'Học từ vựng', icon: BookOpen, to: '/vocabulary' },
 	{ key: 'reading', label: 'Luyện đọc', icon: Layout, to: '/reading' },
 	{ key: 'videos', label: 'Video', icon: PlayCircle, to: '/video' },
-	{ key: 'flashcards', label: 'Flashcard', icon: Layout, to: '/flashcards' },
 	{ key: 'dictionary', label: 'Từ điển', icon: Search, to: '/dictionary' },
 	{ key: 'premium', label: 'Gói Premium', icon: Gem, to: '/subscription' },
-	{ key: 'support', label: 'Hỗ trợ', icon: HelpCircle, to: '/support' },
 ]
 
 export function Sidebar({ isCollapsed = false, onToggleCollapse }) {

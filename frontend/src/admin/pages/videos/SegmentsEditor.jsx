@@ -11,6 +11,7 @@
  */
 
 import { useState } from 'react'
+import { Save, Edit2, Trash2, AlertTriangle, Loader2, FileText, Lightbulb } from 'lucide-react'
 
 export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = false, activeId = null, onSegmentClick = null }) {
   const [editingIndex, setEditingIndex] = useState(null)
@@ -42,7 +43,6 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
     const end = parseFloat(editEnd)
 
     if (!editText.trim() || isNaN(start) || isNaN(end) || end <= start) {
-      alert('⚠️ Vui lòng nhập dữ liệu hợp lệ (text, start < end)')
       return
     }
 
@@ -77,8 +77,9 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
 
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-        ⏳ Đang tải phụ đề...
+      <div style={{ textAlign: 'center', padding: '20px', color: '#666' }} className="d-flex align-items-center justify-content-center gap-2">
+        <Loader2 className="spinner-border spinner-border-sm" size={16} />
+        Đang tải phụ đề...
       </div>
     )
   }
@@ -86,8 +87,8 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
   if (segments.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-        📝 Không có phụ đề
-        <br />
+        <FileText size={24} className="mb-2" />
+        <div>Không có phụ đề</div>
         <small>Kiểm tra video có bật phụ đề tiếng Anh không</small>
       </div>
     )
@@ -168,10 +169,10 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
 
             <div className="d-flex gap-2">
               <button
-                className="btn btn-sm btn-primary"
+                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                 onClick={handleSaveSegment}
               >
-                ✓ Lưu
+                <Save size={14} /> Lưu
               </button>
               <button
                 className="btn btn-sm btn-outline-secondary"
@@ -237,7 +238,7 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
                 onClick={(e) => handleEditSegment(idx, e)}
                 style={{ padding: '4px 8px', fontSize: '12px' }}
               >
-                ✏️
+                <Edit2 size={14} />
               </button>
               <button
                 className="btn btn-sm btn-outline-danger"
@@ -245,15 +246,15 @@ export function SegmentsEditor({ segments = [], onSegmentsChange, isLoading = fa
                 onClick={(e) => handleDeleteSegment(idx, e)}
                 style={{ padding: '4px 8px', fontSize: '12px' }}
               >
-                🗑️
+                <Trash2 size={14} />
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      <small className="form-text text-muted d-block mt-2">
-        💡 {segments.length} segment có thể chỉnh sửa hoặc xóa trước khi lưu
+      <small className="form-text text-muted d-flex align-items-center gap-1 mt-2">
+        <Lightbulb size={12} /> {segments.length} segment có thể chỉnh sửa hoặc xóa trước khi lưu
       </small>
     </div>
   )

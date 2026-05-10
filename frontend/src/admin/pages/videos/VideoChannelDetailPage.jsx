@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard, Badge } from '../../components/console/AdminUi'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../../utils/api'
 
 function formatDate(dateString) {
   if (!dateString) return 'Chưa có'
@@ -26,7 +26,7 @@ export function VideoChannelDetailPage() {
     let isDisposed = false
     async function loadData() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/video-channels/${id}`)
+        const response = await adminFetch(`/api/admin/video-channels/${id}`)
         if (!response.ok) throw new Error(`Cannot fetch channel ${id}`)
         const payload = await response.json()
         if (!isDisposed) setChannel(payload)

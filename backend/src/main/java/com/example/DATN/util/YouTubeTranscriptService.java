@@ -1,7 +1,7 @@
 package com.example.DATN.util;
 
-import com.example.DATN.dto.TranscriptSegmentDto;
-import com.example.DATN.dto.TranscriptChunkDto;
+import com.example.DATN.dto.user.TranscriptSegmentDto;
+import com.example.DATN.dto.user.TranscriptChunkDto;
 import java.util.*;
 import java.util.regex.Pattern;
 

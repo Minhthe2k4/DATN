@@ -9,25 +9,23 @@ const NotificationToast = () => {
         const handleNewNotification = (event) => {
             const notification = event.detail;
             
-            // Lấy thông tin user hiện tại từ localStorage
-            const userJson = localStorage.getItem('user');
-            const currentUser = userJson ? JSON.parse(userJson) : null;
-            const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
-
-            // --- PHÂN LUỒNG THÔNG BÁO CHẶT CHẼ ---
-            
             const isAdminPath = window.location.pathname.startsWith('/admin');
 
-            // 1. Nếu đang ở trang Admin: Chỉ hiện thông báo từ USER gửi đến
-            if (isAdminPath) {
-                if (notification.type !== 'NEW_SUPPORT_TICKET' && notification.type !== 'USER_SUPPORT_REPLY') {
-                    return;
-                }
-            } 
-            // 2. Nếu đang ở trang User: Chỉ hiện thông báo từ ADMIN gửi đến
-            else {
-                if (notification.type !== 'SUPPORT_REPLY' && notification.type !== 'PAYMENT_SUCCESS' && notification.type !== 'SYSTEM') {
-                    return;
+            // --- FILTER LOGIC ---
+            // Allow general types (SUCCESS, ERROR, etc.) everywhere
+            const generalTypes = ['SUCCESS', 'ERROR', 'WARNING', 'INFO', 'SYSTEM'];
+            const isGeneral = generalTypes.includes(notification.type);
+
+            if (!isGeneral) {
+                // Specialized routing for support/payment
+                if (isAdminPath) {
+                    if (notification.type !== 'NEW_SUPPORT_TICKET' && notification.type !== 'USER_SUPPORT_REPLY') {
+                        return;
+                    }
+                } else {
+                    if (notification.type !== 'SUPPORT_REPLY' && notification.type !== 'PAYMENT_SUCCESS' && notification.type !== 'REVIEW_REMINDER') {
+                        return;
+                    }
                 }
             }
 
@@ -41,10 +39,9 @@ const NotificationToast = () => {
 
             setToasts(prev => [...prev, newToast]);
 
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 removeToast(id);
-            }, 5000);
+            }, 6000);
         };
 
         window.addEventListener('new-notification', handleNewNotification);
@@ -62,10 +59,7 @@ const NotificationToast = () => {
             {toasts.map(toast => (
                 <div key={toast.id} className={`notification-toast ${toast.type.toLowerCase()}`}>
                     <div className="toast-icon">
-                        {toast.type === 'SUPPORT_REPLY' && <Bell size={20} />}
-                        {toast.type === 'PAYMENT_SUCCESS' && <CheckCircle size={20} />}
-                        {toast.type === 'SYSTEM' && <Info size={20} />}
-                        {!['SUPPORT_REPLY', 'PAYMENT_SUCCESS', 'SYSTEM'].includes(toast.type) && <Bell size={20} />}
+                        {renderIcon(toast.type)}
                     </div>
                     <div className="toast-content">
                         <div className="toast-title">{getFriendlyType(toast.type)}</div>
@@ -80,14 +74,29 @@ const NotificationToast = () => {
     );
 };
 
+const renderIcon = (type) => {
+    switch (type) {
+        case 'SUCCESS': return <CheckCircle size={20} />;
+        case 'ERROR': return <AlertTriangle size={20} />;
+        case 'WARNING': return <AlertTriangle size={20} />;
+        case 'INFO': return <Info size={20} />;
+        case 'PAYMENT_SUCCESS': return <CheckCircle size={20} />;
+        case 'SUPPORT_REPLY': return <Bell size={20} />;
+        case 'NEW_SUPPORT_TICKET': return <Bell size={20} />;
+        default: return <Bell size={20} />;
+    }
+};
+
 const getFriendlyType = (type) => {
     switch (type) {
-        case 'SUPPORT_REPLY': return 'Phản hồi từ Admin';
+        case 'SUCCESS': return 'Thành công';
+        case 'ERROR': return 'Lỗi';
+        case 'WARNING': return 'Cảnh báo';
+        case 'INFO': return 'Thông tin';
+        case 'SUPPORT_REPLY': return 'Phản hồi hỗ trợ';
         case 'PAYMENT_SUCCESS': return 'Thanh toán thành công';
-        case 'LEADERBOARD_UPDATE': return 'Bảng xếp hạng';
-        case 'REVIEW_REMINDER': return 'Nhắc nhở ôn tập';
+        case 'SYSTEM': return 'Hệ thống';
         case 'NEW_SUPPORT_TICKET': return 'Yêu cầu hỗ trợ mới';
-        case 'NEW_PREMIUM_REQUEST': return 'Yêu cầu Premium';
         default: return 'Thông báo';
     }
 };

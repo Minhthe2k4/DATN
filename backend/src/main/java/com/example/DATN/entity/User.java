@@ -23,8 +23,6 @@ public class User {
     @Column(name = "role", length = 20)
     public String role;
 
-    @Column(name = "avatar", length = 500)
-    public String avatar;
 
     @Column(name = "phone_number", length = 20)
     public String phoneNumber;

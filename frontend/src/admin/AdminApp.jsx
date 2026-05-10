@@ -9,8 +9,6 @@ import './assets/css/app.min.css'
 import './assets/css/admin-overrides.css'
 import './assets/css/admin-console.css'
 
-const AdminDashboard = lazy(() => import('./pages/dashboard/AdminDashboard').then((module) => ({ default: module.AdminDashboard })))
-const SystemReports = lazy(() => import('./pages/reports/SystemReports').then((module) => ({ default: module.SystemReports })))
 const TopicManagement = lazy(() => import('./pages/topics/TopicManagement').then((module) => ({ default: module.TopicManagement })))
 const LessonManagement = lazy(() => import('./pages/lessons/LessonManagement').then((module) => ({ default: module.LessonManagement })))
 const LessonCrudPage = lazy(() => import('./pages/lessons/LessonCrudPage').then((module) => ({ default: module.LessonCrudPage })))
@@ -33,9 +31,7 @@ const PremiumManagement = lazy(() => import('./pages/premium/PremiumManagement')
 const PremiumPlanCrud = lazy(() => import('./pages/premium/PremiumPlanCrud').then((module) => ({ default: module.PremiumPlanCrud })))
 const PremiumGrantPage = lazy(() => import('./pages/premium/PremiumGrantPage').then((module) => ({ default: module.PremiumGrantPage })))
 const PremiumExtendPage = lazy(() => import('./pages/premium/PremiumExtendPage').then((module) => ({ default: module.PremiumExtendPage })))
-const SpacedRepetitionManagement = lazy(() => import('./pages/spaced-repetition/SpacedRepetitionManagement').then((module) => ({ default: module.SpacedRepetitionManagement })))
-const SupportManagement = lazy(() => import('./pages/support/SupportManagement').then((module) => ({ default: module.SupportManagement })))
-const SupportDetailPage = lazy(() => import('./pages/support/SupportDetailPage').then((module) => ({ default: module.SupportDetailPage })))
+const LearningManagement = lazy(() => import('./pages/spaced-repetition/LearningManagement').then((module) => ({ default: module.LearningManagement })))
 const TopicCrudPage = lazy(() => import('./pages/topics/TopicCrudPage').then((module) => ({ default: module.TopicCrudPage })))
 const TopicDetailPage = lazy(() => import('./pages/topics/TopicDetailPage').then((module) => ({ default: module.TopicDetailPage })))
 const ReadingTopicCrudPage = lazy(() => import('./pages/readings/ReadingTopicCrudPage').then((module) => ({ default: module.ReadingTopicCrudPage })))
@@ -90,6 +86,25 @@ export function AdminApp() {
     }
 
     loadAdminUiRuntime()
+
+    // Verify admin session
+    const verifyAdmin = async () => {
+      const session = JSON.parse(window.localStorage.getItem('adminSession'))
+      if (!session || !session.token) return
+
+      try {
+        const response = await fetch('/api/auth/verify', {
+          headers: { Authorization: `Bearer ${session.token}` }
+        })
+        if (response.status === 401) {
+          window.localStorage.removeItem('adminSession')
+          window.location.href = '/admin/login'
+        }
+      } catch (err) {
+        console.error('Admin verify failed:', err)
+      }
+    }
+    verifyAdmin()
   }, [])
 
   return (
@@ -107,8 +122,7 @@ export function AdminApp() {
             />
             <Suspense fallback={null}>
               <Routes>
-                <Route index element={<AdminDashboard />} />
-                <Route path="reports" element={<SystemReports />} />
+                <Route index element={<LearningManagement />} />
                 <Route path="topics" element={<TopicManagement />} />
                 <Route path="topics/new" element={<TopicCrudPage mode="create" />} />
                 <Route path="topics/:id" element={<TopicDetailPage />} />
@@ -152,9 +166,7 @@ export function AdminApp() {
                 <Route path="premium/grant" element={<PremiumGrantPage />} />
                 <Route path="premium/members/:userId/extend" element={<PremiumExtendPage />} />
                 <Route path="revenue" element={<RevenueManagement />} />
-                <Route path="spaced-repetition" element={<SpacedRepetitionManagement />} />
-                <Route path="support" element={<SupportManagement />} />
-                <Route path="support/:id" element={<SupportDetailPage />} />
+                <Route path="spaced-repetition" element={<LearningManagement />} />
                 <Route path="recycle-bin" element={<RecycleBin />} />
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>

@@ -1,0 +1,6003 @@
+
+(object Petal
+    version    	50
+    _written   	"Rose 2006.0.0.060314"
+    charSet    	0)
+
+(object Design "Logical View"
+    is_unit    	TRUE
+    is_loaded  	TRUE
+    attributes 	(list Attribute_Set
+	(object Attribute
+	    tool       	"Java"
+	    name       	"IDE"
+	    value      	"Internal Editor")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagName1"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagText1"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagApply1"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagName2"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagText2"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagApply2"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagName3"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagText3"
+	    value      	"")
+	(object Attribute
+	    tool       	"Java"
+	    name       	"UserDefineTagApply3"
+	    value      	""))
+    quid       	"5CC76A0F035C"
+    enforceClosureAutoLoad 	FALSE
+    defaults   	(object defaults
+	rightMargin 	0.250000
+	leftMargin 	0.250000
+	topMargin  	0.250000
+	bottomMargin 	0.500000
+	pageOverlap 	0.000000
+	clipIconLabels 	TRUE
+	autoResize 	TRUE
+	snapToGrid 	TRUE
+	gridX      	16
+	gridY      	16
+	defaultFont 	(object Font
+	    size       	10
+	    face       	"Arial"
+	    bold       	FALSE
+	    italics    	FALSE
+	    underline  	FALSE
+	    strike     	FALSE
+	    color      	0
+	    default_color 	TRUE)
+	showMessageNum 	3
+	showClassOfObject 	TRUE
+	notation   	"Unified")
+    root_usecase_package 	(object Class_Category "Use Case View"
+	quid       	"5CC76A0F035E"
+	stereotype 	"system"
+	exportControl 	"Public"
+	global     	TRUE
+	logical_models 	(list unit_reference_list
+	    (object Class "NguoiDung"
+		quid       	"5CC76A1B032D"
+		stereotype 	"Actor")
+	    (object Class "NangCapPremiumUI"
+		quid       	"5CC76A2402FE"
+		stereotype 	"boundary"
+		operations 	(list Operations
+		    (object Operation "Nhan Goi premium"
+			quid       	"5CC76C170177"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Hien thi danh sach cac goi"
+			quid       	"5CC76C520214"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Chon goi mong muon va nhan vao Nang cap ngay"
+			quid       	"5CC76C8201D5"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Hien thi trang ket qua"
+			quid       	"5CC76FD30177"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Hien thi thong bao thanh cong"
+			quid       	"5CC7709B0291"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)))
+	    (object Class "NangCapPremiumController"
+		quid       	"5CC76A31038B"
+		stereotype 	"control"
+		operations 	(list Operations
+		    (object Operation "Lay danh sach goi"
+			quid       	"5CC76C25004E"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Lay thong tin nguoi dung va goi"
+			quid       	"5CC76D7501F4"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Sinh ra ma giao dich va chu ky so (MAC)"
+			quid       	"5CC76E160271"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Tien hanh cap nhat trang thai giao dich"
+			quid       	"5CC77026003F"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)))
+	    (object Class "premium_plans"
+		quid       	"5CC76A530010"
+		stereotype 	"entity"
+		operations 	(list Operations
+		    (object Operation "getPremium_plans"
+			quid       	"5CC76C3101D5"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "getId"
+			quid       	"5CC76DE60242"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0))
+		class_attributes 	(list class_attribute_list
+		    (object ClassAttribute "id"
+			quid       	"5CC77193004E")
+		    (object ClassAttribute "name"
+			quid       	"5CC771950000")
+		    (object ClassAttribute "price"
+			quid       	"5CC77195032D")
+		    (object ClassAttribute "duration"
+			quid       	"5CC771970204")
+		    (object ClassAttribute "description"
+			quid       	"5CC771990233")))
+	    (object Class "transactions"
+		quid       	"5CC76A5B02FE"
+		stereotype 	"entity"
+		operations 	(list Operations
+		    (object Operation "saveTransactions"
+			quid       	"5CC76E3C01E5"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Cap nhat trang thai sang AWAITING"
+			quid       	"5CC770520271"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0))
+		class_attributes 	(list class_attribute_list
+		    (object ClassAttribute "id"
+			quid       	"5CC771AA0223")
+		    (object ClassAttribute "user_id"
+			quid       	"5CC771AC007D")
+		    (object ClassAttribute "subscription_id"
+			quid       	"5CC771AE01D5")
+		    (object ClassAttribute "amount"
+			quid       	"5CC771B60139")
+		    (object ClassAttribute "payment_method"
+			quid       	"5CC771B70271")
+		    (object ClassAttribute "status"
+			quid       	"5CC771BC0204")
+		    (object ClassAttribute "created_at"
+			quid       	"5CC771BF00CB")
+		    (object ClassAttribute "vnp_txn_ref"
+			quid       	"5CC771C303AA")
+		    (object ClassAttribute "plan_id"
+			quid       	"5CC771CA004E")
+		    (object ClassAttribute "payment_trans_id"
+			quid       	"5CC771D1009D")))
+	    (object Class "ZaloPay"
+		quid       	"5CC76BC60168"
+		stereotype 	"system"
+		operations 	(list Operations
+		    (object Operation "Gui yeu cau tao don hang"
+			quid       	"5CC76E890242"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Tu dong dieu huong sang trang ZaloPay"
+			quid       	"5CC76ECB00DB"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Tien hanh thanh toan"
+			quid       	"5CC76EF4011A"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)
+		    (object Operation "Tien hanh thanh toan"
+			quid       	"5CC76F1001D5"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0)))
+	    (object Class "Notification"
+		quid       	"5CC76BCF02BF"
+		stereotype 	"system")
+	    (object Class "users"
+		quid       	"5CC76DAB02EE"
+		stereotype 	"entity"
+		operations 	(list Operations
+		    (object Operation "getUser_id"
+			quid       	"5CC76DC10020"
+			concurrency 	"Sequential"
+			opExportControl 	"Public"
+			uid        	0))
+		class_attributes 	(list class_attribute_list
+		    (object ClassAttribute "id"
+			quid       	"5CC771E6008D")
+		    (object ClassAttribute "username"
+			quid       	"5CC771E70271")
+		    (object ClassAttribute "password"
+			quid       	"5CC771EA0020")
+		    (object ClassAttribute "role"
+			quid       	"5CC771ED0281")
+		    (object ClassAttribute "is_active"
+			quid       	"5CC771F00020")
+		    (object ClassAttribute "created_at"
+			quid       	"5CC771F30204")
+		    (object ClassAttribute "deleted_at"
+			quid       	"5CC771F7006E")
+		    (object ClassAttribute "phone_number"
+			quid       	"5CC771F903C9")
+		    (object ClassAttribute "updated_at"
+			quid       	"5CC771FF0000")))
+	    (object UseCase "Nang cap premium"
+		quid       	"5CC76AA302BF"
+		visible_modules 	(list dependency_list
+		    (object Dependency_Relationship
+			quid       	"5CC76AD6002F"
+			stereotype 	"include"
+			supplier   	"Use Case View::Xem danh sach goi premium"
+			quidu      	"5CC76AD1006E")
+		    (object Dependency_Relationship
+			quid       	"5CC76AD70020"
+			stereotype 	"include"
+			supplier   	"Use Case View::Chon goi va thanh toan"
+			quidu      	"5CC76AD1036B")))
+	    (object UseCase "Xem danh sach goi premium"
+		quid       	"5CC76AD1006E")
+	    (object UseCase "Chon goi va thanh toan"
+		quid       	"5CC76AD1036B"
+		visible_modules 	(list dependency_list
+		    (object Dependency_Relationship
+			quid       	"5CC76B1E0262"
+			stereotype 	"include"
+			supplier   	"Use Case View::Xu ly qua cong Zalopay"
+			quidu      	"5CC76B05007D")
+		    (object Dependency_Relationship
+			quid       	"5CC76B1F01F4"
+			stereotype 	"include"
+			supplier   	"Use Case View::Doi soat thanh toan"
+			quidu      	"5CC76B0502BF")))
+	    (object UseCase "Xu ly qua cong Zalopay"
+		quid       	"5CC76B05007D")
+	    (object UseCase "Doi soat thanh toan"
+		quid       	"5CC76B0502BF"
+		visible_modules 	(list dependency_list
+		    (object Dependency_Relationship
+			quid       	"5CC76B3800DB"
+			stereotype 	"include"
+			supplier   	"Use Case View::Gui thong bao realtime"
+			quidu      	"5CC76B2B030E")))
+	    (object UseCase "Gui thong bao realtime"
+		quid       	"5CC76B2B030E")
+	    (object Association "$UNNAMED$0"
+		quid       	"5CC76ABA034C"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$1"
+			quid       	"5CC76ABB01C5"
+			supplier   	"Use Case View::Nang cap premium"
+			quidu      	"5CC76AA302BF"
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$2"
+			quid       	"5CC76ABB01C7"
+			supplier   	"Use Case View::NguoiDung"
+			quidu      	"5CC76A1B032D"
+			is_navigable 	TRUE)))
+	    (object Association "$UNNAMED$3"
+		quid       	"5CC7713502DF"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$4"
+			quid       	"5CC77136033C"
+			supplier   	"Use Case View::NangCapPremiumController"
+			quidu      	"5CC76A31038B"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$5"
+			quid       	"5CC77136035C"
+			supplier   	"Use Case View::NangCapPremiumUI"
+			quidu      	"5CC76A2402FE"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)))
+	    (object Association "$UNNAMED$6"
+		quid       	"5CC771380010"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$7"
+			quid       	"5CC771380158"
+			supplier   	"Use Case View::ZaloPay"
+			quidu      	"5CC76BC60168"
+			client_cardinality 	(value cardinality "*")
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$8"
+			quid       	"5CC771380168"
+			supplier   	"Use Case View::NangCapPremiumController"
+			quidu      	"5CC76A31038B"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)))
+	    (object Association "$UNNAMED$9"
+		quid       	"5CC77138037B"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$10"
+			quid       	"5CC7713A02A0"
+			supplier   	"Use Case View::users"
+			quidu      	"5CC76DAB02EE"
+			client_cardinality 	(value cardinality "*")
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$11"
+			quid       	"5CC7713A02B0"
+			supplier   	"Use Case View::NangCapPremiumController"
+			quidu      	"5CC76A31038B"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)))
+	    (object Association "$UNNAMED$12"
+		quid       	"5CC7713B0233"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$13"
+			quid       	"5CC7713C002F"
+			supplier   	"Use Case View::premium_plans"
+			quidu      	"5CC76A530010"
+			client_cardinality 	(value cardinality "*")
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$14"
+			quid       	"5CC7713C0031"
+			supplier   	"Use Case View::NangCapPremiumController"
+			quidu      	"5CC76A31038B"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)))
+	    (object Association "$UNNAMED$15"
+		quid       	"5CC7713C035C"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$16"
+			quid       	"5CC7713D0168"
+			supplier   	"Use Case View::transactions"
+			quidu      	"5CC76A5B02FE"
+			client_cardinality 	(value cardinality "*")
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$17"
+			quid       	"5CC7713D016A"
+			supplier   	"Use Case View::NangCapPremiumController"
+			quidu      	"5CC76A31038B"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)))
+	    (object Association "$UNNAMED$18"
+		quid       	"5CC7722F003F"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$19"
+			quid       	"5CC7722F034C"
+			supplier   	"Use Case View::transactions"
+			quidu      	"5CC76A5B02FE"
+			client_cardinality 	(value cardinality "*")
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$20"
+			quid       	"5CC7722F035C"
+			supplier   	"Use Case View::users"
+			quidu      	"5CC76DAB02EE"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)))
+	    (object Association "$UNNAMED$21"
+		quid       	"5CC7724603AA"
+		roles      	(list role_list
+		    (object Role "$UNNAMED$22"
+			quid       	"5CC7724701C5"
+			supplier   	"Use Case View::transactions"
+			quidu      	"5CC76A5B02FE"
+			client_cardinality 	(value cardinality "*")
+			is_navigable 	TRUE)
+		    (object Role "$UNNAMED$23"
+			quid       	"5CC7724701D5"
+			supplier   	"Use Case View::premium_plans"
+			quidu      	"5CC76A530010"
+			client_cardinality 	(value cardinality "1")
+			is_navigable 	TRUE)))
+	    (object Mechanism @1
+		logical_models 	(list unit_reference_list
+		    (object Object "$UNNAMED$24"
+			quid       	"5CC76B500139"
+			collaborators 	(list link_list
+			    (object Link
+				quid       	"5CC76C040223"
+				supplier   	"$UNNAMED$25"
+				quidu      	"5CC76B5202A0"
+				messages   	(list Messages
+				    (object Message "Nhan Goi premium( )"
+					quid       	"5CC76C040224"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"1"
+					ordinal    	0
+					quidu      	"5CC76C170177"
+					creation   	FALSE)
+				    (object Message "Chon goi mong muon va nhan vao Nang cap ngay( )"
+					quid       	"5CC76C7E02FE"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"6"
+					ordinal    	5
+					quidu      	"5CC76C8201D5"
+					creation   	FALSE)))
+			    (object Link
+				quid       	"5CC76F0B031D"
+				supplier   	"$UNNAMED$26"
+				quidu      	"5CC76BE602CF"
+				messages   	(list Messages
+				    (object Message "Tien hanh thanh toan( )"
+					quid       	"5CC76F0B031E"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"18"
+					ordinal    	17
+					quidu      	"5CC76F1001D5"
+					creation   	FALSE))))
+			class      	"Use Case View::NguoiDung"
+			quidu      	"5CC76A1B032D"
+			persistence 	"Transient"
+			creationObj 	FALSE
+			multi      	FALSE)
+		    (object Object "$UNNAMED$25"
+			quid       	"5CC76B5202A0"
+			collaborators 	(list link_list
+			    (object Link
+				quid       	"5CC76C2103B9"
+				supplier   	"$UNNAMED$27"
+				quidu      	"5CC76B5303AA"
+				messages   	(list Messages
+				    (object Message "Lay danh sach goi( )"
+					quid       	"5CC76C2103BA"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"2"
+					ordinal    	1
+					quidu      	"5CC76C25004E"
+					creation   	FALSE)
+				    (object Message "Hien thi danh sach cac goi( )"
+					quid       	"5CC76C4D0020"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"ToClientFromSupplier"
+					sequence   	"5"
+					ordinal    	4
+					quidu      	"5CC76C520214"
+					creation   	FALSE)
+				    (object Message "Lay thong tin nguoi dung va goi( )"
+					quid       	"5CC76D72011A"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"7"
+					ordinal    	6
+					quidu      	"5CC76D7501F4"
+					creation   	FALSE)
+				    (object Message "Tra ve order_url"
+					quid       	"5CC76EAF00DB"
+					frequency  	"Aperiodic"
+					synchronization 	"Return"
+					dir        	"ToClientFromSupplier"
+					sequence   	"16"
+					ordinal    	15
+					quidu      	"000000000000"
+					creation   	FALSE)
+				    (object Message "Hien thi trang ket qua( )"
+					quid       	"5CC76FC600AC"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"ToClientFromSupplier"
+					sequence   	"20"
+					ordinal    	19
+					quidu      	"5CC76FD30177"
+					creation   	FALSE)
+				    (object Message "Tien hanh cap nhat trang thai giao dich( )"
+					quid       	"5CC7701F02DF"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"21"
+					ordinal    	20
+					quidu      	"5CC77026003F"
+					creation   	FALSE)
+				    (object Message "Hien thi thong bao thanh cong( )"
+					quid       	"5CC77094011A"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"ToClientFromSupplier"
+					sequence   	"24"
+					ordinal    	23
+					quidu      	"5CC7709B0291"
+					creation   	FALSE)))
+			    (object Link
+				quid       	"5CC76EC70168"
+				supplier   	"$UNNAMED$26"
+				quidu      	"5CC76BE602CF"
+				messages   	(list Messages
+				    (object Message "Tu dong dieu huong sang trang ZaloPay( )"
+					quid       	"5CC76EC70169"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"17"
+					ordinal    	16
+					quidu      	"5CC76ECB00DB"
+					creation   	FALSE))))
+			class      	"Use Case View::NangCapPremiumUI"
+			quidu      	"5CC76A2402FE"
+			persistence 	"Transient"
+			creationObj 	FALSE
+			multi      	FALSE)
+		    (object Object "$UNNAMED$27"
+			quid       	"5CC76B5303AA"
+			collaborators 	(list link_list
+			    (object Link
+				quid       	"5CC76C2E0168"
+				supplier   	"$UNNAMED$28"
+				quidu      	"5CC76B58003F"
+				messages   	(list Messages
+				    (object Message "getPremium_plans( )"
+					quid       	"5CC76C2E0169"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"3"
+					ordinal    	2
+					quidu      	"5CC76C3101D5"
+					creation   	FALSE)
+				    (object Message "Tra ve thong tin"
+					quid       	"5CC76C390262"
+					frequency  	"Aperiodic"
+					synchronization 	"Return"
+					dir        	"ToClientFromSupplier"
+					sequence   	"4"
+					ordinal    	3
+					quidu      	"000000000000"
+					creation   	FALSE)
+				    (object Message "getId( )"
+					quid       	"5CC76DCA0214"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"9"
+					ordinal    	8
+					quidu      	"5CC76DE60242"
+					creation   	FALSE)
+				    (object Message "Tra ve thong tin nguoi dung va goi"
+					quid       	"5CC76DEC03D9"
+					frequency  	"Aperiodic"
+					synchronization 	"Return"
+					dir        	"ToClientFromSupplier"
+					sequence   	"10"
+					ordinal    	9
+					quidu      	"000000000000"
+					creation   	FALSE)))
+			    (object Link
+				quid       	"5CC76DBD01C5"
+				supplier   	"$UNNAMED$29"
+				quidu      	"5CC76DB702B0"
+				messages   	(list Messages
+				    (object Message "getUser_id( )"
+					quid       	"5CC76DBD01C6"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"8"
+					ordinal    	7
+					quidu      	"5CC76DC10020"
+					creation   	FALSE)))
+			    (object Link
+				quid       	"5CC76E12030E"
+				supplier   	"$UNNAMED$27"
+				quidu      	"5CC76B5303AA"
+				messages   	(list Messages
+				    (object Message "Sinh ra ma giao dich va chu ky so (MAC)"
+					quid       	"5CC76E12030F"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"11"
+					ordinal    	10
+					quidu      	"5CC76E160271"
+					creation   	FALSE)))
+			    (object Link
+				quid       	"5CC76E380271"
+				supplier   	"$UNNAMED$30"
+				quidu      	"5CC76B59034C"
+				messages   	(list Messages
+				    (object Message "saveTransactions( )"
+					quid       	"5CC76E380272"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"12"
+					ordinal    	11
+					quidu      	"5CC76E3C01E5"
+					creation   	FALSE)
+				    (object Message "Tra ve giao dich da luu"
+					quid       	"5CC76E5A0204"
+					frequency  	"Aperiodic"
+					synchronization 	"Return"
+					dir        	"ToClientFromSupplier"
+					sequence   	"13"
+					ordinal    	12
+					quidu      	"000000000000"
+					creation   	FALSE)
+				    (object Message "Cap nhat trang thai sang AWAITING( )"
+					quid       	"5CC7704E01B6"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"22"
+					ordinal    	21
+					quidu      	"5CC770520271"
+					creation   	FALSE)
+				    (object Message "Tra ve thong tin"
+					quid       	"5CC7707F0214"
+					frequency  	"Aperiodic"
+					synchronization 	"Return"
+					dir        	"ToClientFromSupplier"
+					sequence   	"23"
+					ordinal    	22
+					quidu      	"000000000000"
+					creation   	FALSE)))
+			    (object Link
+				quid       	"5CC76E85037B"
+				supplier   	"$UNNAMED$26"
+				quidu      	"5CC76BE602CF"
+				messages   	(list Messages
+				    (object Message "Gui yeu cau tao don hang( )"
+					quid       	"5CC76E85037C"
+					frequency  	"Aperiodic"
+					synchronization 	"Simple"
+					dir        	"FromClientToSupplier"
+					sequence   	"14"
+					ordinal    	13
+					quidu      	"5CC76E890242"
+					creation   	FALSE)
+				    (object Message "Tra ve order_url"
+					quid       	"5CC76E99031D"
+					frequency  	"Aperiodic"
+					synchronization 	"Return"
+					dir        	"ToClientFromSupplier"
+					sequence   	"15"
+					ordinal    	14
+					quidu      	"000000000000"
+					creation   	FALSE)
+				    (object Message "Tra ve thong tin"
+					quid       	"5CC76FB4037B"
+					frequency  	"Aperiodic"
+					synchronization 	"Return"
+					dir        	"ToClientFromSupplier"
+					sequence   	"19"
+					ordinal    	18
+					quidu      	"000000000000"
+					creation   	FALSE))))
+			class      	"Use Case View::NangCapPremiumController"
+			quidu      	"5CC76A31038B"
+			persistence 	"Transient"
+			creationObj 	FALSE
+			multi      	FALSE)
+		    (object Object "$UNNAMED$28"
+			quid       	"5CC76B58003F"
+			class      	"Use Case View::premium_plans"
+			quidu      	"5CC76A530010"
+			persistence 	"Transient"
+			creationObj 	FALSE
+			multi      	FALSE)
+		    (object Object "$UNNAMED$30"
+			quid       	"5CC76B59034C"
+			class      	"Use Case View::transactions"
+			quidu      	"5CC76A5B02FE"
+			persistence 	"Transient"
+			creationObj 	FALSE
+			multi      	FALSE)
+		    (object Object "$UNNAMED$26"
+			quid       	"5CC76BE602CF"
+			class      	"Use Case View::ZaloPay"
+			quidu      	"5CC76BC60168"
+			persistence 	"Transient"
+			creationObj 	FALSE
+			multi      	FALSE)
+		    (object Object "$UNNAMED$29"
+			quid       	"5CC76DB702B0"
+			class      	"Use Case View::users"
+			quidu      	"5CC76DAB02EE"
+			persistence 	"Transient"
+			creationObj 	FALSE
+			multi      	FALSE))))
+	logical_presentations 	(list unit_reference_list
+	    (object UseCaseDiagram "Main"
+		quid       	"5CC76A100030"
+		title      	"Main"
+		zoom       	100
+		max_height 	28350
+		max_width  	21600
+		origin_x   	0
+		origin_y   	0
+		items      	(list diagram_item_list))
+	    (object ClassDiagram "PhanRa"
+		quid       	"5CC76A8A037B"
+		title      	"PhanRa"
+		zoom       	100
+		max_height 	28350
+		max_width  	21600
+		origin_x   	0
+		origin_y   	0
+		items      	(list diagram_item_list
+		    (object UseCaseView "Use Case View::Nang cap premium" @2
+			location   	(848, 640)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@2
+			    location   	(848, 778)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	630
+			    justify    	0
+			    label      	"Nang cap premium")
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76AA302BF"
+			height     	118)
+		    (object ClassView "Class" "Use Case View::NguoiDung" @3
+			ShowCompartmentStereotypes 	TRUE
+			SuppressAttribute 	TRUE
+			SuppressOperation 	TRUE
+			IncludeAttribute 	TRUE
+			IncludeOperation 	TRUE
+			ShowOperationSignature 	TRUE
+			location   	(288, 640)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@3
+			    location   	(288, 800)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	362
+			    justify    	0
+			    label      	"NguoiDung")
+			icon       	"Actor"
+			icon_style 	"Icon"
+			line_color 	3342489
+			quidu      	"5CC76A1B032D"
+			annotation 	8
+			autoResize 	TRUE)
+		    (object AssociationViewNew "$UNNAMED$0" @4
+			location   	(541, 640)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC76ABA034C"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$1" @5
+				Parent_View 	@4
+				location   	(253, 32)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC76ABB01C5"
+				client     	@4
+				supplier   	@2
+				vertices   	(list Points
+				    (541, 640)
+				    (738, 640))
+				line_style 	0)
+			    (object RoleView "$UNNAMED$2" @6
+				Parent_View 	@4
+				location   	(253, 32)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC76ABB01C7"
+				client     	@4
+				supplier   	@3
+				vertices   	(list Points
+				    (541, 640)
+				    (345, 640))
+				line_style 	0)))
+		    (object UseCaseView "Use Case View::Xem danh sach goi premium" @7
+			location   	(1456, 448)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@7
+			    location   	(1456, 586)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	630
+			    justify    	0
+			    label      	"Xem danh sach goi premium")
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76AD1006E"
+			height     	118)
+		    (object UseCaseView "Use Case View::Chon goi va thanh toan" @8
+			location   	(1504, 928)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@8
+			    location   	(1504, 1066)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	630
+			    justify    	0
+			    label      	"Chon goi va thanh toan")
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76AD1036B"
+			height     	118)
+		    (object DependencyView "" @9
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			stereotype 	(object SegLabel @10
+			    Parent_View 	@9
+			    location   	(1055, 526)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    anchor     	10
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	450
+			    justify    	0
+			    label      	"<<include>>"
+			    pctDist    	0.448019
+			    height     	44
+			    orientation 	0)
+			line_color 	3342489
+			quidu      	"5CC76AD6002F"
+			client     	@2
+			supplier   	@7
+			vertices   	(list Points
+			    (956, 601)
+			    (1203, 526))
+			line_style 	0)
+		    (object DependencyView "" @11
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			stereotype 	(object SegLabel @12
+			    Parent_View 	@11
+			    location   	(1219, 748)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    anchor     	10
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	450
+			    justify    	0
+			    label      	"<<include>>"
+			    pctDist    	0.485462
+			    height     	49
+			    orientation 	0)
+			line_color 	3342489
+			quidu      	"5CC76AD70020"
+			client     	@2
+			supplier   	@8
+			vertices   	(list Points
+			    (1018, 713)
+			    (1392, 876))
+			line_style 	0)
+		    (object UseCaseView "Use Case View::Xu ly qua cong Zalopay" @13
+			location   	(2176, 784)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@13
+			    location   	(2176, 922)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	630
+			    justify    	0
+			    label      	"Xu ly qua cong Zalopay")
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B05007D"
+			height     	118)
+		    (object UseCaseView "Use Case View::Doi soat thanh toan" @14
+			location   	(2192, 1232)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@14
+			    location   	(2192, 1370)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	630
+			    justify    	0
+			    label      	"Doi soat thanh toan")
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B0502BF"
+			height     	118)
+		    (object DependencyView "" @15
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			stereotype 	(object SegLabel @16
+			    Parent_View 	@15
+			    location   	(1803, 839)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    anchor     	10
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	450
+			    justify    	0
+			    label      	"<<include>>"
+			    pctDist    	0.428959
+			    height     	22
+			    orientation 	0)
+			line_color 	3342489
+			quidu      	"5CC76B1E0262"
+			client     	@8
+			supplier   	@13
+			vertices   	(list Points
+			    (1612, 902)
+			    (2066, 805))
+			line_style 	0)
+		    (object DependencyView "" @17
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			stereotype 	(object SegLabel @18
+			    Parent_View 	@17
+			    location   	(1975, 1104)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    anchor     	10
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	450
+			    justify    	0
+			    label      	"<<include>>"
+			    pctDist    	0.685531
+			    height     	29
+			    orientation 	0)
+			line_color 	3342489
+			quidu      	"5CC76B1F01F4"
+			client     	@8
+			supplier   	@14
+			vertices   	(list Points
+			    (1707, 1015)
+			    (2080, 1181))
+			line_style 	0)
+		    (object UseCaseView "Use Case View::Gui thong bao realtime" @19
+			location   	(2896, 1232)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@19
+			    location   	(2896, 1370)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	630
+			    justify    	0
+			    label      	"Gui thong bao realtime")
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B2B030E"
+			height     	118)
+		    (object DependencyView "" @20
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			stereotype 	(object SegLabel @21
+			    Parent_View 	@20
+			    location   	(2543, 1113)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    anchor     	10
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	450
+			    justify    	0
+			    label      	"<<include>>"
+			    pctDist    	0.500000
+			    height     	120
+			    orientation 	0)
+			line_color 	3342489
+			quidu      	"5CC76B3800DB"
+			client     	@14
+			supplier   	@19
+			vertices   	(list Points
+			    (2300, 1232)
+			    (2786, 1232))
+			line_style 	0)))
+	    (object ClassDiagram "VOPC"
+		quid       	"5CC770A801A6"
+		title      	"VOPC"
+		zoom       	100
+		max_height 	28350
+		max_width  	21600
+		origin_x   	5161
+		origin_y   	0
+		items      	(list diagram_item_list
+		    (object ClassView "Class" "Use Case View::NangCapPremiumUI" @22
+			ShowCompartmentStereotypes 	TRUE
+			IncludeAttribute 	TRUE
+			IncludeOperation 	TRUE
+			ShowOperationSignature 	TRUE
+			location   	(640, 400)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@22
+			    location   	(172, 241)
+			    fill_color 	13434879
+			    nlines     	1
+			    max_width  	936
+			    justify    	0
+			    label      	"NangCapPremiumUI")
+			stereotype 	(object ItemLabel
+			    Parent_View 	@22
+			    location   	(172, 191)
+			    fill_color 	13434879
+			    anchor     	10
+			    nlines     	1
+			    max_width  	936
+			    justify    	0
+			    label      	"<<boundary>>")
+			icon       	"boundary"
+			icon_style 	"Label"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76A2402FE"
+			compartment 	(object Compartment
+			    Parent_View 	@22
+			    location   	(172, 302)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    icon_style 	"Icon"
+			    fill_color 	13434879
+			    anchor     	2
+			    nlines     	6
+			    max_width  	934
+			    justify    	1)
+			width      	954
+			height     	442
+			annotation 	8
+			autoResize 	TRUE)
+		    (object ClassView "Class" "Use Case View::ZaloPay" @23
+			ShowCompartmentStereotypes 	TRUE
+			IncludeAttribute 	TRUE
+			IncludeOperation 	TRUE
+			ShowOperationSignature 	TRUE
+			location   	(3296, 672)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@23
+			    location   	(2914, 538)
+			    fill_color 	13434879
+			    nlines     	1
+			    max_width  	764
+			    justify    	0
+			    label      	"ZaloPay")
+			stereotype 	(object ItemLabel
+			    Parent_View 	@23
+			    location   	(2914, 488)
+			    fill_color 	13434879
+			    anchor     	10
+			    nlines     	1
+			    max_width  	764
+			    justify    	0
+			    label      	"<<system>>")
+			icon_style 	"Label"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76BC60168"
+			compartment 	(object Compartment
+			    Parent_View 	@23
+			    location   	(2914, 599)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    icon_style 	"Icon"
+			    fill_color 	13434879
+			    anchor     	2
+			    nlines     	5
+			    max_width  	762
+			    justify    	1)
+			width      	782
+			height     	392
+			annotation 	8
+			autoResize 	TRUE)
+		    (object ClassView "Class" "Use Case View::users" @24
+			ShowCompartmentStereotypes 	TRUE
+			IncludeAttribute 	TRUE
+			IncludeOperation 	TRUE
+			ShowOperationSignature 	TRUE
+			location   	(3056, 1472)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@24
+			    location   	(2902, 1188)
+			    fill_color 	13434879
+			    nlines     	1
+			    max_width  	308
+			    justify    	0
+			    label      	"users")
+			stereotype 	(object ItemLabel
+			    Parent_View 	@24
+			    location   	(2902, 1138)
+			    fill_color 	13434879
+			    anchor     	10
+			    nlines     	1
+			    max_width  	308
+			    justify    	0
+			    label      	"<<entity>>")
+			icon       	"entity"
+			icon_style 	"Label"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76DAB02EE"
+			compartment 	(object Compartment
+			    Parent_View 	@24
+			    location   	(2902, 1249)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    icon_style 	"Icon"
+			    fill_color 	13434879
+			    anchor     	2
+			    nlines     	11
+			    max_width  	306
+			    justify    	1)
+			width      	326
+			height     	692
+			annotation 	8
+			autoResize 	TRUE)
+		    (object ClassView "Class" "Use Case View::NangCapPremiumController" @25
+			ShowCompartmentStereotypes 	TRUE
+			IncludeAttribute 	TRUE
+			IncludeOperation 	TRUE
+			ShowOperationSignature 	TRUE
+			location   	(1952, 528)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@25
+			    location   	(1555, 394)
+			    fill_color 	13434879
+			    nlines     	1
+			    max_width  	794
+			    justify    	0
+			    label      	"NangCapPremiumController")
+			stereotype 	(object ItemLabel
+			    Parent_View 	@25
+			    location   	(1555, 344)
+			    fill_color 	13434879
+			    anchor     	10
+			    nlines     	1
+			    max_width  	794
+			    justify    	0
+			    label      	"<<control>>")
+			icon       	"control"
+			icon_style 	"Label"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76A31038B"
+			compartment 	(object Compartment
+			    Parent_View 	@25
+			    location   	(1555, 455)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    icon_style 	"Icon"
+			    fill_color 	13434879
+			    anchor     	2
+			    nlines     	5
+			    max_width  	790
+			    justify    	1)
+			width      	812
+			height     	392
+			annotation 	8
+			autoResize 	TRUE)
+		    (object AssociationViewNew "$UNNAMED$3" @26
+			location   	(1331, 467)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC7713502DF"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$4" @27
+				Parent_View 	@26
+				location   	(691, 67)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC77136033C"
+				client     	@26
+				supplier   	@25
+				vertices   	(list Points
+				    (1331, 467)
+				    (1545, 488))
+				line_style 	0
+				label      	(object SegLabel @28
+				    Parent_View 	@27
+				    location   	(1519, 540)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	1))
+			    (object RoleView "$UNNAMED$5" @29
+				Parent_View 	@26
+				location   	(691, 67)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC77136035C"
+				client     	@26
+				supplier   	@22
+				vertices   	(list Points
+				    (1331, 467)
+				    (1117, 446))
+				line_style 	0
+				label      	(object SegLabel @30
+				    Parent_View 	@29
+				    location   	(1135, 502)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	0))))
+		    (object AssociationViewNew "$UNNAMED$6" @31
+			location   	(2631, 599)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC771380010"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$7" @32
+				Parent_View 	@31
+				location   	(679, 71)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC771380158"
+				client     	@31
+				supplier   	@23
+				vertices   	(list Points
+				    (2631, 599)
+				    (2904, 629))
+				line_style 	0
+				label      	(object SegLabel @33
+				    Parent_View 	@32
+				    location   	(2871, 680)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"*"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	1))
+			    (object RoleView "$UNNAMED$8" @34
+				Parent_View 	@31
+				location   	(679, 71)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC771380168"
+				client     	@31
+				supplier   	@25
+				vertices   	(list Points
+				    (2631, 599)
+				    (2358, 570))
+				line_style 	0
+				label      	(object SegLabel @35
+				    Parent_View 	@34
+				    location   	(2381, 627)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	0))))
+		    (object AssociationViewNew "$UNNAMED$9" @36
+			location   	(2537, 1028)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC77138037B"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$10" @37
+				Parent_View 	@36
+				location   	(585, 500)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7713A02A0"
+				client     	@36
+				supplier   	@24
+				vertices   	(list Points
+				    (2537, 1028)
+				    (2892, 1332))
+				line_style 	0
+				label      	(object SegLabel @38
+				    Parent_View 	@37
+				    location   	(2822, 1342)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"*"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	1))
+			    (object RoleView "$UNNAMED$11" @39
+				Parent_View 	@36
+				location   	(585, 500)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7713A02B0"
+				client     	@36
+				supplier   	@25
+				vertices   	(list Points
+				    (2537, 1028)
+				    (2182, 724))
+				line_style 	0
+				label      	(object SegLabel @40
+				    Parent_View 	@39
+				    location   	(2209, 778)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.884795
+				    height     	24
+				    orientation 	0))))
+		    (object ClassView "Class" "Use Case View::transactions" @41
+			ShowCompartmentStereotypes 	TRUE
+			IncludeAttribute 	TRUE
+			IncludeOperation 	TRUE
+			ShowOperationSignature 	TRUE
+			location   	(672, 1264)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@41
+			    location   	(319, 930)
+			    fill_color 	13434879
+			    nlines     	1
+			    max_width  	706
+			    justify    	0
+			    label      	"transactions")
+			stereotype 	(object ItemLabel
+			    Parent_View 	@41
+			    location   	(319, 880)
+			    fill_color 	13434879
+			    anchor     	10
+			    nlines     	1
+			    max_width  	706
+			    justify    	0
+			    label      	"<<entity>>")
+			icon       	"entity"
+			icon_style 	"Label"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76A5B02FE"
+			compartment 	(object Compartment
+			    Parent_View 	@41
+			    location   	(319, 991)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    icon_style 	"Icon"
+			    fill_color 	13434879
+			    anchor     	2
+			    nlines     	13
+			    max_width  	703
+			    justify    	1)
+			width      	724
+			height     	792
+			annotation 	8
+			autoResize 	TRUE)
+		    (object AssociationViewNew "$UNNAMED$15" @42
+			location   	(1321, 889)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC7713C035C"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$16" @43
+				Parent_View 	@42
+				location   	(-631, 361)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7713D0168"
+				client     	@42
+				supplier   	@41
+				vertices   	(list Points
+				    (1321, 889)
+				    (1034, 1055))
+				line_style 	0
+				label      	(object SegLabel @44
+				    Parent_View 	@43
+				    location   	(1090, 1085)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"*"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	0))
+			    (object RoleView "$UNNAMED$17" @45
+				Parent_View 	@42
+				location   	(-631, 361)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7713D016A"
+				client     	@42
+				supplier   	@25
+				vertices   	(list Points
+				    (1321, 889)
+				    (1609, 724))
+				line_style 	0
+				label      	(object SegLabel @46
+				    Parent_View 	@45
+				    location   	(1607, 788)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	1))))
+		    (object AssociationViewNew "$UNNAMED$18" @47
+			location   	(1963, 1376)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC7722F003F"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$19" @48
+				Parent_View 	@47
+				location   	(-1093, -96)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7722F034C"
+				client     	@47
+				supplier   	@41
+				vertices   	(list Points
+				    (1963, 1376)
+				    (1034, 1295))
+				line_style 	0
+				label      	(object SegLabel @49
+				    Parent_View 	@48
+				    location   	(1123, 1357)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"*"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	0))
+			    (object RoleView "$UNNAMED$20" @50
+				Parent_View 	@47
+				location   	(-1093, -96)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7722F035C"
+				client     	@47
+				supplier   	@24
+				vertices   	(list Points
+				    (1963, 1376)
+				    (2892, 1457))
+				line_style 	0
+				label      	(object SegLabel @51
+				    Parent_View 	@50
+				    location   	(2795, 1503)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	1))))
+		    (object ClassView "Class" "Use Case View::premium_plans" @52
+			ShowCompartmentStereotypes 	TRUE
+			IncludeAttribute 	TRUE
+			IncludeOperation 	TRUE
+			ShowOperationSignature 	TRUE
+			location   	(1888, 1760)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@52
+			    location   	(1687, 1551)
+			    fill_color 	13434879
+			    nlines     	1
+			    max_width  	402
+			    justify    	0
+			    label      	"premium_plans")
+			stereotype 	(object ItemLabel
+			    Parent_View 	@52
+			    location   	(1687, 1501)
+			    fill_color 	13434879
+			    anchor     	10
+			    nlines     	1
+			    max_width  	402
+			    justify    	0
+			    label      	"<<entity>>")
+			icon       	"entity"
+			icon_style 	"Label"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76A530010"
+			compartment 	(object Compartment
+			    Parent_View 	@52
+			    location   	(1687, 1612)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    icon_style 	"Icon"
+			    fill_color 	13434879
+			    anchor     	2
+			    nlines     	8
+			    max_width  	400
+			    justify    	1)
+			width      	420
+			height     	542
+			annotation 	8
+			autoResize 	TRUE)
+		    (object AssociationViewNew "$UNNAMED$12" @53
+			location   	(1921, 1106)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC7713B0233"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$13" @54
+				Parent_View 	@53
+				location   	(-31, 578)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7713C002F"
+				client     	@53
+				supplier   	@52
+				vertices   	(list Points
+				    (1921, 1106)
+				    (1902, 1488))
+				line_style 	0
+				label      	(object SegLabel @55
+				    Parent_View 	@54
+				    location   	(1958, 1452)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"*"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	0))
+			    (object RoleView "$UNNAMED$14" @56
+				Parent_View 	@53
+				location   	(-31, 578)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7713C0031"
+				client     	@53
+				supplier   	@25
+				vertices   	(list Points
+				    (1921, 1106)
+				    (1941, 724))
+				line_style 	0
+				label      	(object SegLabel @57
+				    Parent_View 	@56
+				    location   	(1993, 764)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	1))))
+		    (object AssociationViewNew "$UNNAMED$21" @58
+			location   	(1355, 1542)
+			stereotype 	TRUE
+			line_color 	3342489
+			quidu      	"5CC7724603AA"
+			roleview_list 	(list RoleViews
+			    (object RoleView "$UNNAMED$22" @59
+				Parent_View 	@58
+				location   	(-549, -154)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7724701C5"
+				client     	@58
+				supplier   	@41
+				vertices   	(list Points
+				    (1355, 1542)
+				    (1034, 1411))
+				line_style 	0
+				label      	(object SegLabel @60
+				    Parent_View 	@59
+				    location   	(1047, 1474)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"*"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	0))
+			    (object RoleView "$UNNAMED$23" @61
+				Parent_View 	@58
+				location   	(-549, -154)
+				font       	(object Font
+				    size       	10
+				    face       	"Arial"
+				    bold       	FALSE
+				    italics    	FALSE
+				    underline  	FALSE
+				    strike     	FALSE
+				    color      	0
+				    default_color 	TRUE)
+				stereotype 	TRUE
+				line_color 	3342489
+				quidu      	"5CC7724701D5"
+				client     	@58
+				supplier   	@52
+				vertices   	(list Points
+				    (1355, 1542)
+				    (1677, 1673))
+				line_style 	0
+				label      	(object SegLabel @62
+				    Parent_View 	@61
+				    location   	(1625, 1710)
+				    font       	(object Font
+					size       	10
+					face       	"Arial"
+					bold       	FALSE
+					italics    	FALSE
+					underline  	FALSE
+					strike     	FALSE
+					color      	0
+					default_color 	TRUE)
+				    anchor     	2
+				    anchor_loc 	1
+				    nlines     	1
+				    max_width  	15
+				    justify    	0
+				    label      	"1"
+				    pctDist    	0.900000
+				    height     	54
+				    orientation 	1))))))
+	    (object InteractionDiagram "TrinhTu"
+		mechanism_ref 	@1
+		quid       	"5CC76B470242"
+		title      	"TrinhTu"
+		zoom       	100
+		max_height 	28350
+		max_width  	21600
+		origin_x   	87
+		origin_y   	4893
+		items      	(list diagram_item_list
+		    (object InterObjView "$UNNAMED$24" @63
+			location   	(176, 224)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	TRUE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@63
+			    location   	(176, 249)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	360
+			    justify    	0
+			    label      	"")
+			icon       	"Actor"
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B500139"
+			width      	120
+			height     	4388
+			icon_height 	162
+			icon_width 	120
+			icon_y_offset 	0
+			annotation 	1
+			Focus_Of_Control 	(object Focus_Of_Control "" @64
+			    location   	(176, 416)
+			    line_color 	3342489
+			    InterObjView 	@63
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @65
+			    location   	(176, 1376)
+			    line_color 	3342489
+			    InterObjView 	@63
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @66
+			    location   	(176, 3456)
+			    line_color 	3342489
+			    InterObjView 	@63
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE))
+		    (object InterObjView "$UNNAMED$25" @67
+			location   	(736, 224)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	TRUE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@67
+			    location   	(736, 250)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	394
+			    justify    	0
+			    label      	"")
+			icon       	"boundary"
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B5202A0"
+			width      	406
+			height     	4388
+			icon_height 	153
+			icon_width 	229
+			icon_y_offset 	0
+			annotation 	1
+			Focus_Of_Control 	(object Focus_Of_Control "" @68
+			    location   	(736, 416)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @69
+			    location   	(736, 608)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @70
+			    location   	(736, 1168)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @71
+			    location   	(736, 1376)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @72
+			    location   	(736, 1552)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @73
+			    location   	(736, 3088)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @74
+			    location   	(736, 3264)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @75
+			    location   	(736, 3776)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @76
+			    location   	(736, 3936)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @77
+			    location   	(736, 4432)
+			    line_color 	3342489
+			    InterObjView 	@67
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE))
+		    (object InterObjView "$UNNAMED$27" @78
+			location   	(1344, 224)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	TRUE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@78
+			    location   	(1344, 249)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	504
+			    justify    	0
+			    label      	"")
+			icon       	"control"
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B5303AA"
+			width      	498
+			height     	4388
+			icon_height 	164
+			icon_width 	157
+			icon_y_offset 	0
+			annotation 	1
+			Focus_Of_Control 	(object Focus_Of_Control "" @79
+			    location   	(1344, 608)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @80
+			    location   	(1344, 800)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @81
+			    location   	(1344, 992)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @82
+			    location   	(1344, 1168)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @83
+			    location   	(1344, 1552)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @84
+			    location   	(1344, 1680)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @85
+			    location   	(1344, 1856)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @86
+			    location   	(1344, 2016)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @87
+			    location   	(1344, 2224)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	92
+			    y_coord    	2
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @88
+			    location   	(1344, 2256)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	TRUE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @89
+			    location   	(1344, 2416)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @90
+			    location   	(1344, 2576)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @91
+			    location   	(1344, 2736)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @92
+			    location   	(1344, 2928)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @93
+			    location   	(1344, 3088)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @94
+			    location   	(1344, 3616)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @95
+			    location   	(1344, 3776)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @96
+			    location   	(1344, 3936)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @97
+			    location   	(1344, 4080)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @98
+			    location   	(1344, 4256)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @99
+			    location   	(1344, 4432)
+			    line_color 	3342489
+			    InterObjView 	@78
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE))
+		    (object InterObjView "$UNNAMED$28" @100
+			location   	(1968, 224)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	TRUE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@100
+			    location   	(1968, 250)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	462
+			    justify    	0
+			    label      	"")
+			icon       	"entity"
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B58003F"
+			width      	154
+			height     	4388
+			icon_height 	153
+			icon_width 	154
+			icon_y_offset 	0
+			annotation 	1
+			Focus_Of_Control 	(object Focus_Of_Control "" @101
+			    location   	(1968, 800)
+			    line_color 	3342489
+			    InterObjView 	@100
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @102
+			    location   	(1968, 992)
+			    line_color 	3342489
+			    InterObjView 	@100
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @103
+			    location   	(1968, 1856)
+			    line_color 	3342489
+			    InterObjView 	@100
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @104
+			    location   	(1968, 2016)
+			    line_color 	3342489
+			    InterObjView 	@100
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE))
+		    (object InterObjView "$UNNAMED$30" @105
+			location   	(2432, 224)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	TRUE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@105
+			    location   	(2432, 250)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	462
+			    justify    	0
+			    label      	"")
+			icon       	"entity"
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76B59034C"
+			width      	154
+			height     	4388
+			icon_height 	153
+			icon_width 	154
+			icon_y_offset 	0
+			annotation 	1
+			Focus_Of_Control 	(object Focus_Of_Control "" @106
+			    location   	(2432, 2416)
+			    line_color 	3342489
+			    InterObjView 	@105
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @107
+			    location   	(2432, 2576)
+			    line_color 	3342489
+			    InterObjView 	@105
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @108
+			    location   	(2432, 4080)
+			    line_color 	3342489
+			    InterObjView 	@105
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @109
+			    location   	(2432, 4256)
+			    line_color 	3342489
+			    InterObjView 	@105
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE))
+		    (object InterObjView "$UNNAMED$29" @110
+			location   	(2800, 224)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	TRUE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@110
+			    location   	(2800, 250)
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	462
+			    justify    	0
+			    label      	"")
+			icon       	"entity"
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76DB702B0"
+			width      	154
+			height     	4388
+			icon_height 	153
+			icon_width 	154
+			icon_y_offset 	0
+			annotation 	1
+			Focus_Of_Control 	(object Focus_Of_Control "" @111
+			    location   	(2800, 1680)
+			    line_color 	3342489
+			    InterObjView 	@110
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE))
+		    (object InterObjView "$UNNAMED$26" @112
+			location   	(3248, 225)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	TRUE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object ItemLabel
+			    Parent_View 	@112
+			    location   	(3248, 224)
+			    fill_color 	13434879
+			    anchor_loc 	1
+			    nlines     	2
+			    max_width  	282
+			    justify    	0
+			    label      	"")
+			icon_style 	"Icon"
+			line_color 	3342489
+			fill_color 	13434879
+			quidu      	"5CC76BE602CF"
+			width      	300
+			height     	4387
+			icon_height 	0
+			icon_width 	0
+			icon_y_offset 	0
+			annotation 	1
+			Focus_Of_Control 	(object Focus_Of_Control "" @113
+			    location   	(3248, 2736)
+			    line_color 	3342489
+			    InterObjView 	@112
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @114
+			    location   	(3248, 2928)
+			    line_color 	3342489
+			    InterObjView 	@112
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @115
+			    location   	(3248, 3264)
+			    line_color 	3342489
+			    InterObjView 	@112
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @116
+			    location   	(3248, 3456)
+			    line_color 	3342489
+			    InterObjView 	@112
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE)
+			Focus_Of_Control 	(object Focus_Of_Control "" @117
+			    location   	(3248, 3616)
+			    line_color 	3342489
+			    InterObjView 	@112
+			    height     	90
+			    y_coord    	0
+			    Nested     	FALSE))
+		    (object InterMessView "Nhan Goi premium( )" @118
+			location   	(16, 416)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @119
+			    Parent_View 	@118
+			    location   	(455, 372)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76C040224"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	419
+			    justify    	0
+			    label      	"Nhan Goi premium( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@63
+			supplier   	@67
+			Focus_Src  	@64
+			Focus_Entry 	@68
+			origin     	(191, 416)
+			terminus   	(720, 416)
+			ordinal    	0)
+		    (object InterMessView "Lay danh sach goi( )" @120
+			location   	(16, 608)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @121
+			    Parent_View 	@120
+			    location   	(1039, 564)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76C2103BA"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	410
+			    justify    	0
+			    label      	"Lay danh sach goi( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@67
+			supplier   	@78
+			Focus_Src  	@69
+			Focus_Entry 	@79
+			origin     	(751, 608)
+			terminus   	(1328, 608)
+			ordinal    	1)
+		    (object InterMessView "getPremium_plans( )" @122
+			location   	(16, 800)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @123
+			    Parent_View 	@122
+			    location   	(1655, 756)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76C2E0169"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	419
+			    justify    	0
+			    label      	"getPremium_plans( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@78
+			supplier   	@100
+			Focus_Src  	@80
+			Focus_Entry 	@101
+			origin     	(1359, 800)
+			terminus   	(1952, 800)
+			ordinal    	2)
+		    (object InterMessView "Tra ve thong tin" @124
+			location   	(16, 992)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @125
+			    Parent_View 	@124
+			    location   	(1656, 948)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76C390262"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	310
+			    justify    	0
+			    label      	"Tra ve thong tin"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@100
+			supplier   	@78
+			Focus_Src  	@102
+			Focus_Entry 	@81
+			origin     	(1952, 992)
+			terminus   	(1360, 992)
+			ordinal    	3)
+		    (object InterMessView "Hien thi danh sach cac goi( )" @126
+			location   	(16, 1168)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @127
+			    Parent_View 	@126
+			    location   	(1040, 1124)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76C4D0020"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	554
+			    justify    	0
+			    label      	"Hien thi danh sach cac goi( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@78
+			supplier   	@67
+			Focus_Src  	@82
+			Focus_Entry 	@70
+			origin     	(1328, 1168)
+			terminus   	(752, 1168)
+			ordinal    	4)
+		    (object InterMessView "Chon goi mong muon va nhan vao Nang cap ngay( )" @128
+			location   	(16, 1376)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @129
+			    Parent_View 	@128
+			    location   	(535, 1333)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76C7E02FE"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	950
+			    justify    	0
+			    label      	"Chon goi mong muon va nhan vao Nang cap ngay( )"
+			    pctDist    	0.650284
+			    height     	44
+			    orientation 	0)
+			line_color 	3342489
+			client     	@63
+			supplier   	@67
+			Focus_Src  	@65
+			Focus_Entry 	@71
+			origin     	(191, 1376)
+			terminus   	(720, 1376)
+			ordinal    	5)
+		    (object InterMessView "Lay thong tin nguoi dung va goi( )" @130
+			location   	(16, 1552)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @131
+			    Parent_View 	@130
+			    location   	(1039, 1508)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76D72011A"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	629
+			    justify    	0
+			    label      	"Lay thong tin nguoi dung va goi( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@67
+			supplier   	@78
+			Focus_Src  	@72
+			Focus_Entry 	@83
+			origin     	(751, 1552)
+			terminus   	(1328, 1552)
+			ordinal    	6)
+		    (object InterMessView "getUser_id( )" @132
+			location   	(16, 1680)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @133
+			    Parent_View 	@132
+			    location   	(2071, 1636)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76DBD01C6"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	279
+			    justify    	0
+			    label      	"getUser_id( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@78
+			supplier   	@110
+			Focus_Src  	@84
+			Focus_Entry 	@111
+			origin     	(1359, 1680)
+			terminus   	(2784, 1680)
+			ordinal    	7)
+		    (object InterMessView "getId( )" @134
+			location   	(16, 1856)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @135
+			    Parent_View 	@134
+			    location   	(1655, 1812)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76DCA0214"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	176
+			    justify    	0
+			    label      	"getId( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@78
+			supplier   	@100
+			Focus_Src  	@85
+			Focus_Entry 	@103
+			origin     	(1359, 1856)
+			terminus   	(1952, 1856)
+			ordinal    	8)
+		    (object InterMessView "Tra ve thong tin nguoi dung va goi" @136
+			location   	(16, 2016)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @137
+			    Parent_View 	@136
+			    location   	(1656, 1972)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76DEC03D9"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	651
+			    justify    	0
+			    label      	"Tra ve thong tin nguoi dung va goi"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@100
+			supplier   	@78
+			Focus_Src  	@104
+			Focus_Entry 	@86
+			origin     	(1952, 2016)
+			terminus   	(1360, 2016)
+			ordinal    	9)
+		    (object SelfMessView "Sinh ra ma giao dich va chu ky so (MAC)" @138
+			location   	(16, 2224)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @139
+			    Parent_View 	@138
+			    location   	(1435, 2180)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76E12030F"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	788
+			    justify    	0
+			    label      	"Sinh ra ma giao dich va chu ky so (MAC)"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@78
+			supplier   	@78
+			Focus_Src  	@87
+			Focus_Entry 	@88
+			origin     	(1360, 2224)
+			terminus   	(1510, 2224)
+			ordinal    	10)
+		    (object InterMessView "saveTransactions( )" @140
+			location   	(16, 2416)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @141
+			    Parent_View 	@140
+			    location   	(1887, 2372)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76E380272"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	413
+			    justify    	0
+			    label      	"saveTransactions( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@78
+			supplier   	@105
+			Focus_Src  	@89
+			Focus_Entry 	@106
+			origin     	(1359, 2416)
+			terminus   	(2416, 2416)
+			ordinal    	11)
+		    (object InterMessView "Tra ve giao dich da luu" @142
+			location   	(16, 2576)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @143
+			    Parent_View 	@142
+			    location   	(1888, 2532)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76E5A0204"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	463
+			    justify    	0
+			    label      	"Tra ve giao dich da luu"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@105
+			supplier   	@78
+			Focus_Src  	@107
+			Focus_Entry 	@90
+			origin     	(2416, 2576)
+			terminus   	(1360, 2576)
+			ordinal    	12)
+		    (object InterMessView "Gui yeu cau tao don hang( )" @144
+			location   	(16, 2736)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @145
+			    Parent_View 	@144
+			    location   	(2295, 2692)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76E85037C"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	560
+			    justify    	0
+			    label      	"Gui yeu cau tao don hang( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@78
+			supplier   	@112
+			Focus_Src  	@91
+			Focus_Entry 	@113
+			origin     	(1359, 2736)
+			terminus   	(3232, 2736)
+			ordinal    	13)
+		    (object InterMessView "Tra ve order_url" @146
+			location   	(16, 2928)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @147
+			    Parent_View 	@146
+			    location   	(2296, 2884)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76E99031D"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	341
+			    justify    	0
+			    label      	"Tra ve order_url"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@112
+			supplier   	@78
+			Focus_Src  	@114
+			Focus_Entry 	@92
+			origin     	(3232, 2928)
+			terminus   	(1360, 2928)
+			ordinal    	14)
+		    (object InterMessView "Tra ve order_url" @148
+			location   	(16, 3088)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @149
+			    Parent_View 	@148
+			    location   	(1040, 3044)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76EAF00DB"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	341
+			    justify    	0
+			    label      	"Tra ve order_url"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@78
+			supplier   	@67
+			Focus_Src  	@93
+			Focus_Entry 	@73
+			origin     	(1328, 3088)
+			terminus   	(752, 3088)
+			ordinal    	15)
+		    (object InterMessView "Tu dong dieu huong sang trang ZaloPay( )" @150
+			location   	(16, 3264)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @151
+			    Parent_View 	@150
+			    location   	(1991, 3220)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76EC70169"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	801
+			    justify    	0
+			    label      	"Tu dong dieu huong sang trang ZaloPay( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@67
+			supplier   	@112
+			Focus_Src  	@74
+			Focus_Entry 	@115
+			origin     	(751, 3264)
+			terminus   	(3232, 3264)
+			ordinal    	16)
+		    (object InterMessView "Tien hanh thanh toan( )" @152
+			location   	(16, 3456)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @153
+			    Parent_View 	@152
+			    location   	(1711, 3412)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76F0B031E"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	476
+			    justify    	0
+			    label      	"Tien hanh thanh toan( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@63
+			supplier   	@112
+			Focus_Src  	@66
+			Focus_Entry 	@116
+			origin     	(191, 3456)
+			terminus   	(3232, 3456)
+			ordinal    	17)
+		    (object InterMessView "Tra ve thong tin" @154
+			location   	(16, 3616)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @155
+			    Parent_View 	@154
+			    location   	(2296, 3572)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76FB4037B"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	341
+			    justify    	0
+			    label      	"Tra ve thong tin"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@112
+			supplier   	@78
+			Focus_Src  	@117
+			Focus_Entry 	@94
+			origin     	(3232, 3616)
+			terminus   	(1360, 3616)
+			ordinal    	18)
+		    (object InterMessView "Hien thi trang ket qua( )" @156
+			location   	(16, 3776)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @157
+			    Parent_View 	@156
+			    location   	(1040, 3732)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC76FC600AC"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	485
+			    justify    	0
+			    label      	"Hien thi trang ket qua( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@78
+			supplier   	@67
+			Focus_Src  	@95
+			Focus_Entry 	@75
+			origin     	(1328, 3776)
+			terminus   	(752, 3776)
+			ordinal    	19)
+		    (object InterMessView "Tien hanh cap nhat trang thai giao dich( )" @158
+			location   	(16, 3936)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @159
+			    Parent_View 	@158
+			    location   	(1039, 3892)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC7701F02DF"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	785
+			    justify    	0
+			    label      	"Tien hanh cap nhat trang thai giao dich( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@67
+			supplier   	@78
+			Focus_Src  	@76
+			Focus_Entry 	@96
+			origin     	(751, 3936)
+			terminus   	(1328, 3936)
+			ordinal    	20)
+		    (object InterMessView "Cap nhat trang thai sang AWAITING( )" @160
+			location   	(16, 4080)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @161
+			    Parent_View 	@160
+			    location   	(1887, 4036)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC7704E01B6"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	741
+			    justify    	0
+			    label      	"Cap nhat trang thai sang AWAITING( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	0)
+			line_color 	3342489
+			client     	@78
+			supplier   	@105
+			Focus_Src  	@97
+			Focus_Entry 	@108
+			origin     	(1359, 4080)
+			terminus   	(2416, 4080)
+			ordinal    	21)
+		    (object InterMessView "Tra ve thong tin" @162
+			location   	(16, 4256)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @163
+			    Parent_View 	@162
+			    location   	(1888, 4212)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC7707F0214"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	341
+			    justify    	0
+			    label      	"Tra ve thong tin"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@105
+			supplier   	@78
+			Focus_Src  	@109
+			Focus_Entry 	@98
+			origin     	(2416, 4256)
+			terminus   	(1360, 4256)
+			ordinal    	22)
+		    (object InterMessView "Hien thi thong bao thanh cong( )" @164
+			location   	(16, 4432)
+			font       	(object Font
+			    size       	10
+			    face       	"Arial"
+			    bold       	FALSE
+			    italics    	FALSE
+			    underline  	FALSE
+			    strike     	FALSE
+			    color      	0
+			    default_color 	TRUE)
+			label      	(object SegLabel @165
+			    Parent_View 	@164
+			    location   	(1040, 4388)
+			    font       	(object Font
+				size       	10
+				face       	"Arial"
+				bold       	FALSE
+				italics    	FALSE
+				underline  	FALSE
+				strike     	FALSE
+				color      	0
+				default_color 	TRUE)
+			    quidu      	"5CC77094011A"
+			    anchor_loc 	1
+			    nlines     	1
+			    max_width  	632
+			    justify    	0
+			    label      	"Hien thi thong bao thanh cong( )"
+			    pctDist    	0.500000
+			    height     	45
+			    orientation 	1)
+			line_color 	3342489
+			client     	@78
+			supplier   	@67
+			Focus_Src  	@99
+			Focus_Entry 	@77
+			origin     	(1328, 4432)
+			terminus   	(752, 4432)
+			ordinal    	23)))))
+    root_category 	(object Class_Category "Logical View"
+	quid       	"5CC76A0F035D"
+	exportControl 	"Public"
+	global     	TRUE
+	subsystem  	"Component View"
+	quidu      	"5CC76A0F035F"
+	logical_models 	(list unit_reference_list)
+	logical_presentations 	(list unit_reference_list
+	    (object ClassDiagram "Main"
+		quid       	"5CC76A0F03D9"
+		title      	"Main"
+		zoom       	100
+		max_height 	28350
+		max_width  	21600
+		origin_x   	0
+		origin_y   	0
+		items      	(list diagram_item_list))))
+    root_subsystem 	(object SubSystem "Component View"
+	quid       	"5CC76A0F035F"
+	physical_models 	(list unit_reference_list)
+	physical_presentations 	(list unit_reference_list
+	    (object Module_Diagram "Main"
+		quid       	"5CC76A10002F"
+		title      	"Main"
+		zoom       	100
+		max_height 	28350
+		max_width  	21600
+		origin_x   	0
+		origin_y   	0
+		items      	(list diagram_item_list)))
+	category   	"Logical View"
+	quidu      	"5CC76A0F035D")
+    process_structure 	(object Processes
+	quid       	"5CC76A0F0360"
+	ProcsNDevs 	(list
+	    (object Process_Diagram "Deployment View"
+		quid       	"5CC76A0F0362"
+		title      	"Deployment View"
+		zoom       	100
+		max_height 	28350
+		max_width  	21600
+		origin_x   	0
+		origin_y   	0
+		items      	(list diagram_item_list))))
+    properties 	(object Properties
+	attributes 	(list Attribute_Set
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"propertyId"
+		value      	"809135966")
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Role"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Synchronize"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeName"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"InitialValue"
+			value      	"")))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Inherit"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Synchronize"
+			value      	TRUE)))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Module-Spec"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Synchronize"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"RevEngRootDirectory"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"RootPackage"
+			value      	"C++ Reverse Engineered")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"RevEngDirectoriesAsPackages"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"HeaderFileExtension"
+			value      	".h")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ImplementationFileExtension"
+			value      	".cpp")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"NewHeaderFileDirectory"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"NewImplementationFileDirectory"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"FileCapitalization"
+			value      	("FileCapitalizationSet" 0))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeGenExtraDirectories"
+			value      	("CodeGenExtraDirectoriesSet" 0))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"StripClassPrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"UseTabs"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"TabWidth"
+			value      	8)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"IndentWidth"
+			value      	4)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"AccessIndentation"
+			value      	-2)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CreateBackupFiles"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ModelIdCommentRules"
+			value      	("ModelIdCommentRulesSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentRules"
+			value      	("CommentRulesSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"PageWidth"
+			value      	80)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ClassMemberOrder"
+			value      	("MemberOrderSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"OneParameterPerLine"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"NamespaceBraceStyle"
+			value      	("BraceStyleSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ClassBraceStyle"
+			value      	("BraceStyleSet" 2))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"FunctionBraceStyle"
+			value      	("BraceStyleSet" 2))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentStyleProperty"
+			value      	("CommentStyleSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Copyright"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"InitialHeaderIncludes"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"InitialBodyIncludes"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeGenExtraDirectoriesSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"None"
+				value      	0)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Namespaces"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Packages"
+				value      	2)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"FileCapitalizationSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Same as model"
+				value      	0)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Lower case"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Upper case"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Lower case with underscores"
+				value      	3)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentStyleSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"C++ Comment"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"C Comment"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"XML Comment"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"JavaDoc Comment"
+				value      	4)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"BraceStyleSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B1"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B2"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B3"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B4"
+				value      	4)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B5"
+				value      	5)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"MemberOrderSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Public First"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Private First"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Order by kind"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Unordered"
+				value      	4)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ModelIdCommentRulesSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Code generation only"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Code generation and reverse engineering"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Never generate model IDs"
+				value      	3)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentRulesSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Always synchronize"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Code generation only"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Reverse engineering only"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Never synchronize"
+				value      	4)))))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Module-Body"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Synchronize"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"RevEngRootDirectory"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"RootPackage"
+			value      	"C++ Reverse Engineered")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"RevEngDirectoriesAsPackages"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"HeaderFileExtension"
+			value      	".h")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ImplementationFileExtension"
+			value      	".cpp")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"NewHeaderFileDirectory"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"NewImplementationFileDirectory"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"FileCapitalization"
+			value      	("FileCapitalizationSet" 0))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeGenExtraDirectories"
+			value      	("CodeGenExtraDirectoriesSet" 0))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"StripClassPrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"UseTabs"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"TabWidth"
+			value      	8)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"IndentWidth"
+			value      	4)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"AccessIndentation"
+			value      	-2)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CreateBackupFiles"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ModelIdCommentRules"
+			value      	("ModelIdCommentRulesSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentRules"
+			value      	("CommentRulesSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"PageWidth"
+			value      	80)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ClassMemberOrder"
+			value      	("MemberOrderSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"OneParameterPerLine"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"NamespaceBraceStyle"
+			value      	("BraceStyleSet" 2))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ClassBraceStyle"
+			value      	("BraceStyleSet" 2))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"FunctionBraceStyle"
+			value      	("BraceStyleSet" 2))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentStyleProperty"
+			value      	("CommentStyleSet" 1))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Copyright"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"InitialHeaderIncludes"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"InitialBodyIncludes"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeGenExtraDirectoriesSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"None"
+				value      	0)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Namespaces"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Packages"
+				value      	2)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"FileCapitalizationSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Same as model"
+				value      	0)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Lower case"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Upper case"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Lower case with underscores"
+				value      	3)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentStyleSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"C++ Comment"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"C Comment"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"XML Comment"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"JavaDoc Comment"
+				value      	4)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"BraceStyleSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B1"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B2"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B3"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B4"
+				value      	4)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"B5"
+				value      	5)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"MemberOrderSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Public First"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Private First"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Order by kind"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Unordered"
+				value      	4)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ModelIdCommentRulesSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Code generation only"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Code generation and reverse engineering"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Never generate model IDs"
+				value      	3)))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CommentRulesSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Always synchronize"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Code generation only"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Reverse engineering only"
+				value      	3)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Never synchronize"
+				value      	4)))))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Param"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeName"
+			value      	"")))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Attribute"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Synchronize"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeName"
+			value      	"")))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Operation"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Synchronize"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeName"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"InitialCodeBody"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Inline"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"GenerateFunctionBody"
+			value      	("GenerateFunctionBodySet" 2))
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"GenerateFunctionBodySet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"Default"
+				value      	2)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"True"
+				value      	1)
+			    (object Attribute
+				tool       	"Cplusplus"
+				name       	"False"
+				value      	0)))))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"Synchronize"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeName"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"ImplementationType"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"HeaderSourceFile"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"BodySourceFile"
+			value      	"")))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Category"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"CodeName"
+			value      	"")
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"IsNamespace"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"default__Uses"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Cplusplus"
+			name       	"BodyReferenceOnly"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Cplusplus"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"ANSIConvert"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"propertyId"
+		value      	"809135966")
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Project"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"CreateMissingDirectories"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"Editor"
+			value      	("EditorType" 100))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"IncludePath"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"StopOnError"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"EditorType"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"CORBA"
+				name       	"BuiltIn"
+				value      	100)
+			    (object Attribute
+				tool       	"CORBA"
+				name       	"WindowsShell"
+				value      	101)))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"PathSeparator"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"GenerateRoseID"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"NotShowRoseIDDlg"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"GenerateComments"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"UseTabs"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"UseSpaces"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"SpacingItems"
+			value      	4)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"BraceOnNewLine"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"FundamentalTypes"
+			value      	"short; long; long long; unsigned short; unsigned long; unsigned long long; float; double; long double; char; boolean; wchar; octet; any;string; wstring; sequence; fixed; Object")))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"ArrayDimensions"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"ConstValue"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"ImplementationType"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"IsLocal"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Module-Spec"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"AdditionalIncludes"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"CmIdentification"
+			value      	(value Text "  %X% %Q% %Z% %W%"))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"CopyrightNotice"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"InclusionProtectionSymbol"
+			value      	"AUTO GENERATE")))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Module-Body"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"AdditionalIncludes"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"CmIdentification"
+			value      	(value Text "  %X% %Q% %Z% %W%"))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"CopyrightNotice"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"InclusionProtectionSymbol"
+			value      	"AUTO GENERATE")))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Operation"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"Context"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"OperationIsOneWay"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Attribute"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"ArrayDimensions"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"CaseSpecifier"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"IsReadOnly"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"Order"
+			value      	"")))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Role"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"ArrayDimensions"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"CaseSpecifier"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"GenerateForwardReference"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"IsReadOnly"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"Order"
+			value      	"")
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"BoundedRoleType"
+			value      	("AssocTypeSet" 47))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"AssocTypeSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"CORBA"
+				name       	"Array"
+				value      	24)
+			    (object Attribute
+				tool       	"CORBA"
+				name       	"Sequence"
+				value      	47)))))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Uses"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"GenerateForwardReference"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"default__Param"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"Direction"
+			value      	("ParamDirectionTypeSet" 102))
+		    (object Attribute
+			tool       	"CORBA"
+			name       	"ParamDirectionTypeSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"CORBA"
+				name       	"in"
+				value      	102)
+			    (object Attribute
+				tool       	"CORBA"
+				name       	"inout"
+				value      	103)
+			    (object Attribute
+				tool       	"CORBA"
+				name       	"out"
+				value      	104)))))
+	    (object Attribute
+		tool       	"CORBA"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"Deploy"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"Java"
+		name       	"propertyId"
+		value      	"809135966")
+	    (object Attribute
+		tool       	"Java"
+		name       	"default__Project"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"RootDir"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"CreateMissingDirectories"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"StopOnError"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"UsePrefixes"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"AutoSync"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"NotShowRoseIDDlg"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ShowCodegenDlg"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateRoseID"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateDefaultJ2EEJavadoc"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateDefaultReturnLine"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocDefaultAuthor"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocDefaultVersion"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocDefaultSince"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"UserDefineJavaDocTags"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocNumAsterisks"
+			value      	0)
+		    (object Attribute
+			tool       	"Java"
+			name       	"MaxNumChars"
+			value      	80)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Editor"
+			value      	("EditorType" 100))
+		    (object Attribute
+			tool       	"Java"
+			name       	"VM"
+			value      	("VMType" 200))
+		    (object Attribute
+			tool       	"Java"
+			name       	"ClassPath"
+			value      	"D:\\Laptrinhjava\\GUIProject\\mysql-connector-j-8.4.0.jar")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ReferenceClasspath"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EditorType"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"BuiltIn"
+				value      	100)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"VMType"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"Sun"
+				value      	200)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"VAJavaWorkingFolder"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"InstanceVariablePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ClassVariablePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"DefaultAttributeDataType"
+			value      	"int")
+		    (object Attribute
+			tool       	"Java"
+			name       	"DefaultOperationReturnType"
+			value      	"void")
+		    (object Attribute
+			tool       	"Java"
+			name       	"NoClassCustomDlg"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GlobalImports"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Java"
+			name       	"OpenBraceClassStyle"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"OpenBraceMethodStyle"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"UseTabs"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"UseSpaces"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"SpacingItems"
+			value      	3)
+		    (object Attribute
+			tool       	"Java"
+			name       	"RoseDefaultCommentStyle"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"AsteriskCommentStyle"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavaCommentStyle"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocAuthor"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocSince"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocVersion"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"JavadocExceptionTag"
+			value      	"@throws")
+		    (object Attribute
+			tool       	"Java"
+			name       	"BeanPrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"BeanSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"RemotePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"RemoteSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"HomePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"HomeSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"LocalPrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"LocalSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"LocalHomePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"LocalHomeSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"PrimaryKeyPrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"PrimaryKeySuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBDTDLocation"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletDTDLocation"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"DefaultEJBVersion"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"DefaultServletVersion"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"SourceControl"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"SCCSelected"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"SCCProjectSourceRoot"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"SCCProjectName"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"SCCComment"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"FundamentalType"
+			value      	"boolean; char; byte; short; int; long; float; double; Boolean; Byte; Character; Double; Float; Integer; Long; Object; Short; String; StringBuffer; Void; java.math.BigDecimal; java.math.BigInteger; java.sql.Date; java.sql.Time; java.sql.Timestamp; java.util.AbstractCollection; java.util.AbstractList;java.util.AbstractMap; java.util.AbstractSequentialList; java.util.AbstractSet; java.util.ArrayList; java.util.Arrays; java.util.BitSet; java.util.Calendar; java.util.Collections; java.util.Date; java.util.Date; java.util.Dictionary; java.util.EventObject; java.util.GregorianCalendar; java.util.HashMap; java.util.HashSet; java.util.Hashtable; java.util.LinkedList; java.util.ListResourceBundle; java.util.Locale; java.util.Observable; java.util.Properties; java.util.PropertyPermission; java.util.PropertyResourceBundle; java.util.Random; java.util.ResourceBundle; java.util.SimpleTimeZone; java.util.Stack; java.util.StringTokenizer; java.util.Timer; java.util.TimerTask; java.util.TimeZone; java.util.TreeMap; java.util.TreeSet; java.util.Vector; java.util.WeakHashMap;int; float; boolean; char; double; short; long; byte; ;Boolean; Byte; Character; Double; Float; Integer; Long; Object; Short; String; StringBuffer; Void; java.math.BigDecimal; java.math.BigInteger; java.sql.Date; java.sql.Time; java.sql.Timestamp; ;java.util.AbstractCollection; java.util.AbstractList; java.util.AbstractMap; java.util.AbstractSequentialList; java.util.AbstractSet; java.util.ArrayList; java.util.Arrays; java.util.BitSet; java.util.Calendar; java.util.Collections; java.util.Date; java.util.Dictionary; java.util.EventObject; java.util.GregorianCalendar; java.util.HashMap; java.util.HashSet; java.util.Hashtable; java.util.LinkedList; java.util.ListResourceBundle; java.util.Locale; java.util.Observable; java.util.Properties; java.util.PropertyPermission; java.util.PropertyResourceBundle; java.util.Random; java.util.ResourceBundle; java.util.ArrayList; java.util.SimpleTimeZone; java.util.Stack; java.util.StringTokenizer; java.util.Timer; java.util.TimerTask; java.util.TimerTask; java.util.TimeZone; java.util.TreeMap; java.util.TreeSet; java.util.Vector; java.util.WeakHashMap; ")))
+	    (object Attribute
+		tool       	"Java"
+		name       	"default__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"Final"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Static"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateDefaultConstructor"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ConstructorIs"
+			value      	("Ctor_Set" 62))
+		    (object Attribute
+			tool       	"Java"
+			name       	"Ctor_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"public"
+				value      	62)
+			    (object Attribute
+				tool       	"Java"
+				name       	"protected"
+				value      	63)
+			    (object Attribute
+				tool       	"Java"
+				name       	"private"
+				value      	64)
+			    (object Attribute
+				tool       	"Java"
+				name       	"package"
+				value      	65)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateFinalizer"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateStaticInitializer"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateInstanceInitializer"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateCode"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"DisableAutoSync"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ReadOnly"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Strictfp"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Java"
+		name       	"Default_Servlet__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletName"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletContextRef"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"IsSingleThread"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletInitParameter"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletInitParameterNames"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletIsSecure"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletRequestDispatcher"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletRequestDispatcherPath"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"DispatcherInclude"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"DispatcherForward"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletSecurityRoles"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletgetInfo"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletXMLFilePath"
+			value      	"")))
+	    (object Attribute
+		tool       	"Java"
+		name       	"Http_Servlet__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletRequestAttribute"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletRequestAttributesNames"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"MethodForRequestAttributes"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletRequestParameter"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletRequestParameterNames"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"MethodForRequestParameters"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletHeader"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletHeaderNames"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"MethodForHeaders"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletIntHeader"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletDateHeader"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletCookie"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"MethodForCookie"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"ServletContentType"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateHTML"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Java"
+		name       	"Default_EJB__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"Generate_XML_DD"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBCmpField"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBEnvironmentProperties"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBCnxFactory"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBReferences"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBSecurityRoles"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBNameInJAR"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBSessionType"
+			value      	("EJBSessionType_Set" 200))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBSessionType_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	""
+				value      	200)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Stateless"
+				value      	201)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Stateful"
+				value      	202)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBTransactionType"
+			value      	("EJBTransactionType_Set" 211))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBTransactionType_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"Container"
+				value      	211)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Bean"
+				value      	212)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBPersistenceType"
+			value      	("EJBPersistenceType_Set" 220))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBPersistenceType_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	""
+				value      	220)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Bean"
+				value      	221)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Container"
+				value      	222)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBReentrant"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBSessionSync"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBVersion"
+			value      	("EJBVersion_Set" 230))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBVersion_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"2.0"
+				value      	230)
+			    (object Attribute
+				tool       	"Java"
+				name       	"1.x"
+				value      	231)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"EJBXMLFilePath"
+			value      	"")))
+	    (object Attribute
+		tool       	"Java"
+		name       	"default__Module-Spec"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"CmIdentification"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Java"
+			name       	"CopyrightNotice"
+			value      	(value Text ""))))
+	    (object Attribute
+		tool       	"Java"
+		name       	"default__Module-Body"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"CmIdentification"
+			value      	(value Text ""))
+		    (object Attribute
+			tool       	"Java"
+			name       	"CopyrightNotice"
+			value      	(value Text ""))))
+	    (object Attribute
+		tool       	"Java"
+		name       	"default__Operation"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"Abstract"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Static"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Final"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Native"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Synchronized"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateFullyQualifiedReturn"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"ReplaceExistingCode"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Strictfp"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Java"
+		name       	"default__Attribute"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"Final"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Transient"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Volatile"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"PropertyType"
+			value      	("BeanProperty_Set" 71))
+		    (object Attribute
+			tool       	"Java"
+			name       	"BeanProperty_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"Not A Property"
+				value      	71)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Simple"
+				value      	72)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Bound"
+				value      	73)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Constrained"
+				value      	74)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"IndividualChangeMgt"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Read/Write"
+			value      	("Read/Write_Set" 81))
+		    (object Attribute
+			tool       	"Java"
+			name       	"Read/Write_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"Read & Write"
+				value      	81)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Read Only"
+				value      	82)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Write Only"
+				value      	83)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateFullyQualifiedTypes"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Java"
+		name       	"default__Role"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Java"
+			name       	"ContainerClass"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"InitialValue"
+			value      	"")
+		    (object Attribute
+			tool       	"Java"
+			name       	"Final"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Transient"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Volatile"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"PropertyType"
+			value      	("BeanProperty_Set" 71))
+		    (object Attribute
+			tool       	"Java"
+			name       	"BeanProperty_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"Not A Property"
+				value      	71)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Simple"
+				value      	72)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Bound"
+				value      	73)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Constrained"
+				value      	74)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"IndividualChangeMgt"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"Read/Write"
+			value      	("Read/Write_Set" 81))
+		    (object Attribute
+			tool       	"Java"
+			name       	"Read/Write_Set"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Java"
+				name       	"Read & Write"
+				value      	81)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Read Only"
+				value      	82)
+			    (object Attribute
+				tool       	"Java"
+				name       	"Write Only"
+				value      	83)))
+		    (object Attribute
+			tool       	"Java"
+			name       	"GenerateFullyQualifiedTypes"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Java"
+			name       	"IsNavigable"
+			value      	TRUE)))
+	    (object Attribute
+		tool       	"Java"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"propertyId"
+		value      	"360000002")
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"default__Project"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"DDLScriptFilename"
+			value      	"DDL1.SQL")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"DropClause"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"PrimaryKeyColumnName"
+			value      	"_ID")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"PrimaryKeyColumnType"
+			value      	"NUMBER(5,0)")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"SchemaNamePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"SchemaNameSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TableNamePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TableNameSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TypeNamePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TypeNameSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"ViewNamePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"ViewNameSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"VarrayNamePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"VarrayNameSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"NestedTableNamePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"NestedTableNameSuffix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"ObjectTableNamePrefix"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"ObjectTableNameSuffix"
+			value      	"")))
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"default__Module-Spec"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsSchema"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"default__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"OID"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"WhereClause"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"CheckConstraint"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"CollectionTypeLength"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"CollectionTypePrecision"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"CollectionTypeScale"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"CollectionOfREFS"
+			value      	FALSE)))
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"default__Operation"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"MethodKind"
+			value      	("MethodKindSet" 1903))
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"OverloadID"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"OrderNumber"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsReadNoDataState"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsReadNoProcessState"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsWriteNoDataState"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsWriteNoProcessState"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsSelfish"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerType"
+			value      	("TriggerTypeSet" 1801))
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerEvent"
+			value      	("TriggerEventSet" 1601))
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerText"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerReferencingNames"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerForEach"
+			value      	("TriggerForEachSet" 1701))
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerWhenClause"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"MethodKindSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"MapMethod"
+				value      	1901)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"OrderMethod"
+				value      	1902)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"Function"
+				value      	1903)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"Procedure"
+				value      	1904)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"Operator"
+				value      	1905)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"Constructor"
+				value      	1906)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"Destructor"
+				value      	1907)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"Trigger"
+				value      	1908)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"Calculated"
+				value      	1909)))
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerTypeSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"AFTER"
+				value      	1801)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"BEFORE"
+				value      	1802)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"INSTEAD OF"
+				value      	1803)))
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerForEachSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"ROW"
+				value      	1701)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"STATEMENT"
+				value      	1702)))
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"TriggerEventSet"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"INSERT"
+				value      	1601)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"UPDATE"
+				value      	1602)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"DELETE"
+				value      	1603)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"INSERT OR UPDATE"
+				value      	1604)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"INSERT OR DELETE"
+				value      	1605)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"UPDATE OR DELETE"
+				value      	1606)
+			    (object Attribute
+				tool       	"Oracle8"
+				name       	"INSERT OR UPDATE OR DELETE"
+				value      	1607)))))
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"default__Role"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"OrderNumber"
+			value      	"")))
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"default__Attribute"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"OrderNumber"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsUnique"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"NullsAllowed"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"Length"
+			value      	"")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"Precision"
+			value      	"2")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"Scale"
+			value      	"6")
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsIndex"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"IsPrimaryKey"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"CompositeUnique"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"Oracle8"
+			name       	"CheckConstraint"
+			value      	"")))
+	    (object Attribute
+		tool       	"Oracle8"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"Rose Model Integrator"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"Rose Web Publisher"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"TopLink"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"COM"
+		name       	"propertyId"
+		value      	"783606378")
+	    (object Attribute
+		tool       	"COM"
+		name       	"default__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"COM"
+			name       	"TypeKinds"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"COM"
+				name       	"enum"
+				value      	100)
+			    (object Attribute
+				tool       	"COM"
+				name       	"record"
+				value      	101)
+			    (object Attribute
+				tool       	"COM"
+				name       	"module"
+				value      	102)
+			    (object Attribute
+				tool       	"COM"
+				name       	"interface"
+				value      	103)
+			    (object Attribute
+				tool       	"COM"
+				name       	"dispinterface"
+				value      	104)
+			    (object Attribute
+				tool       	"COM"
+				name       	"coclass"
+				value      	105)
+			    (object Attribute
+				tool       	"COM"
+				name       	"alias"
+				value      	106)
+			    (object Attribute
+				tool       	"COM"
+				name       	"union"
+				value      	107)
+			    (object Attribute
+				tool       	"COM"
+				name       	"max"
+				value      	108)
+			    (object Attribute
+				tool       	"COM"
+				name       	"(none)"
+				value      	109)))
+		    (object Attribute
+			tool       	"COM"
+			name       	"Generate"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"COM"
+			name       	"kind"
+			value      	("TypeKinds" 109))
+		    (object Attribute
+			tool       	"COM"
+			name       	"uuid"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"version"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"helpstring"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"helpcontext"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"attributes"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"dllname"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"alias"
+			value      	"")))
+	    (object Attribute
+		tool       	"COM"
+		name       	"default__Operation"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"COM"
+			name       	"Generate"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"COM"
+			name       	"id"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"helpstring"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"attributes"
+			value      	"")))
+	    (object Attribute
+		tool       	"COM"
+		name       	"default__Attribute"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"COM"
+			name       	"Generate"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"COM"
+			name       	"id"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"helpstring"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"attributes"
+			value      	"")))
+	    (object Attribute
+		tool       	"COM"
+		name       	"default__Module-Spec"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"COM"
+			name       	"Generate"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"COM"
+			name       	"filename"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"library"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"uuid"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"version"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"helpstring"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"helpfile"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"helpcontext"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"lcid"
+			value      	"")
+		    (object Attribute
+			tool       	"COM"
+			name       	"attributes"
+			value      	"")))
+	    (object Attribute
+		tool       	"COM"
+		name       	"default__Param"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"COM"
+			name       	"attributes"
+			value      	"")))
+	    (object Attribute
+		tool       	"COM"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"Version Control"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"VisualStudio"
+		name       	"HiddenTool"
+		value      	FALSE)
+	    (object Attribute
+		tool       	"XML_DTD"
+		name       	"propertyId"
+		value      	"809135966")
+	    (object Attribute
+		tool       	"XML_DTD"
+		name       	"default__Project"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"CreateMissingDirectories"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"Editor"
+			value      	("EditorType" 100))
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"StopOnError"
+			value      	TRUE)
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"EditorType"
+			value      	(list Attribute_Set
+			    (object Attribute
+				tool       	"XML_DTD"
+				name       	"BuiltIn"
+				value      	100)
+			    (object Attribute
+				tool       	"XML_DTD"
+				name       	"WindowsShell"
+				value      	101)))))
+	    (object Attribute
+		tool       	"XML_DTD"
+		name       	"default__Class"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"Entity_SystemID"
+			value      	"")
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"Entity_PublicID"
+			value      	"")
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"NotationValue"
+			value      	"")
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"InternalValue"
+			value      	"")
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"ParameterEntity"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"ExternalEntity"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"Notation_SystemID"
+			value      	"")
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"Notation_PublicID"
+			value      	"")))
+	    (object Attribute
+		tool       	"XML_DTD"
+		name       	"default__Attribute"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"DefaultDeclType"
+			value      	"")))
+	    (object Attribute
+		tool       	"XML_DTD"
+		name       	"default__Module-Spec"
+		value      	(list Attribute_Set
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"Assign All"
+			value      	FALSE)
+		    (object Attribute
+			tool       	"XML_DTD"
+			name       	"ComponentPath"
+			value      	"")))
+	    (object Attribute
+		tool       	"XML_DTD"
+		name       	"HiddenTool"
+		value      	FALSE))
+	quid       	"5CC76A0F0361"))

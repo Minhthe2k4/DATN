@@ -1,40 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { users } from '../../data/adminData'
-import {
-  AdminPageHeader,
-  AdminSectionCard,
-  Badge,
-  FilterTabs,
-  SimpleTable,
-  StatGrid,
-  Pagination,
-} from '../../components/console/AdminUi'
+import { AdminPageHeader } from '../../components/console/AdminUi'
+import { Search } from 'lucide-react'
 import { usePagination } from '../../hooks/usePagination'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { 
+  fetchUsers, 
+  normalizeUserRow 
+} from './utils/userUtils'
 
-function formatDate(value) {
-  if (!value) return '---'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '---'
-  return date.toLocaleDateString('vi-VN')
-}
-
-function normalizeUserRow(row) {
-  return {
-    id: row.id,
-    username: row.username ?? '',
-    email: row.email ?? '',
-    fullname: row.fullname ?? '',
-    role: row.role ?? 'USER',
-    createdAt: formatDate(row.createdAt),
-    status: row.status ?? (row.isActive ? 'Hoạt động' : 'Bị khóa'),
-    isActive: Boolean(row.isActive),
-    premium: row.premium ? 'Premium' : 'Thường',
-    avatar: row.avatar ?? '',
-  }
-}
+import { UserStats } from './components/UserStats'
+import { UserDashboardCharts } from './components/UserDashboardCharts'
+import { UserTable } from './components/UserTable'
 
 export function UserManagement() {
   const [rows, setRows] = useState(users)
@@ -45,11 +22,9 @@ export function UserManagement() {
 
   useEffect(() => {
     let disposed = false
-    async function loadUsers() {
+    async function loadData() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/users`)
-        if (!response.ok) throw new Error('Cannot fetch users')
-        const payload = await response.json()
+        const payload = await fetchUsers()
         if (disposed) return
         setRows(Array.isArray(payload) ? payload.map(normalizeUserRow) : users)
         setLoadError('')
@@ -61,7 +36,7 @@ export function UserManagement() {
         if (!disposed) setIsLoading(false)
       }
     }
-    loadUsers()
+    loadData()
     return () => { disposed = true }
   }, [])
 
@@ -78,12 +53,25 @@ export function UserManagement() {
 
   const pagination = usePagination(filteredUsers, 10)
 
-  const stats = [
-    { label: 'Tổng số tài khoản', value: rows.length.toString(), meta: 'Toàn bộ hệ thống', icon: 'iconoir-community' },
-    { label: 'Đang hoạt động', value: rows.filter((user) => user.isActive).length.toString(), meta: 'Có thể đăng nhập', icon: 'iconoir-check-circle' },
-    { label: 'Bị khóa', value: rows.filter((user) => !user.isActive).length.toString(), meta: 'Tài khoản tạm ngừng', icon: 'iconoir-lock' },
-    { label: 'Premium', value: rows.filter((user) => user.premium === 'Premium').length.toString(), meta: 'Gói nâng cao', icon: 'iconoir-star' },
-  ]
+  const newestUsers = useMemo(() => {
+    return [...rows].sort((a, b) => new Date(b.rawCreatedAt || 0) - new Date(a.rawCreatedAt || 0)).slice(0, 5)
+  }, [rows])
+
+  const premiumData = useMemo(() => {
+    const premiumCount = rows.filter(u => u.premium === 'Premium').length
+    return [
+      { name: 'Premium', count: premiumCount },
+      { name: 'Free', count: rows.length - premiumCount }
+    ]
+  }, [rows])
+
+  const statusData = useMemo(() => {
+    const activeCount = rows.filter(u => u.isActive).length
+    return [
+      { name: 'Hoạt động', count: activeCount },
+      { name: 'Bị khóa', count: rows.length - activeCount }
+    ]
+  }, [rows])
 
   return (
     <div className="page-content">
@@ -93,9 +81,15 @@ export function UserManagement() {
           title="Quản lý người dùng"
           description="Quản lý tài khoản người dùng, phân quyền và trạng thái hoạt động."
           actions={
-            <div className="admin-topbar-search">
+            <div className="admin-topbar-search position-relative">
+              <Search 
+                size={16} 
+                className="position-absolute" 
+                style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} 
+              />
               <input
                 className="admin-input"
+                style={{ paddingLeft: '36px' }}
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -105,67 +99,24 @@ export function UserManagement() {
           }
         />
 
-        <StatGrid items={stats} />
+        <UserStats rows={rows} />
 
         {isLoading && <div className="alert alert-info mt-3">Đang tải dữ liệu người dùng...</div>}
         {loadError && <div className="alert alert-warning mt-3">{loadError}</div>}
 
-        <div className="row g-3 mt-1">
+        <UserDashboardCharts 
+          newestUsers={newestUsers} 
+          premiumData={premiumData} 
+          statusData={statusData} 
+        />
+
+        <div className="row g-3 mt-3">
           <div className="col-12">
-            <AdminSectionCard
-              title="Danh sách người dùng"
-              description="Tra cứu và xử lý tài khoản theo trạng thái hoạt động."
-              actions={<FilterTabs items={['Tất cả', 'Hoạt động', 'Bị khóa']} active={activeFilter} onChange={setActiveFilter} />}
-            >
-              <SimpleTable
-                columns={[
-                  { 
-                    key: 'avatar', 
-                    label: 'Ảnh',
-                    render: (row) => (
-                      <img 
-                        src={row.avatar || 'https://via.placeholder.com/32'} 
-                        alt="Avatar" 
-                        className="rounded-circle border" 
-                        style={{ width: '32px', height: '32px', objectFit: 'cover' }} 
-                      />
-                    )
-                  },
-                  { key: 'username', label: 'Username' },
-                  { key: 'email', label: 'Email' },
-                  { key: 'fullname', label: 'Họ tên' },
-                  { key: 'createdAt', label: 'Ngày tạo' },
-                  {
-                    key: 'role',
-                    label: 'Vai trò',
-                    render: (row) => <Badge tone={row.role === 'ADMIN' ? 'danger' : 'info'}>{row.role}</Badge>,
-                  },
-                  {
-                    key: 'status',
-                    label: 'Trạng thái',
-                    render: (row) => <Badge tone={row.isActive ? 'success' : 'danger'}>{row.status}</Badge>,
-                  },
-                  {
-                    key: 'actions',
-                    label: 'Hành động',
-                    render: (row) => (
-                      <div className="d-flex flex-nowrap gap-2">
-                        <Link to={`/admin/users/${row.id}`} className="btn btn-sm btn-soft-info">Chi tiết</Link>
-                        <Link to={`/admin/users/${row.id}/edit`} className="btn btn-sm btn-soft-primary">Sửa</Link>
-                        <Link to={`/admin/users/${row.id}/delete`} className="btn btn-sm btn-soft-danger">Xóa</Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                rows={pagination.paginatedData}
-                emptyMessage="Không tìm thấy người dùng phù hợp."
-              />
-              <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={pagination.handlePageChange}
-              />
-            </AdminSectionCard>
+            <UserTable 
+              pagination={pagination} 
+              activeFilter={activeFilter} 
+              setActiveFilter={setActiveFilter} 
+            />
           </div>
         </div>
       </div>

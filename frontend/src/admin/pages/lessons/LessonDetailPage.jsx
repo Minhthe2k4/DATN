@@ -1,20 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard, Badge } from '../../components/console/AdminUi'
+import { 
+  Star, 
+  Edit, 
+  Trash2, 
+  ArrowLeft 
+} from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../../utils/api'
+import { formatDateTime } from './utils/lessonUtils'
 
-function formatDate(dateString) {
-  if (!dateString) return 'Chưa có'
-  const date = new Date(dateString)
-  return date.toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 export function LessonDetailPage() {
   const { id } = useParams()
@@ -27,12 +23,12 @@ export function LessonDetailPage() {
     let isDisposed = false
     async function loadData() {
       try {
-        const lessonRes = await fetch(`${API_BASE_URL}/api/admin/lessons/${id}`)
+        const lessonRes = await adminFetch(`/api/admin/lessons/${id}`)
         if (!lessonRes.ok) throw new Error(`Cannot fetch lesson ${id}`)
         const lessonData = await lessonRes.json()
         
         if (lessonData.topicId) {
-          const topicRes = await fetch(`${API_BASE_URL}/api/admin/topics/${lessonData.topicId}`)
+          const topicRes = await adminFetch(`/api/admin/topics/${lessonData.topicId}`)
           if (topicRes.ok) {
             const topicData = await topicRes.json()
             setTopic(topicData)
@@ -61,7 +57,11 @@ export function LessonDetailPage() {
           eyebrow="Lesson Management"
           title={`Chi tiết bài học: ${lesson.name}`}
           description="Xem chi tiết cấu hình, chủ đề và thời gian cập nhật của bài học."
-          actions={<Link to="/admin/lessons" className="btn btn-outline-secondary">Quay lại danh sách</Link>}
+          actions={
+            <Link to="/admin/lessons" className="btn btn-outline-secondary d-flex align-items-center gap-2">
+              <ArrowLeft size={18} /> Quay lại danh sách
+            </Link>
+          }
         />
 
         <div className="row mt-4">
@@ -95,7 +95,13 @@ export function LessonDetailPage() {
                     <tr>
                       <th className="bg-light">Loại nội dung</th>
                       <td>
-                        {lesson.isPremium ? <Badge tone="info">👑 Premium</Badge> : <Badge tone="neutral">Mọi người</Badge>}
+                        {lesson.isPremium ? (
+                          <Badge tone="info">
+                            <Star size={12} className="me-1" /> Premium
+                          </Badge>
+                        ) : (
+                          <Badge tone="neutral">Mọi người</Badge>
+                        )}
                       </td>
                     </tr>
                     <tr>
@@ -106,22 +112,26 @@ export function LessonDetailPage() {
                     </tr>
                     <tr>
                       <th className="bg-light">Ngày tạo</th>
-                      <td>{formatDate(lesson.createdAt)}</td>
+                      <td>{formatDateTime(lesson.createdAt)}</td>
                     </tr>
                     <tr>
                       <th className="bg-light">Cập nhật cuối</th>
-                      <td>{formatDate(lesson.updatedAt)}</td>
+                      <td>{formatDateTime(lesson.updatedAt)}</td>
                     </tr>
                     <tr>
                       <th className="bg-light">Ngày xóa</th>
-                      <td>{lesson.deletedAt ? formatDate(lesson.deletedAt) : 'Chưa xóa'}</td>
+                      <td>{lesson.deletedAt ? formatDateTime(lesson.deletedAt) : 'Chưa xóa'}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              <div className="mt-3">
-                <Link to={`/admin/lessons/${lesson.id}/edit`} className="btn btn-primary me-2">Chỉnh sửa</Link>
-                <Link to={`/admin/lessons/${lesson.id}/delete`} className="btn btn-danger">Xóa bài học</Link>
+              <div className="mt-3 d-flex gap-2">
+                <Link to={`/admin/lessons/${lesson.id}/edit`} className="btn btn-primary d-flex align-items-center gap-2">
+                  <Edit size={18} /> Chỉnh sửa
+                </Link>
+                <Link to={`/admin/lessons/${lesson.id}/delete`} className="btn btn-danger d-flex align-items-center gap-2">
+                  <Trash2 size={18} /> Xóa bài học
+                </Link>
               </div>
             </AdminSectionCard>
           </div>

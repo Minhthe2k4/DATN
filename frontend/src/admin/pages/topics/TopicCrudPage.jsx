@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
+import { modal } from '../../../utils/modalUtils'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../../utils/api'
 const DIFFICULTY_OPTIONS = ['Dễ', 'Trung bình', 'Khó']
 const STATUS_OPTIONS = ['Hoạt động', 'Tạm dừng']
+
+import { TopicForm } from './components/TopicForm'
+import { TopicDeleteConfirmation } from './components/TopicDeleteConfirmation'
 
 export function TopicCrudPage({ mode }) {
   const navigate = useNavigate()
@@ -16,10 +20,8 @@ export function TopicCrudPage({ mode }) {
     status: 'Hoạt động',
     topicImage: '',
   })
-  
+
   const [isLoading, setIsLoading] = useState(mode !== 'create')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   useEffect(() => {
     if (mode === 'create') return
@@ -27,10 +29,10 @@ export function TopicCrudPage({ mode }) {
     let isDisposed = false
     async function loadTopic() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/topics/${id}`)
+        const response = await adminFetch(`/api/admin/topics/${id}`)
         if (!response.ok) throw new Error(`Cannot fetch topic ${id}`)
         const payload = await response.json()
-        
+
         if (!isDisposed) {
           setFormValues({
             name: payload.name || '',
@@ -40,7 +42,7 @@ export function TopicCrudPage({ mode }) {
           })
         }
       } catch (err) {
-        if (!isDisposed) setError('Không thể tải chủ đề từ backend.')
+        if (!isDisposed) modal.error('Không thể tải chủ đề từ backend.')
       } finally {
         if (!isDisposed) setIsLoading(false)
       }
@@ -64,44 +66,40 @@ export function TopicCrudPage({ mode }) {
 
   const submit = async (force = false) => {
     if (mode !== 'delete') {
-      if (!formValues.name.trim()) { setError('Vui lòng nhập Tên chủ đề.'); return }
-      if (!formValues.description.trim()) { setError('Vui lòng nhập Mô tả.'); return }
+      if (!formValues.name.trim()) { modal.warning('Vui lòng nhập Tên chủ đề.'); return }
+      if (!formValues.description.trim()) { modal.warning('Vui lòng nhập Mô tả.'); return }
     }
 
-    setError('')
     try {
       if (mode === 'create') {
-        const res = await fetch(`${API_BASE_URL}/api/admin/topics`, {
+        const res = await adminFetch(`/api/admin/topics`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formValues),
         })
         if (!res.ok) throw new Error(await extractError(res, 'Tạo mới thất bại'))
-        setSuccess('Đã tạo chủ đề thành công.')
-        window.setTimeout(() => navigate('/admin/topics'), 1500)
+        modal.success('Đã tạo chủ đề thành công.')
+        navigate('/admin/topics')
         return
       }
 
       if (mode === 'edit') {
-        const res = await fetch(`${API_BASE_URL}/api/admin/topics/${id}`, {
+        const res = await adminFetch(`/api/admin/topics/${id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formValues),
         })
         if (!res.ok) throw new Error(await extractError(res, 'Cập nhật thất bại'))
-        setSuccess('Đã cập nhật chủ đề thành công.')
-        window.setTimeout(() => navigate('/admin/topics'), 1500)
+        modal.success('Đã cập nhật chủ đề thành công.')
+        navigate('/admin/topics')
         return
       }
 
       // Mode: Delete
-      const res = await fetch(`${API_BASE_URL}/api/admin/topics/${id}${force ? '?force=true' : ''}`, { method: 'DELETE' })
+      const res = await adminFetch(`/api/admin/topics/${id}${force ? '?force=true' : ''}`, { method: 'DELETE' })
       if (!res.ok && res.status !== 204) throw new Error(await extractError(res, 'Xóa thất bại'))
-      setSuccess(force ? 'Đã xóa vĩnh viễn chủ đề.' : 'Đã xóa tạm thời chủ đề.')
-      window.setTimeout(() => navigate('/admin/topics'), 1500)
+      modal.success(force ? 'Đã xóa vĩnh viễn chủ đề.' : 'Đã xóa tạm thời chủ đề.')
+      navigate('/admin/topics')
     } catch (err) {
-      setSuccess('')
-      setError(err.message || 'Thao tác thất bại. Vui lòng thử lại.')
+      modal.error(err.message || 'Thao tác thất bại. Vui lòng thử lại.')
     }
   }
 
@@ -123,50 +121,19 @@ export function TopicCrudPage({ mode }) {
           <div className="col-12">
             <AdminSectionCard title={title}>
               {mode === 'delete' ? (
-                <div>
-                  <div className="alert alert-danger">
-                    Bạn đang chuẩn bị xóa chủ đề <strong>{formValues.name || id}</strong>.
-                    <br /><br />
-                    - <strong>Xóa tạm thời:</strong> Chủ đề sẽ được chuyển sang trạng thái "Tạm dừng" và ẩn khỏi website của người học, nhưng dữ liệu vẫn được giữ lại để quản lý.
-                    <br />
-                    - <strong>Xóa vĩnh viễn:</strong> Toàn bộ thông tin về chủ đề này sẽ bị xóa bỏ hoàn toàn khỏi hệ thống.
-                  </div>
-                  <div className="d-flex gap-2">
-                    <button className="btn btn-warning" onClick={() => submit(false)}>Xóa tạm thời</button>
-                    <button className="btn btn-danger" onClick={() => submit(true)}>Xóa vĩnh viễn</button>
-                    <Link to="/admin/topics" className="btn btn-outline-secondary">Hủy</Link>
-                  </div>
-                </div>
+                <TopicDeleteConfirmation 
+                  topicName={formValues.name} 
+                  topicId={id} 
+                  onConfirm={submit} 
+                />
               ) : (
-                <form onSubmit={e => { e.preventDefault(); submit() }}>
-                  <div className="row g-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Tên chủ đề <span className="text-danger">*</span></label>
-                      <input className="form-control" value={formValues.name} onChange={e => handleFieldChange('name', e.target.value)} />
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Trạng thái <span className="text-danger">*</span></label>
-                      <select className="form-select" value={formValues.status} onChange={e => handleFieldChange('status', e.target.value)}>
-                        {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Ảnh chủ đề (URL)</label>
-                      <input className="form-control" value={formValues.topicImage} onChange={e => handleFieldChange('topicImage', e.target.value)} />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label fw-semibold">Mô tả <span className="text-danger">*</span></label>
-                      <textarea className="form-control" rows="3" value={formValues.description} onChange={e => handleFieldChange('description', e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="d-flex gap-2 mt-4">
-                    <button type="submit" className="btn btn-primary">{mode === 'create' ? 'Tạo mới' : 'Lưu thay đổi'}</button>
-                    <Link to="/admin/topics" className="btn btn-outline-secondary">Hủy</Link>
-                  </div>
-                </form>
+                <TopicForm 
+                  formValues={formValues} 
+                  handleFieldChange={handleFieldChange} 
+                  onSubmit={submit} 
+                  mode={mode} 
+                />
               )}
-              {error && <div className="text-danger mt-3">{error}</div>}
-              {success && <div className="text-success mt-3">{success}</div>}
             </AdminSectionCard>
           </div>
         </div>

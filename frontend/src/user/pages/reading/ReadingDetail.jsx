@@ -1,180 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import axios from 'axios'
-import { getUserSession, getAuthHeader } from '../../utils/authSession'
+import { getUserSession } from '../../utils/authSession'
 import { usePremiumStatus } from '../../../hooks/usePremiumStatus'
-import FavoriteButton from '../../components/interaction/FavoriteButton'
-import ProgressBar from '../../components/interaction/ProgressBar'
-import HighlightWrapper from '../../components/interaction/HighlightWrapper'
 import './readingDetail.css'
 import '../../components/interaction/interaction.css'
+import {
+    estimateMinutes,
+    normalizeContentHtml,
+    tokenizeContentHtml,
+    cleanContextSentence,
+    extractSentence
+} from './utils'
+import { DictionaryModal } from './components/DictionaryModal'
+import { SaveVocabModal } from './components/SaveVocabModal'
+import { ReadingDetailHero } from './components/ReadingDetailHero'
 
-const FALLBACK_ARTICLE_IMAGE = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80'
+// Custom Hooks
+import { useArticleData } from './hooks/useArticleData'
+import { useArticleProgress } from './hooks/useArticleProgress'
+import { useDictionaryLookup } from './hooks/useDictionaryLookup'
 
-function normalizeArticle(row) {
-    return {
-        id: Number(row?.id),
-        topicId: Number(row?.topicId),
-        topicName: row?.topicName || 'Khong ro chu de',
-        topicImage: row?.topicImage || '',
-        title: row?.title || 'Bai viet chua co tieu de',
-        content: row?.content || '',
-        source: row?.source || 'Nguon noi bo',
-        createdAt: row?.createdAt || row?.created_at || null,
-        difficulty: row?.difficulty || 'Trung binh',
-        wordsHighlighted: Number(row?.wordsHighlighted || row?.words_highlighted || 0),
-        articleImage: row?.articleImage || row?.article_image || '',
-    }
-}
-
-function formatDate(value) {
-    if (!value) return 'Moi cap nhat'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return 'Moi cap nhat'
-    return date.toLocaleString('vi-VN')
-}
-
-function estimateMinutes(content) {
-    if (!content) return 1
-    const words = content
-        .replace(/<[^>]+>/g, ' ')
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean).length
-    return Math.max(1, Math.ceil(words / 180))
-}
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-}
-
-function normalizeContentHtml(content) {
-    const raw = String(content ?? '').trim()
-    if (!raw) {
-        return ''
-    }
-
-    const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw)
-    const html = hasHtml
-        ? raw
-        : raw
-            .split(/\n{2,}/)
-            .map((paragraph) => paragraph.trim())
-            .filter(Boolean)
-            .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
-            .join('')
-
-    // Remove obvious dangerous tags/attributes before rendering.
-    return html
-        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
-        .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
-        .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
-        .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
-        .replace(/javascript:/gi, '')
-}
-
-function normalizeWordToken(value) {
-    return String(value ?? '')
-        .toLowerCase()
-        .replace(/^[^\p{L}]+/u, '')
-        .replace(/[^\p{L}'-]+$/u, '')
-        .trim()
-}
-
-function tokenizeContentHtml(html, activeWord, savedVocab = []) {
-    if (!html) {
-        return ''
-    }
-
-    if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
-        return html
-    }
-
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html')
-    const root = doc.body.firstElementChild
-    if (!root) {
-        return html
-    }
-
-    const textNodes = []
-    const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-    let current = walker.nextNode()
-    while (current) {
-        const parentTag = current.parentElement?.tagName?.toLowerCase() || ''
-        if (!['script', 'style', 'code', 'pre'].includes(parentTag) && current.nodeValue?.trim()) {
-            textNodes.push(current)
-        }
-        current = walker.nextNode()
-    }
-
-    // Sort vocab by length descending for better matching
-    const sortedVocab = [...savedVocab].sort((a, b) => (b.word || '').length - (a.word || '').length)
-
-    textNodes.forEach((node) => {
-        const text = node.nodeValue || ''
-        const fragment = doc.createDocumentFragment()
-        const parts = text.split(/(\p{L}[\p{L}'-]*)/u)
-
-        parts.forEach((part) => {
-            if (!part) {
-                return
-            }
-
-            if (/^\p{L}[\p{L}'-]*$/u.test(part)) {
-                const word = normalizeWordToken(part)
-                if (!word) {
-                    fragment.appendChild(doc.createTextNode(part))
-                    return
-                }
-
-                const span = doc.createElement('span')
-                const isSaved = sortedVocab.find(v => (v.word || '').toLowerCase() === word)
-                
-                let className = 'reading-inline-word'
-                if (word === activeWord) className += ' is-context-word'
-                if (isSaved) className += ' highlighted-word'
-                
-                span.className = className
-                span.setAttribute('data-word', word)
-                span.textContent = part
-
-                if (isSaved) {
-                    const tooltip = doc.createElement('span')
-                    tooltip.className = 'vocab-tooltip'
-                    
-                    const tWord = doc.createElement('span')
-                    tWord.className = 'tooltip-word'
-                    tWord.textContent = `${isSaved.word} ${isSaved.pronunciation ? `[${isSaved.pronunciation}]` : ''}`
-                    
-                    const tMeaning = doc.createElement('span')
-                    tMeaning.className = 'tooltip-meaning'
-                    tMeaning.textContent = isSaved.meaningVi || isSaved.meaningEn
-                    
-                    tooltip.appendChild(tWord)
-                    tooltip.appendChild(tMeaning)
-                    span.appendChild(tooltip)
-                }
-
-                fragment.appendChild(span)
-            } else {
-                fragment.appendChild(doc.createTextNode(part))
-            }
-        })
-
-        node.replaceWith(fragment)
-    })
-
-    return root.innerHTML
-}
-
-function SpeakerIcon() {
+export function SpeakerIcon() {
     return (
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
             <path d="M11 5L6 9H2v6h4l5 4V5z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
@@ -183,190 +29,26 @@ function SpeakerIcon() {
     )
 }
 
-function cleanContextSentence(value) {
-    return String(value ?? '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 420)
-}
-
-function extractSentence(text, word) {
-    if (!text || !word) return text;
-    const lowerText = text.toLowerCase();
-    const lowerWord = word.toLowerCase();
-    const wordIndex = lowerText.indexOf(lowerWord);
-    if (wordIndex === -1) return text;
-
-    // Find the start of the sentence
-    let start = wordIndex;
-    while (start > 0) {
-        const char = text[start - 1];
-        const prevChar = start > 1 ? text[start - 2] : '';
-        // Sentence boundaries: . ! ? followed by space or end of string
-        if (/[.!?]/.test(prevChar) && /\s/.test(char)) break;
-        start--;
-    }
-
-    // Find the end of the sentence
-    let end = wordIndex + word.length;
-    while (end < text.length) {
-        const char = text[end];
-        if (/[.!?]/.test(char)) {
-            end++; // include the punctuation
-            break;
-        }
-        end++;
-    }
-
-    return text.substring(start, end).trim();
-}
-
 export function ReadingDetail() {
     const { topicId, articleId } = useParams()
     const session = getUserSession()
     const userId = session?.userId ? Number(session.userId) : null
     const premiumStatus = usePremiumStatus(userId)
 
-    const [article, setArticle] = useState(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [errorMessage, setErrorMessage] = useState('')
+    const { article, isLoading, errorMessage, savedVocab, fetchSavedVocab } = useArticleData(articleId, topicId, userId)
+    const { progressPercent } = useArticleProgress(articleId, article, userId)
     
-    // New interaction states
-    const [isFavorite, setIsFavorite] = useState(false)
-    const [progressPercent, setProgressPercent] = useState(0)
-    const [savedVocab, setSavedVocab] = useState([])
-    const [interactionLoading, setInteractionLoading] = useState(false)
-
-    const [lookupState, setLookupState] = useState({
-        open: false,
-        loading: false,
-        saving: false,
-        saveModalOpen: false,
-        saveDraft: null,
-        saveMessage: '',
-        saveError: '',
-        error: '',
-        word: '',
-        normalizedWord: '',
-        sentence: '',
-        response: null,
-        availableDecks: [],
-    })
-
-    useEffect(() => {
-        let mounted = true
-
-        Promise.resolve().then(() => {
-            if (!mounted) return
-            setIsLoading(true)
-            setErrorMessage('')
-        })
-
-        axios.get(`/api/article/${articleId}`)
-            .then((res) => {
-                if (!mounted) return
-                const data = normalizeArticle(res.data)
-                if (topicId && Number(topicId) !== data.topicId) {
-                    setErrorMessage('Bai viet khong thuoc chu de da chon.')
-                    setArticle(null)
-                    return
-                }
-                setArticle(data)
-                
-                // Fetch stats and vocab if user is logged in
-                if (userId) {
-                    fetchInteractionStats()
-                    fetchSavedVocab()
-                }
-            })
-            .catch(() => {
-                if (!mounted) return
-                setArticle(null)
-                setErrorMessage('Khong the tai noi dung bai viet. Vui long thu lai.')
-            })
-            .finally(() => {
-                if (mounted) setIsLoading(false)
-            })
-
-        return () => {
-            mounted = false
-        }
-    }, [articleId, topicId, userId])
-
-    // Interaction handlers
-    const fetchInteractionStats = async () => {
-        try {
-            const res = await axios.get('/api/user/interaction/stats', {
-                params: { targetId: articleId, targetType: 'ARTICLE' },
-                headers: getAuthHeader()
-            })
-            setIsFavorite(res.data.isFavorite)
-            setProgressPercent(res.data.progressPercent)
-        } catch (err) {
-            console.error('Failed to fetch stats:', err)
-        }
-    }
-
-    const fetchSavedVocab = async () => {
-        try {
-            const res = await axios.get('/api/user/vocab-custom/list', {
-                headers: getAuthHeader()
-            })
-            setSavedVocab(res.data || [])
-        } catch (err) {
-            console.error('Failed to fetch saved vocab:', err)
-        }
-    }
-
-    const handleToggleFavorite = async () => {
-        if (!userId) {
-            alert('Vui lòng đăng nhập để sử dụng tính năng này!')
-            return
-        }
-        setInteractionLoading(true)
-        try {
-            const res = await axios.post('/api/user/interaction/favorite/toggle', null, {
-                params: { targetId: articleId, targetType: 'ARTICLE' },
-                headers: getAuthHeader()
-            })
-            setIsFavorite(res.data.isFavorite)
-        } catch (err) {
-            console.error('Failed to toggle favorite:', err)
-        } finally {
-            setInteractionLoading(false)
-        }
-    }
-
-    const handleUpdateProgress = async (percent) => {
-        if (!userId) return
-        try {
-            await axios.post('/api/user/interaction/progress', null, {
-                params: { targetId: articleId, targetType: 'ARTICLE', percent },
-                headers: getAuthHeader()
-            })
-            setProgressPercent(percent)
-        } catch (err) {
-            console.error('Failed to update progress:', err)
-        }
-    }
-
-    // Scroll tracking for progress
-    useEffect(() => {
-        const handleScroll = () => {
-            if (!article || !userId) return
-            const winScroll = document.body.scrollTop || document.documentElement.scrollTop
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
-            const scrolled = (winScroll / height) * 100
-            
-            // Debounce or only update if significantly increased
-            if (scrolled > progressPercent + 5 || scrolled >= 95) {
-                handleUpdateProgress(Math.min(scrolled, 100))
-            }
-        }
-
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [article, userId, progressPercent])
+    const {
+        lookupState,
+        openLookupModal,
+        closeLookupModal,
+        handleOpenSaveMeaningModal,
+        handleCloseSaveMeaningModal,
+        handleSaveFormChange,
+        handleSaveMeaning,
+        pronunciationUk,
+        pronunciationUs
+    } = useDictionaryLookup(articleId, premiumStatus, fetchSavedVocab)
 
     const contentHtml = useMemo(() => normalizeContentHtml(article?.content), [article?.content])
     const interactiveHtml = useMemo(
@@ -375,296 +57,20 @@ export function ReadingDetail() {
     )
 
     const handleSpeak = (audioUrl) => {
-        if (!audioUrl) {
-            return
-        }
+        if (!audioUrl) return
         const audio = new Audio(audioUrl)
-        void audio.play().catch(() => {
-            // Ignore autoplay/sound permission failures.
-        })
-    }
-
-    const handleDownloadArticle = async () => {
-        if (!article || !userId) return
-
-        const downloadLimit = premiumStatus?.featureLimits?.ARTICLE_DOWNLOADS
-        const canDownload = premiumStatus?.isPremium || (downloadLimit && !downloadLimit.IS_LOCKED)
-
-        if (!canDownload) {
-            alert('🔒 Tính năng tải bài báo yêu cầu gói Premium.')
-            return
-        }
-
-        try {
-            // 1. Call backend to verify and increment limit
-            await axios.post(`/api/article/${articleId}/check-download-limit?userId=${userId}`)
-            
-            // 2. If backend allows (doesn't throw error), proceed with download
-            const content = `${article.title}\n${'='.repeat(article.title.length)}\n\nTác giả: ${article.source}\nKhó độ: ${article.difficulty}\nThời gian đọc: ${estimateMinutes(article.content)} phút\n\n${article.content.replace(/<[^>]+>/g, '')}`
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-            const link = document.createElement('a')
-            link.href = URL.createObjectURL(blob)
-            link.download = `${article.title.slice(0, 50).replace(/[^a-z0-9]/gi, '_')}.txt`
-            link.click()
-            URL.revokeObjectURL(link.href)
-        } catch (error) {
-            const errorMsg = error?.response?.data?.message || 'Không thể tải bài báo lúc này.'
-            alert('📥 ' + errorMsg)
-        }
-    }
-
-    const pickPronunciation = (label) => {
-        const list = lookupState.response?.pronunciations || []
-        const upper = String(label || '').toUpperCase()
-        return list.find((item) => String(item?.label || '').toUpperCase() === upper) || null
-    }
-
-    const pickPronunciationFallback = (primaryLabel, fallbackIndex) => {
-        const list = lookupState.response?.pronunciations || []
-        const direct = pickPronunciation(primaryLabel)
-        if (direct) {
-            return direct
-        }
-        if (Number.isInteger(fallbackIndex) && list[fallbackIndex]) {
-            return list[fallbackIndex]
-        }
-        return list.find((item) => item?.audio || item?.ipa) || null
-    }
-
-    const pronunciationUk = pickPronunciationFallback('UK', 0)
-    const pronunciationUs = pickPronunciationFallback('US', 1)
-
-    const openLookupModal = async (rawWord, sentence, forceRefresh = false) => {
-        const normalizedWord = normalizeWordToken(rawWord)
-        if (!normalizedWord) {
-            return
-        }
-
-        setLookupState({
-            open: true,
-            loading: true,
-            saving: false,
-            saveModalOpen: false,
-            saveDraft: null,
-            saveMessage: '',
-            saveError: '',
-            error: '',
-            word: rawWord,
-            normalizedWord,
-            sentence,
-            response: null,
-        })
-
-        try {
-            const session = getUserSession()
-            const response = await axios.post('/api/article/lookup-word', {
-                userId: Number(session?.userId) || null,
-                articleId: Number(articleId),
-                word: normalizedWord,
-                sentence,
-                forceRefresh,
-            })
-
-            setLookupState((prev) => ({
-                ...prev,
-                loading: false,
-                error: '',
-                normalizedWord: response.data?.normalizedWord || normalizedWord,
-                response: response.data,
-                contextTranslation: response.data?.contextTranslation || '',
-            }))
-        } catch (error) {
-            console.error('Lookup error:', error)
-            let errorMsg = 'Khong the tra tu luc nay. Vui long thu lai.'
-            if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
-                errorMsg = 'Yêu cầu tra từ bị quá hạn (Timeout). Vui lòng thử lại.'
-            } else if (error?.response?.data?.message) {
-                errorMsg = error.response.data.message
-            }
-
-            if (error?.response?.status === 403 && errorMsg.includes('Premium')) {
-                alert('🔒 ' + errorMsg)
-            }
-            setLookupState((prev) => ({
-                ...prev,
-                loading: false,
-                response: null,
-                error: errorMsg,
-            }))
-        }
+        void audio.play().catch(() => {})
     }
 
     const handleArticleWordClick = (event) => {
         const token = event.target.closest('.reading-inline-word')
-        if (!token) {
-            return
-        }
+        if (!token) return
 
         const container = token.closest('p, li, blockquote, figcaption, h2, h3, h4')
         const fullText = container?.textContent || article?.title || ''
         const rawWord = token.textContent || ''
-        console.log(`[Lookup] Clicking word: "${rawWord}"`)
         const sentence = cleanContextSentence(extractSentence(fullText, rawWord))
         void openLookupModal(rawWord, sentence)
-    }
-
-    const closeLookupModal = () => {
-        setLookupState((prev) => ({
-            ...prev,
-            open: false,
-            saveModalOpen: false,
-            saveDraft: null,
-            error: '',
-            saveMessage: '',
-            saveError: '',
-        }))
-    }
-
-    const handleOpenSaveMeaningModal = (meaning) => {
-        const defaultPhonetic = pronunciationUk?.ipa || pronunciationUs?.ipa || ''
-        setLookupState((prev) => ({
-            ...prev,
-            saveModalOpen: true,
-            saveError: '',
-            saveMessage: '',
-            saveDraft: {
-                word: prev.response?.normalizedWord || prev.normalizedWord,
-                pronunciation: defaultPhonetic,
-                level: prev.response?.level || '',
-                typeOfWord: meaning?.typeOfWord || '',
-                definitionEng: meaning?.definitionEn || '',
-                definitionVi: meaning?.definitionVi || '',
-                exampleEng: meaning?.example || prev.sentence || '',
-                exampleVi: prev.response?.contextTranslation || '',
-                saveType: 'SRS',
-                deckId: '',
-            },
-        }))
-        fetchDecks()
-    }
-
-    const fetchDecks = async () => {
-        try {
-            const authToken = localStorage.getItem('token') || session?.userId
-            const response = await axios.get('/api/user/flashcards/decks', {
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            })
-            setLookupState(prev => ({ ...prev, availableDecks: response.data }))
-        } catch (err) {
-            console.error('Failed to fetch decks:', err)
-        }
-    }
-
-    const handleCloseSaveMeaningModal = () => {
-        setLookupState((prev) => ({
-            ...prev,
-            saveModalOpen: false,
-            saveDraft: null,
-            saveError: '',
-        }))
-    }
-
-    const handleSaveFormChange = (field, value) => {
-        setLookupState((prev) => ({
-            ...prev,
-            saveDraft: {
-                ...(prev.saveDraft || {}),
-                [field]: value,
-            },
-        }))
-    }
-
-    const handleSaveMeaning = async () => {
-        const session = getUserSession()
-        const userId = Number(session?.userId)
-        if (!Number.isFinite(userId) || userId <= 0) {
-            setLookupState((prev) => ({
-                ...prev,
-                saveError: 'Vui long dang nhap de luu tu vao kho tu vung.',
-                saveMessage: '',
-            }))
-            return
-        }
-
-        if (lookupState.saveDraft?.saveType === 'FLASHCARD' && !lookupState.saveDraft?.deckId) {
-            setLookupState((prev) => ({
-                ...prev,
-                saveError: 'Vui lòng chọn bộ thẻ để lưu!',
-                saveMessage: '',
-            }))
-            return
-        }
-
-        if (lookupState.saveDraft?.saveType === 'SRS') {
-            const vocabLimit = premiumStatus?.featureLimits?.SAVED_VOCABULARY
-            const canSaveSRS = premiumStatus?.isPremium || (vocabLimit && !vocabLimit.IS_LOCKED)
-            
-            if (!canSaveSRS) {
-                setLookupState((prev) => ({
-                    ...prev,
-                    saveError: '✨ Tính năng lưu vào lộ trình SRS yêu cầu gói Premium. Bạn có thể chọn lưu vào Flashcard để thay thế!',
-                    saveMessage: '',
-                }))
-                return
-            }
-        }
-
-        setLookupState((prev) => ({
-            ...prev,
-            saving: true,
-            saveError: '',
-            saveMessage: '',
-        }))
-
-        const firstPronunciation = (lookupState.response?.pronunciations || []).find((item) => item?.ipa || item?.audio)
-        const ipa = lookupState.saveDraft?.pronunciation || firstPronunciation?.ipa || ''
-
-        try {
-            const saveRes = await axios.post('/api/article/save-word', {
-                userId,
-                articleId: Number(articleId),
-                word: lookupState.saveDraft?.word || lookupState.response?.normalizedWord || lookupState.normalizedWord,
-                pronunciation: ipa,
-                typeOfWord: lookupState.saveDraft?.typeOfWord || '',
-                meaningEn: lookupState.saveDraft?.definitionEng || '',
-                meaningVi: lookupState.saveDraft?.definitionVi || '',
-                example: lookupState.saveDraft?.exampleEng || '',
-                exampleVi: lookupState.saveDraft?.exampleVi || '',
-                addToSRS: lookupState.saveDraft?.saveType === 'SRS'
-            })
-
-            if (lookupState.saveDraft?.saveType === 'FLASHCARD' && lookupState.saveDraft?.deckId) {
-                const authToken = localStorage.getItem('token') || session?.userId
-                const savedVocabId = saveRes.data?.id;
-                
-                await axios.post(`/api/user/flashcards/decks/${lookupState.saveDraft.deckId}/cards`, {
-                    frontText: lookupState.saveDraft.word,
-                    backText: lookupState.saveDraft.definitionVi,
-                    customVocab: savedVocabId ? { id: savedVocabId } : null
-                }, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                })
-            }
-
-            setLookupState((prev) => ({
-                ...prev,
-                saving: false,
-                saveModalOpen: false,
-                saveDraft: null,
-                saveError: '',
-                saveMessage: 'Đã lưu từ vựng thành công!',
-            }))
-            setTimeout(() => {
-                setLookupState(prev => ({ ...prev, saveMessage: '' }))
-            }, 3000)
-        } catch (error) {
-            setLookupState((prev) => ({
-                ...prev,
-                saving: false,
-                saveMessage: '',
-                saveError: error?.response?.data?.message || 'Khong the luu tu luc nay. Vui long thu lai.',
-            }))
-        }
     }
 
     if (isLoading) {
@@ -696,36 +102,11 @@ export function ReadingDetail() {
             <div className="reading-detail-page__container">
                 <Link to="/reading" className="reading-detail-back">? Back to Topics</Link>
 
-                <header className="reading-detail-hero">
-                    <img src={article.articleImage || FALLBACK_ARTICLE_IMAGE} alt={article.title} className="reading-detail-hero__image" referrerPolicy="no-referrer" />
-                    <div className="reading-detail-hero__content">
-                        <p>{article.topicName}</p>
-                        <h1>{article.title}</h1>
-                        <div className="reading-detail-hero__meta">
-                            <span>{article.source}</span>
-                            <span>{minutes} min read</span>
-                            <span>{article.difficulty}</span>
-                            <span>{article.wordsHighlighted} tu khoa</span>
-                            <span>{formatDate(article.createdAt)}</span>
-                        </div>
-                        <div className="reading-detail-hero__actions">
-                            <FavoriteButton 
-                                isFavorite={isFavorite} 
-                                onToggle={handleToggleFavorite} 
-                                loading={interactionLoading} 
-                            />
-                            <button
-                                type="button"
-                                className="reading-download-btn"
-                                onClick={handleDownloadArticle}
-                                title={premiumStatus?.isPremium ? 'Tải bài viết' : 'Chỉ thành viên Premium có thể tải'}
-                            >
-                                {premiumStatus?.isPremium ? '📥 Tải bài viết' : '🔒 Tải (Premium)'}
-                            </button>
-                        </div>
-                        <ProgressBar percent={progressPercent} label="Tiến độ đọc" />
-                    </div>
-                </header>
+                <ReadingDetailHero 
+                    article={article} 
+                    minutes={minutes} 
+                    progressPercent={progressPercent} 
+                />
 
                 <article className="reading-article-body">
                     {interactiveHtml ? (
@@ -739,280 +120,25 @@ export function ReadingDetail() {
                     )}
                 </article>
 
-                {lookupState.open ? (
-                    <div className="dictionary-modal" role="dialog" aria-modal="true" aria-label="Tra tu theo ngu canh bai doc">
-                        <button type="button" className="dictionary-modal__backdrop" onClick={closeLookupModal} aria-label="Dong" />
-                        <div className="dictionary-modal__content" onClick={(event) => event.stopPropagation()}>
-                            <button type="button" className="dictionary-close" onClick={closeLookupModal} aria-label="Dong dictionary">×</button>
+                <DictionaryModal 
+                    lookupState={lookupState}
+                    closeLookupModal={closeLookupModal}
+                    openLookupModal={openLookupModal}
+                    handleSpeak={handleSpeak}
+                    handleOpenSaveMeaningModal={handleOpenSaveMeaningModal}
+                    pronunciationUk={pronunciationUk}
+                    pronunciationUs={pronunciationUs}
+                />
 
-                            {lookupState.loading ? (
-                                <p className="reading-vocab-empty">Dang tra tu dien va doi chieu ngu canh...</p>
-                            ) : null}
-
-                            {!lookupState.loading && lookupState.error ? (
-                                <div className="reading-vocab-empty reading-vocab-error-box">
-                                    <span>{lookupState.error}</span>
-                                    <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                                        <button 
-                                            type="button" 
-                                            className="vlesson-primary" 
-                                            style={{ height: '32px', fontSize: '12px' }}
-                                            onClick={() => openLookupModal(lookupState.word, lookupState.sentence)}
-                                        >
-                                            Thử lại
-                                        </button>
-                                        {lookupState.error.includes('Premium') && (
-                                            <Link to="/subscription" className="reading-error-upgrade-link" style={{ fontSize: '12px' }}>
-                                                Nâng cấp Premium →
-                                            </Link>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : null}
-
-                            {!lookupState.loading && !lookupState.error && lookupState.response ? (
-                                <>
-                                    {/* Header: Word + Part of Speech */}
-                                    <div className="dict-header-section">
-                                        <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <h2 className="dict-word-title">{lookupState.response?.word || lookupState.word}</h2>
-                                                {lookupState.response?.dictionarySource && (
-                                                    <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
-                                                        {lookupState.response.dictionarySource}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="dict-header-badges">
-                                                {lookupState.response?.level ? <span className="dict-pill">{lookupState.response.level}</span> : null}
-                                                {lookupState.response?.meanings?.[0]?.typeOfWord ? <span className="dict-pill">{lookupState.response.meanings[0].typeOfWord.toUpperCase()}</span> : null}
-                                            </div>
-                                        </div>
-                                        {lookupState.response?.dictionarySource !== 'AI-Generated' && (
-                                            <button 
-                                                type="button" 
-                                                className="vlesson-ghost" 
-                                                style={{ fontSize: '11px', padding: '4px 8px' }}
-                                                onClick={() => openLookupModal(lookupState.word, lookupState.sentence, true)}
-                                                disabled={lookupState.loading}
-                                            >
-                                                ✨ Làm mới từ AI
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Pronunciations: UK and US */}
-                                    <div className="dict-pronunciation-list">
-                                        <div className="dict-pronunciation-row">
-                                            <strong>UK</strong>
-                                            {pronunciationUk?.audio ? (
-                                                <button type="button" className="dict-speak-btn" onClick={() => handleSpeak(pronunciationUk.audio)} aria-label="Phat am UK">
-                                                    <SpeakerIcon />
-                                                </button>
-                                            ) : null}
-                                            <span>{pronunciationUk?.ipa || '-'}</span>
-                                        </div>
-                                        <div className="dict-pronunciation-row">
-                                            <strong>US</strong>
-                                            {pronunciationUs?.audio ? (
-                                                <button type="button" className="dict-speak-btn" onClick={() => handleSpeak(pronunciationUs.audio)} aria-label="Phat am US">
-                                                    <SpeakerIcon />
-                                                </button>
-                                            ) : null}
-                                            <span>{pronunciationUs?.ipa || '-'}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Meanings: Each as separate card */}
-                                    <div className="dict-meanings-block">
-                                        {(lookupState.response.meanings || []).map((meaning) => (
-                                            <div
-                                                key={meaning.index}
-                                                className={`dict-meaning-card${meaning.contextMatch ? ' dict-meaning-card--context-match' : ''}`}
-                                            >
-                                                <div className="dict-meaning-card__header">
-                                                    <div className="dict-meaning-card__left">
-                                                        {meaning.typeOfWord ? <span className="dict-pill-large">{meaning.typeOfWord.toUpperCase()}</span> : null}
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        className="dict-save-icon"
-                                                        onClick={() => handleOpenSaveMeaningModal(meaning)}
-                                                        disabled={lookupState.saving}
-                                                        title="Luu tu"
-                                                        aria-label="Luu tu"
-                                                    >
-                                                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                                                            <path d="M5 3h14v18l-7-4-7 4V3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-
-                                                <p className="dict-meaning-card__definition">{meaning.definitionEn}</p>
-
-                                                {meaning.definitionVi && (
-                                                    <p className="dict-meaning-card__definition-vi">{meaning.definitionVi}</p>
-                                                )}
-
-                                                {lookupState.response?.contextTranslation && (
-                                                    <div className="dict-context-translation">
-                                                        <span className="dict-context-label">Dịch ngữ cảnh:</span>
-                                                        <p className="dict-context-text">{lookupState.response.contextTranslation}</p>
-                                                    </div>
-                                                )}
-
-                                                {meaning.example ? (
-                                                    <ul className="dict-examples">
-                                                        <li>{meaning.example}</li>
-                                                    </ul>
-                                                ) : null}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {lookupState.saveMessage ? (
-                                        <p className="reading-vocab-empty">{lookupState.saveMessage}</p>
-                                    ) : null}
-
-                                    {lookupState.saveError ? (
-                                        <div className="reading-vocab-empty reading-vocab-error-box">
-                                            <span>{lookupState.saveError}</span>
-                                            {lookupState.saveError.includes('Premium') && (
-                                                <Link to="/subscription" className="reading-error-upgrade-link">
-                                                    Nâng cấp Premium ngay →
-                                                </Link>
-                                            )}
-                                        </div>
-                                    ) : null}
-                                </>
-                            ) : null}
-                        </div>
-                    </div>
-                ) : null}
-
-                {lookupState.saveModalOpen && lookupState.saveDraft ? (
-                    <div className="reading-save-modal-overlay" onClick={handleCloseSaveMeaningModal}>
-                        <div className="reading-save-modal" onClick={(event) => event.stopPropagation()}>
-                            <h2 className="reading-save-modal__title">Luu tu vung da chon</h2>
-
-                            <div className="reading-save-modal__form">
-                                <div className="reading-save-form__group">
-                                    <label>Tu tieng Anh</label>
-                                    <input type="text" value={lookupState.saveDraft.word || ''} onChange={(event) => handleSaveFormChange('word', event.target.value)} />
-                                </div>
-
-                                <div className="reading-save-form__group">
-                                    <label>Phien am</label>
-                                    <input type="text" value={lookupState.saveDraft.pronunciation || ''} onChange={(event) => handleSaveFormChange('pronunciation', event.target.value)} />
-                                    <div className="reading-save-pronunciation-actions">
-                                        {pronunciationUk?.audio ? (
-                                            <button
-                                                type="button"
-                                                className="dict-speak-btn"
-                                                onClick={() => handleSpeak(pronunciationUk.audio)}
-                                                aria-label="Nghe phat am UK"
-                                                title="Nghe UK"
-                                            >
-                                                <SpeakerIcon />
-                                                <span>UK</span>
-                                            </button>
-                                        ) : null}
-                                        {pronunciationUs?.audio ? (
-                                            <button
-                                                type="button"
-                                                className="dict-speak-btn"
-                                                onClick={() => handleSpeak(pronunciationUs.audio)}
-                                                aria-label="Nghe phat am US"
-                                                title="Nghe US"
-                                            >
-                                                <SpeakerIcon />
-                                                <span>US</span>
-                                            </button>
-                                        ) : null}
-                                    </div>
-                                </div>
-
-                                <div className="reading-save-form__group">
-                                    <label>Level</label>
-                                    <input type="text" value={lookupState.saveDraft.level || ''} onChange={(event) => handleSaveFormChange('level', event.target.value)} />
-                                </div>
-
-                                <div className="reading-save-form__group">
-                                    <label>Tu loai</label>
-                                    <input type="text" value={lookupState.saveDraft.typeOfWord || ''} onChange={(event) => handleSaveFormChange('typeOfWord', event.target.value)} />
-                                </div>
-
-                                <div className="reading-save-form__group">
-                                    <label>Dinh nghia tieng Anh</label>
-                                    <textarea rows="3" value={lookupState.saveDraft.definitionEng || ''} onChange={(event) => handleSaveFormChange('definitionEng', event.target.value)} />
-                                </div>
-
-                                <div className="reading-save-form__group">
-                                    <label>Dinh nghia tieng Viet</label>
-                                    <textarea rows="3" value={lookupState.saveDraft.definitionVi || ''} onChange={(event) => handleSaveFormChange('definitionVi', event.target.value)} />
-                                </div>
-
-                                <div className="reading-save-form__group">
-                                    <label>Vi du lien quan</label>
-                                    <textarea rows="2" value={lookupState.saveDraft.exampleEng || ''} onChange={(event) => handleSaveFormChange('exampleEng', event.target.value)} />
-                                </div>
-
-                                <div className="reading-save-form__group">
-                                    <label>Dich vi du (ngu canh)</label>
-                                    <textarea rows="2" value={lookupState.saveDraft.exampleVi || ''} onChange={(event) => handleSaveFormChange('exampleVi', event.target.value)} />
-                                </div>
-
-                                <div className="dictionary-save-type-selector" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                    <label className="save-option-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
-                                        <input 
-                                            type="radio" 
-                                            name="saveType" 
-                                            value="SRS" 
-                                            checked={lookupState.saveDraft.saveType === 'SRS'} 
-                                            onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
-                                        />
-                                        <span>Học thời điểm vàng (SRS)</span>
-                                    </label>
-                                    <label className="save-option-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
-                                        <input 
-                                            type="radio" 
-                                            name="saveType" 
-                                            value="FLASHCARD" 
-                                            checked={lookupState.saveDraft.saveType === 'FLASHCARD'} 
-                                            onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
-                                        />
-                                        <span>Lưu vào Flashcard</span>
-                                    </label>
-                                </div>
-
-                                {lookupState.saveDraft.saveType === 'FLASHCARD' && (
-                                    <div className="reading-save-form__group" style={{ marginTop: '1rem' }}>
-                                        <label>Chọn bộ thẻ</label>
-                                        <select 
-                                            value={lookupState.saveDraft.deckId} 
-                                            onChange={(e) => handleSaveFormChange('deckId', e.target.value)}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid #ddd' }}
-                                        >
-                                            <option value="">-- Chọn bộ thẻ --</option>
-                                            {lookupState.availableDecks.map(deck => (
-                                                <option key={deck.id} value={deck.id}>{deck.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="reading-save-modal__actions">
-                                <button type="button" className="reading-save-modal__btn reading-save-modal__btn--cancel" onClick={handleCloseSaveMeaningModal}>
-                                    Huy
-                                </button>
-                                <button type="button" className="reading-save-modal__btn reading-save-modal__btn--save" onClick={handleSaveMeaning} disabled={lookupState.saving}>
-                                    {lookupState.saving ? 'Dang luu...' : 'Luu'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ) : null}
+                <SaveVocabModal 
+                    lookupState={lookupState}
+                    handleCloseSaveMeaningModal={handleCloseSaveMeaningModal}
+                    handleSaveFormChange={handleSaveFormChange}
+                    handleSaveMeaning={handleSaveMeaning}
+                    handleSpeak={handleSpeak}
+                    pronunciationUk={pronunciationUk}
+                    pronunciationUs={pronunciationUs}
+                />
             </div>
         </section>
     )

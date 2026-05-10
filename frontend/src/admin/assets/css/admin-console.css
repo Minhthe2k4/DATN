@@ -1055,3 +1055,40 @@
     align-items: flex-start;
   }
 }
+
+/* Additional UI Utilities */
+.alert-soft-info {
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #e0f2fe;
+}
+
+.alert-soft-success {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #dcfce7;
+}
+
+.alert-soft-warning {
+  background-color: #fffbeb;
+  color: #a16207;
+  border: 1px solid #fef3c7;
+}
+
+.admin-chart-card {
+  transition: all 0.3s ease;
+}
+
+.admin-chart-card:hover {
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
+}
+/* Ranked List Styles */
+.rank-badge { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; }
+.rank-1 { background: linear-gradient(135deg, #ffd700, #f59e0b); color: #fff; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); }
+.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #fff; }
+.rank-3 { background: linear-gradient(135deg, #b45309, #78350f); color: #fff; }
+.rank-other { background: #f1f5f9; color: #64748b; }
+.lesson-rank-item { position: relative; overflow: hidden; border: 1px solid #f1f5f9; transition: all 0.2s ease; background: #fff; margin-bottom: 4px; }
+.lesson-rank-item:hover { border-color: #dbeafe; background-color: #f8fbff !important; transform: translateX(4px); }
+.lesson-rank-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: rgba(59, 130, 246, 0.2); border-radius: 0 999px 999px 0; z-index: 0; }
+.lesson-rank-item > * { position: relative; z-index: 1; }

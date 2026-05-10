@@ -1,115 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { premiumMembers, premiumRequests } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, FilterTabs, Pagination } from '../../components/console/AdminUi'
+import { AdminPageHeader } from '../../components/console/AdminUi'
 import { usePagination } from '../../hooks/usePagination'
+import { Plus, RefreshCcw, Loader2, AlertTriangle, XCircle } from 'lucide-react'
 import './premium-management.css'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { 
+  fetchPremiumData, 
+  refreshPremiumData, 
+  approveRequest, 
+  rejectRequest, 
+  cancelPremium, 
+  deletePlan, 
+  bulkExtend, 
+  bulkCancel,
+  normalizeRequestRow,
+  normalizeMemberRow,
+  normalizePlanRow,
+  normalizeAuditRow,
+  DEFAULT_REQUEST_FILTER,
+  DEFAULT_MEMBER_FILTER
+} from './premiumUtils'
 
-function formatDateTime(value) {
-  if (!value) return '---'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '---'
-  return date.toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function normalizeRequestRow(row) {
-  return {
-    id: row.id,
-    userId: row.userId,
-    subscriptionId: row.subscriptionId,
-    email: row.email ?? '(không có email)',
-    packageName: row.packageName ?? 'Premium',
-    requestedAt: formatDateTime(row.requestedAt),
-    status: row.status ?? 'Chờ duyệt',
-  }
-}
-
-function normalizeMemberRow(row) {
-  return {
-    id: row.subscriptionId,
-    subscriptionId: row.subscriptionId,
-    userId: row.userId,
-    email: row.email ?? '(không có email)',
-    plan: row.plan ?? 'Premium',
-    expiresAt: formatDateTime(row.expiresAt),
-    action: row.status === 'Hết hạn' ? 'Gia hạn' : row.status === 'Đã hủy' ? 'Đã hủy' : 'Hủy quyền',
-    status: row.status ?? 'Đang hoạt động',
-  }
-}
-
-function normalizeAuditRow(row) {
-  return {
-    id: row.id,
-    email: row.email || '(không có email)',
-    action: row.action || '',
-    statusBefore: row.statusBefore || '---',
-    statusAfter: row.statusAfter || '---',
-    reason: row.reason || '---',
-    adminActor: row.adminActor || 'system',
-    createdAt: formatDateTime(row.createdAt),
-  }
-}
-
-function getAdminActor() {
-  return window.localStorage.getItem('admin_actor') || 'admin'
-}
-
-function normalizePlanRow(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    price: typeof row.price === 'number' ? row.price : parseFloat(row.price) || 0,
-    durationDays: typeof row.durationDays === 'number' ? row.durationDays : parseInt(row.durationDays) || 30,
-    description: row.description || '',
-    limits: row.limits || []
-  }
-}
-
-const DEFAULT_REQUEST_FILTER = { status: 'PENDING', email: '', fromDate: '', toDate: '' }
-const DEFAULT_MEMBER_FILTER = { status: 'ALL', email: '', expiringInDays: '' }
-
-
-function requestStatusTone(status) {
-  if (status === 'Chờ duyệt') {
-    return 'warning'
-  }
-  if (status === 'Đã duyệt') {
-    return 'success'
-  }
-  if (status === 'Từ chối') {
-    return 'danger'
-  }
-  return 'neutral'
-}
-
-function memberActionTone(action) {
-  if (action === 'Gia hạn') {
-    return 'warning'
-  }
-  if (action === 'Hủy quyền') {
-    return 'danger'
-  }
-  return 'info'
-}
-
-function auditActionTone(action) {
-  const normalized = (action || '').toUpperCase()
-  if (normalized.includes('APPROVE') || normalized.includes('GRANT') || normalized.includes('EXTEND')) {
-    return 'success'
-  }
-  if (normalized.includes('REJECT') || normalized.includes('CANCEL')) {
-    return 'danger'
-  }
-  return 'neutral'
-}
+import { PremiumStats } from './components/PremiumStats'
+import { PremiumRequestsTable } from './components/PremiumRequestsTable'
+import { PremiumMembersTable } from './components/PremiumMembersTable'
+import { PremiumPlansTable } from './components/PremiumPlansTable'
+import { PremiumAuditLogsTable } from './components/PremiumAuditLogsTable'
 
 export function PremiumManagement() {
   const navigate = useNavigate()
@@ -120,162 +38,97 @@ export function PremiumManagement() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [actionError, setActionError] = useState('')
-  const [activeTab, setActiveTab] = useState('requests')
 
   const [requestFilter, setRequestFilter] = useState(DEFAULT_REQUEST_FILTER)
   const [memberFilter, setMemberFilter] = useState(DEFAULT_MEMBER_FILTER)
   const [selectedMembers, setSelectedMembers] = useState(new Set())
 
-  // Pagination using custom hook
-  const requestsPagination = usePagination(requestRows, 10)
-  const membersPagination = usePagination(memberRows, 10)
+  const [requestsQuery, setRequestsQuery] = useState('')
+  const [membersQuery, setMembersQuery] = useState('')
+  const [plansQuery, setPlansQuery] = useState('')
+  const [auditQuery, setAuditQuery] = useState('')
+
+  const filteredRequests = useMemo(() => {
+    return requestRows.filter(r => {
+      const matchesEmail = (r.email || '').toLowerCase().includes(requestsQuery.toLowerCase())
+      const matchesPackage = (r.packageName || '').toLowerCase().includes(requestsQuery.toLowerCase())
+      const matchesStatus = requestFilter.status === 'ALL' || r.status === (
+        requestFilter.status === 'PENDING' ? 'Chờ duyệt' :
+        requestFilter.status === 'APPROVED' ? 'Đã duyệt' :
+        requestFilter.status === 'REJECTED' ? 'Từ chối' : requestFilter.status
+      )
+      return matchesEmail && matchesPackage && matchesStatus
+    })
+  }, [requestsQuery, requestRows, requestFilter.status])
+
+  const filteredMembers = useMemo(() => {
+    return memberRows.filter(m => {
+      const matchesEmail = (m.email || '').toLowerCase().includes(membersQuery.toLowerCase())
+      const matchesPlan = (m.plan || '').toLowerCase().includes(membersQuery.toLowerCase())
+      const matchesStatus = memberFilter.status === 'ALL' || m.status === memberFilter.status
+      return matchesEmail && matchesPlan && matchesStatus
+    })
+  }, [membersQuery, memberRows, memberFilter.status])
+
+  const filteredPlans = useMemo(() => {
+    return planRows.filter(p => {
+      const matchesName = (p.name || '').toLowerCase().includes(plansQuery.toLowerCase())
+      const matchesDesc = (p.description || '').toLowerCase().includes(plansQuery.toLowerCase())
+      return matchesName || matchesDesc
+    })
+  }, [plansQuery, planRows])
+
+  const filteredAudit = useMemo(() => {
+    return auditRows.filter(a => {
+      const matchesEmail = (a.email || '').toLowerCase().includes(auditQuery.toLowerCase())
+      const matchesAction = (a.action || '').toLowerCase().includes(auditQuery.toLowerCase())
+      const matchesReason = (a.reason || '').toLowerCase().includes(auditQuery.toLowerCase())
+      return matchesEmail || matchesAction || matchesReason
+    })
+  }, [auditQuery, auditRows])
+
+  const requestsPagination = usePagination(filteredRequests, 10)
+  const membersPagination = usePagination(filteredMembers, 10)
 
   useEffect(() => {
     let disposed = false
-
     async function loadData() {
       try {
-        const [requestsResponse, membersResponse, plansResponse, auditResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/admin/premium/requests?status=ALL`),
-          fetch(`${API_BASE_URL}/api/admin/premium/members?status=ALL`),
-          fetch(`${API_BASE_URL}/api/admin/premium/plans`),
-          fetch(`${API_BASE_URL}/api/admin/premium/audit-logs?limit=20`),
-        ])
-
-        if (!requestsResponse.ok || !membersResponse.ok || !plansResponse.ok || !auditResponse.ok) {
-          throw new Error('Cannot fetch premium data')
-        }
-
-        const [requestsPayload, membersPayload, plansPayload, auditPayload] = await Promise.all([
-          requestsResponse.json(),
-          membersResponse.json(),
-          plansResponse.json(),
-          auditResponse.json(),
-        ])
-
-        if (disposed) {
-          return
-        }
-
-        setRequestRows(Array.isArray(requestsPayload) ? requestsPayload.map(normalizeRequestRow) : premiumRequests)
-        setMemberRows(Array.isArray(membersPayload) ? membersPayload.map(normalizeMemberRow) : premiumMembers)
-        setPlanRows(Array.isArray(plansPayload) ? plansPayload.map(normalizePlanRow) : [])
-        setAuditRows(Array.isArray(auditPayload) ? auditPayload.map(normalizeAuditRow) : [])
+        const data = await fetchPremiumData()
+        if (disposed) return
+        setRequestRows(Array.isArray(data.requests) ? data.requests.map(normalizeRequestRow) : premiumRequests)
+        setMemberRows(Array.isArray(data.members) ? data.members.map(normalizeMemberRow) : premiumMembers)
+        setPlanRows(Array.isArray(data.plans) ? data.plans.map(normalizePlanRow) : [])
+        setAuditRows(Array.isArray(data.audit) ? data.audit.map(normalizeAuditRow) : [])
         setLoadError('')
       } catch {
-        if (disposed) {
-          return
-        }
+        if (disposed) return
         setRequestRows(premiumRequests)
         setMemberRows(premiumMembers)
-        setPlanRows([])
-        setAuditRows([])
         setLoadError('Không thể tải dữ liệu premium từ backend, đang hiển thị dữ liệu mẫu.')
       } finally {
-        if (!disposed) {
-          setIsLoading(false)
-        }
+        if (!disposed) setIsLoading(false)
       }
     }
-
     loadData()
-    return () => {
-      disposed = true
-    }
+    return () => { disposed = true }
   }, [])
 
-  const reloadData = async (requestFilterValue = requestFilter, memberFilterValue = memberFilter) => {
-    const requestQuery = new URLSearchParams({ status: requestFilterValue.status || 'ALL' })
-    if (requestFilterValue.email.trim()) {
-      requestQuery.set('email', requestFilterValue.email.trim())
-    }
-    if (requestFilterValue.fromDate) {
-      requestQuery.set('fromDate', requestFilterValue.fromDate)
-    }
-    if (requestFilterValue.toDate) {
-      requestQuery.set('toDate', requestFilterValue.toDate)
-    }
-
-    const memberQuery = new URLSearchParams({ status: memberFilterValue.status || 'ALL' })
-    if (memberFilterValue.email.trim()) {
-      memberQuery.set('email', memberFilterValue.email.trim())
-    }
-    if (memberFilterValue.expiringInDays.trim()) {
-      memberQuery.set('expiringInDays', memberFilterValue.expiringInDays.trim())
-    }
-
-    const [requestsResponse, membersResponse, auditResponse] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/admin/premium/requests?${requestQuery.toString()}`),
-      fetch(`${API_BASE_URL}/api/admin/premium/members?${memberQuery.toString()}`),
-      fetch(`${API_BASE_URL}/api/admin/premium/audit-logs?limit=20`),
-    ])
-
-    if (!requestsResponse.ok || !membersResponse.ok || !auditResponse.ok) {
-      throw new Error('Cannot refresh premium data')
-    }
-
-    const [requestsPayload, membersPayload, auditPayload] = await Promise.all([
-      requestsResponse.json(),
-      membersResponse.json(),
-      auditResponse.json(),
-    ])
-
-    setRequestRows(Array.isArray(requestsPayload) ? requestsPayload.map(normalizeRequestRow) : premiumRequests)
-    setMemberRows(Array.isArray(membersPayload) ? membersPayload.map(normalizeMemberRow) : premiumMembers)
-    setAuditRows(Array.isArray(auditPayload) ? auditPayload.map(normalizeAuditRow) : [])
-  }
-
-  const applyRequestFilters = async () => {
+  const reloadData = async () => {
     try {
-      await reloadData()
-      setActionError('')
+      const data = await refreshPremiumData(requestFilter, memberFilter)
+      setRequestRows(Array.isArray(data.requests) ? data.requests.map(normalizeRequestRow) : premiumRequests)
+      setMemberRows(Array.isArray(data.members) ? data.members.map(normalizeMemberRow) : premiumMembers)
+      setAuditRows(Array.isArray(data.audit) ? data.audit.map(normalizeAuditRow) : [])
     } catch {
-      setActionError('Không thể áp dụng bộ lọc cho yêu cầu Premium.')
-    }
-  }
-
-  const resetRequestFilters = async () => {
-    try {
-      setRequestFilter(DEFAULT_REQUEST_FILTER)
-      await reloadData(DEFAULT_REQUEST_FILTER, memberFilter)
-      setActionError('')
-    } catch {
-      setActionError('Không thể đặt lại bộ lọc yêu cầu Premium.')
-    }
-  }
-
-  const applyMemberFilters = async () => {
-    try {
-      await reloadData()
-      setActionError('')
-    } catch {
-      setActionError('Không thể áp dụng bộ lọc thành viên Premium.')
-    }
-  }
-
-  const resetMemberFilters = async () => {
-    try {
-      setMemberFilter(DEFAULT_MEMBER_FILTER)
-      await reloadData(requestFilter, DEFAULT_MEMBER_FILTER)
-      setActionError('')
-    } catch {
-      setActionError('Không thể đặt lại bộ lọc thành viên Premium.')
+      setActionError('Làm mới dữ liệu thất bại.')
     }
   }
 
   const handleApprove = async (row) => {
     const reason = window.prompt('Lý do duyệt (tuỳ chọn):', '') || ''
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/requests/${row.id}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason, adminActor: getAdminActor() }),
-      })
-
-      if (!response.ok && response.status !== 204) {
-        throw new Error('Cannot approve request')
-      }
-
+      await approveRequest(row.id, reason)
       await reloadData()
       setActionError('')
     } catch {
@@ -285,22 +138,9 @@ export function PremiumManagement() {
 
   const handleReject = async (row) => {
     const reason = window.prompt('Nhập lý do từ chối (bắt buộc):', '') || ''
-    if (!reason.trim()) {
-      setActionError('Bạn cần nhập lý do khi từ chối yêu cầu Premium.')
-      return
-    }
-
+    if (!reason.trim()) { setActionError('Bạn cần nhập lý do khi từ chối.'); return }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/requests/${row.id}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: reason.trim(), adminActor: getAdminActor() }),
-      })
-
-      if (!response.ok && response.status !== 204) {
-        throw new Error('Cannot reject request')
-      }
-
+      await rejectRequest(row.id, reason)
       await reloadData()
       setActionError('')
     } catch {
@@ -309,28 +149,11 @@ export function PremiumManagement() {
   }
 
   const handleCancelPremium = async (row) => {
-    const confirmed = window.confirm(`Hủy quyền Premium của ${row.email}?`)
-    if (!confirmed) {
-      return
-    }
-
+    if (!window.confirm(`Hủy quyền Premium của ${row.email}?`)) return
     const reason = window.prompt('Lý do hủy Premium (bắt buộc):', '') || ''
-    if (!reason.trim()) {
-      setActionError('Bạn cần nhập lý do khi hủy Premium.')
-      return
-    }
-
+    if (!reason.trim()) { setActionError('Bạn cần nhập lý do khi hủy.'); return }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/members/${row.userId}/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: reason.trim(), adminActor: getAdminActor() }),
-      })
-
-      if (!response.ok && response.status !== 204) {
-        throw new Error('Cannot cancel premium')
-      }
-
+      await cancelPremium(row.userId, reason)
       await reloadData()
       setActionError('')
     } catch {
@@ -338,39 +161,15 @@ export function PremiumManagement() {
     }
   }
 
-  const handleExtendPremium = (row) => {
-    navigate(`/admin/premium/members/${row.userId}/extend?email=${encodeURIComponent(row.email)}`)
-  }
-
-  const handleManualGrant = () => {
-    navigate('/admin/premium/grant')
-  }
-
-
-  // ============= PLAN MANAGEMENT =============
-  const handleAddPlan = () => {
-    navigate('/admin/premium/new')
-  }
-
-  const handleEditPlan = (plan) => {
-    navigate(`/admin/premium/${plan.id}/edit`)
-  }
-
+  const handleExtendPremium = (row) => navigate(`/admin/premium/members/${row.userId}/extend?email=${encodeURIComponent(row.email)}`)
+  const handleManualGrant = () => navigate('/admin/premium/grant')
+  const handleAddPlan = () => navigate('/admin/premium/new')
+  const handleEditPlan = (plan) => navigate(`/admin/premium/${plan.id}/edit`)
 
   const handleDeletePlan = async (plan) => {
-    if (!window.confirm(`Xóa gói "${plan.name}"?`)) {
-      return
-    }
-
+    if (!window.confirm(`Xóa gói "${plan.name}"?`)) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/plans/${plan.id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete plan')
-      }
-
+      await deletePlan(plan.id)
       await reloadData()
       setActionError('')
     } catch {
@@ -378,59 +177,16 @@ export function PremiumManagement() {
     }
   }
 
-  // ============= BULK OPERATIONS =============
-  const toggleMemberSelection = (memberId) => {
-    const newSelected = new Set(selectedMembers)
-    if (newSelected.has(memberId)) {
-      newSelected.delete(memberId)
-    } else {
-      newSelected.add(memberId)
-    }
-    setSelectedMembers(newSelected)
-  }
-
-  const toggleAllMembers = () => {
-    if (selectedMembers.size === memberRows.length) {
-      setSelectedMembers(new Set())
-    } else {
-      setSelectedMembers(new Set(memberRows.map((m) => m.userId)))
-    }
-  }
-
   const handleBulkExtend = async () => {
-    if (selectedMembers.size === 0) {
-      setActionError('Vui lòng chọn ít nhất 1 thành viên.')
-      return
-    }
-
+    if (selectedMembers.size === 0) { setActionError('Vui lòng chọn ít nhất 1 thành viên.'); return }
     const daysText = window.prompt('Số ngày gia hạn:', '30') || '30'
     const days = Number(daysText)
-    if (!Number.isFinite(days) || days <= 0) {
-      setActionError('Số ngày gia hạn không hợp lệ.')
-      return
-    }
-
+    if (!Number.isFinite(days) || days <= 0) { setActionError('Số ngày gia hạn không hợp lệ.'); return }
     const reason = window.prompt('Lý do gia hạn (bắt buộc):', '') || ''
-    if (!reason.trim()) {
-      setActionError('Bạn cần nhập lý do gia hạn.')
-      return
-    }
+    if (!reason.trim()) { setActionError('Bạn cần nhập lý do gia hạn.'); return }
 
     try {
-      await Promise.all(
-        Array.from(selectedMembers).map((userId) =>
-          fetch(`${API_BASE_URL}/api/admin/premium/members/${userId}/extend`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              durationDays: days,
-              reason: reason.trim(),
-              adminActor: getAdminActor(),
-            }),
-          })
-        )
-      )
-
+      await bulkExtend(Array.from(selectedMembers), days, reason)
       setSelectedMembers(new Set())
       await reloadData()
       setActionError('')
@@ -440,35 +196,13 @@ export function PremiumManagement() {
   }
 
   const handleBulkCancel = async () => {
-    if (selectedMembers.size === 0) {
-      setActionError('Vui lòng chọn ít nhất 1 thành viên.')
-      return
-    }
-
-    if (!window.confirm(`Hủy Premium của ${selectedMembers.size} thành viên?`)) {
-      return
-    }
-
+    if (selectedMembers.size === 0) { setActionError('Vui lòng chọn ít nhất 1 thành viên.'); return }
+    if (!window.confirm(`Hủy Premium của ${selectedMembers.size} thành viên?`)) return
     const reason = window.prompt('Lý do hủy (bắt buộc):', '') || ''
-    if (!reason.trim()) {
-      setActionError('Bạn cần nhập lý do hủy.')
-      return
-    }
+    if (!reason.trim()) { setActionError('Bạn cần nhập lý do hủy.'); return }
 
     try {
-      await Promise.all(
-        Array.from(selectedMembers).map((userId) =>
-          fetch(`${API_BASE_URL}/api/admin/premium/members/${userId}/cancel`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              reason: reason.trim(),
-              adminActor: getAdminActor(),
-            }),
-          })
-        )
-      )
-
+      await bulkCancel(Array.from(selectedMembers), reason)
       setSelectedMembers(new Set())
       await reloadData()
       setActionError('')
@@ -476,33 +210,6 @@ export function PremiumManagement() {
       setActionError('Hủy hàng loạt thất bại.')
     }
   }
-
-  const stats = useMemo(() => [
-    {
-      label: 'Yêu cầu chờ duyệt',
-      value: requestRows.length.toString(),
-      meta: 'Yêu cầu nâng cấp đang chờ xử lý',
-      icon: 'iconoir-clock',
-    },
-    {
-      label: 'Thành viên Premium',
-      value: memberRows.length.toString(),
-      meta: 'Đang có quyền truy cập nội dung trả phí',
-      icon: 'iconoir-star',
-    },
-    {
-      label: 'Sắp hết hạn',
-      value: memberRows.filter((member) => member.action === 'Gia hạn').length.toString(),
-      meta: 'Cần theo dõi để nhắc gia hạn hoặc hủy quyền',
-      icon: 'iconoir-calendar',
-    },
-    {
-      label: 'Gói đang lưu hành',
-      value: planRows.length.toString(),
-      meta: 'Số lượng các gói cước đang được hệ thống hỗ trợ',
-      icon: 'iconoir-package',
-    },
-  ], [memberRows, requestRows])
 
   return (
     <div className="page-content premium-management-page">
@@ -513,185 +220,81 @@ export function PremiumManagement() {
           description="Quản lý yêu cầu, thành viên Premium, gói cước và lịch sử hoạt động."
           actions={
             <div className="premium-actions">
-              <button type="button" className="btn btn-primary" onClick={handleManualGrant}>
-                ➕ Cấp Premium
+              <button type="button" className="btn btn-primary d-flex align-items-center gap-1" onClick={handleManualGrant}>
+                <Plus size={16} /> Cấp Premium
               </button>
-              <button type="button" className="btn btn-outline-secondary" onClick={() => reloadData()}>
-                🔄 Làm mới
+              <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-1" onClick={reloadData}>
+                <RefreshCcw size={16} /> Làm mới
               </button>
             </div>
           }
         />
 
-        <StatGrid items={stats} />
-        <div className="premium-insight-strip">
-          <span>📋 Yêu cầu: <strong>{requestRows.length}</strong></span>
-          <span>👥 Thành viên: <strong>{memberRows.length}</strong></span>
-          <span>📦 Gói: <strong>{planRows.length}</strong></span>
-          <span>📊 Audit: <strong>{auditRows.length}</strong></span>
-        </div>
+        <PremiumStats requestRows={requestRows} memberRows={memberRows} planRows={planRows} />
 
-        {isLoading && <div className="alert alert-info">🔄 Đang tải dữ liệu premium...</div>}
-        {loadError && <div className="alert alert-warning">⚠️ {loadError}</div>}
-        {actionError && <div className="alert alert-danger">❌ {actionError}</div>}
+        {isLoading && (
+          <div className="alert alert-info d-flex align-items-center gap-2">
+            <Loader2 className="spinner-border spinner-border-sm" size={16} />
+            Đang tải dữ liệu premium...
+          </div>
+        )}
+        {loadError && (
+          <div className="alert alert-warning d-flex align-items-center gap-2">
+            <AlertTriangle size={16} /> {loadError}
+          </div>
+        )}
+        {actionError && (
+          <div className="alert alert-danger d-flex align-items-center gap-2">
+            <XCircle size={16} /> {actionError}
+          </div>
+        )}
 
         <div className="row g-4 mt-1">
-          {/* REQUESTS - Left Column */}
-          <div className="col-12 col-lg-6 col-xl-6">
-            <AdminSectionCard>
-              <h5><span className="section-header-icon">📋</span> Yêu cầu nâng cấp</h5>
-              <p>Duyệt các yêu cầu từ người dùng ({requestRows.length} bản ghi)</p>
-
-              <div className="mb-3">
-                <FilterTabs
-                  items={[
-                    { label: 'Tất cả', value: 'ALL' },
-                    { label: 'Chờ duyệt', value: 'PENDING' },
-                    { label: 'Đã duyệt', value: 'APPROVED' },
-                    { label: 'Từ chối', value: 'REJECTED' }
-                  ]}
-                  active={requestFilter.status}
-                  onChange={(val) => {
-                    const next = { ...requestFilter, status: val }
-                    setRequestFilter(next)
-                    reloadData(next, memberFilter)
-                  }}
-                />
-              </div>
-
-              <hr className="my-3" />
-              <SimpleTable
-                columns={[
-                  { key: 'email', label: 'Email', render: r => <small>{r.email}</small> },
-                  { key: 'packageName', label: 'Gói' },
-                  { key: 'requestedAt', label: 'Ngày gửi', render: r => <small>{r.requestedAt}</small> },
-                  { key: 'status', label: 'Trạng thái', render: r => <Badge tone={requestStatusTone(r.status)}>{r.status}</Badge> },
-                  {
-                    key: 'actions', label: '', render: r => (
-                      r.status === 'Chờ duyệt' ? (
-                        <div className="premium-row-actions">
-                          <button className="btn btn-sm btn-success" onClick={() => handleApprove(r)} title="Duyệt">✓</button>
-                          <button className="btn btn-sm btn-danger" onClick={() => handleReject(r)} title="Từ chối">✕</button>
-                        </div>
-                      ) : (
-                        <div className="text-center text-muted" title="Đã xử lý">
-                          <small><i className="iconoir-check-circle"></i></small>
-                        </div>
-                      )
-                    )
-                  },
-                ]}
-                rows={requestsPagination.paginatedData}
-                emptyMessage="✨ Không có yêu cầu nào trùng khớp"
-              />
-              <Pagination
-                currentPage={requestsPagination.currentPage}
-                totalPages={requestsPagination.totalPages}
-                onPageChange={requestsPagination.handlePageChange}
-              />
-            </AdminSectionCard>
+          <div className="col-12 col-lg-6">
+            <PremiumRequestsTable 
+              requestsPagination={requestsPagination}
+              requestFilter={requestFilter}
+              setRequestFilter={setRequestFilter}
+              requestsQuery={requestsQuery}
+              setRequestsQuery={setRequestsQuery}
+              handleApprove={handleApprove}
+              handleReject={handleReject}
+            />
           </div>
 
-          {/* MEMBERS - Right Column */}
-          <div className="col-12 col-lg-6 col-xl-6">
-            <AdminSectionCard>
-              <h5><span className="section-header-icon">👥</span> Thành viên Premium {selectedMembers.size > 0 && <Badge tone="info">{selectedMembers.size} chọn</Badge>}</h5>
-              <p>Quản lý các thành viên Premium ({memberRows.length} người)</p>
-              <hr className="my-3" />
-              {selectedMembers.size > 0 && (
-                <div className="alert alert-info mb-3" style={{ padding: '0.8rem' }}>
-                  <div className="d-flex gap-2 flex-wrap">
-                    <button className="btn btn-sm btn-warning" onClick={handleBulkExtend}>⏳ Gia hạn ({selectedMembers.size})</button>
-                    <button className="btn btn-sm btn-outline-danger" onClick={handleBulkCancel}>❌ Hủy ({selectedMembers.size})</button>
-                    <button className="btn btn-sm btn-outline-secondary" onClick={() => setSelectedMembers(new Set())}>🗑️ Bỏ chọn</button>
-                  </div>
-                </div>
-              )}
-              <SimpleTable
-                columns={[
-                  {
-                    key: 'check', label: <input type="checkbox" checked={selectedMembers.size > 0 && selectedMembers.size === memberRows.length} onChange={toggleAllMembers} title="Chọn tất cả" />, render: r => (
-                      <input type="checkbox" checked={selectedMembers.has(r.userId)} onChange={() => toggleMemberSelection(r.userId)} />
-                    )
-                  },
-                  { key: 'email', label: 'Email', render: r => <small>{r.email}</small> },
-                  { key: 'plan', label: 'Gói' },
-                  { key: 'expiresAt', label: 'Hết hạn', render: r => <small>{r.expiresAt}</small> },
-                  {
-                    key: 'actions', label: '', render: r => (
-                      <div className="premium-row-actions">
-                        <button className="btn btn-sm btn-outline-warning" onClick={() => handleExtendPremium(r)} title="Gia hạn">⏳</button>
-                        {r.status === 'Đang hoạt động' && (
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancelPremium(r)} title="Hủy Premium">✕</button>
-                        )}
-                      </div>
-                    )
-                  },
-                ]}
-                rows={membersPagination.paginatedData}
-                emptyMessage="✨ Không có thành viên Premium"
-              />
-              <Pagination
-                currentPage={membersPagination.currentPage}
-                totalPages={membersPagination.totalPages}
-                onPageChange={membersPagination.handlePageChange}
-              />
-            </AdminSectionCard>
+          <div className="col-12 col-lg-6">
+            <PremiumMembersTable 
+              membersPagination={membersPagination}
+              memberFilter={memberFilter}
+              setMemberFilter={setMemberFilter}
+              membersQuery={membersQuery}
+              setMembersQuery={setMembersQuery}
+              selectedMembers={selectedMembers}
+              setSelectedMembers={setSelectedMembers}
+              handleExtendPremium={handleExtendPremium}
+              handleCancelPremium={handleCancelPremium}
+              handleBulkExtend={handleBulkExtend}
+              handleBulkCancel={handleBulkCancel}
+            />
           </div>
 
-          {/* PLANS - Full Width */}
           <div className="col-12">
-            <AdminSectionCard>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <h5 style={{ margin: 0 }}><span className="section-header-icon">📦</span> Gói Premium</h5>
-                  <p style={{ margin: 0, marginTop: '0.25rem' }}>Quản lý các gói cước ({planRows.length} gói)</p>
-                </div>
-                <button className="btn btn-sm btn-primary" onClick={handleAddPlan}>➕ Thêm Gói Mới</button>
-              </div>
-              <hr className="my-3" />
-              <SimpleTable
-                columns={[
-                  { key: 'name', label: 'Gói', render: r => <strong>{r.name}</strong> },
-                  { key: 'price', label: 'Giá', render: r => `${r.price.toLocaleString('vi-VN')} VND` },
-                  { key: 'durationDays', label: 'Kỳ hạn', render: r => `${r.durationDays} ngày` },
-                  { key: 'description', label: 'Mô tả', render: r => <small>{r.description || '—'}</small> },
-                  {
-                    key: 'actions', label: '', render: p => (
-                      <div className="premium-row-actions">
-                        {p.name === 'Free' && <Badge tone="info">Mặc định</Badge>}
-                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleEditPlan(p)} title="Chỉnh sửa">✏️</button>
-                        {p.name !== 'Free' && (
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePlan(p)} title="Xóa">🗑️</button>
-                        )}
-                      </div>
-                    )
-                  },
-                ]}
-                rows={planRows}
-                emptyMessage="✨ Chưa có gói Premium nào. Tạo gói mới để bắt đầu."
-              />
-            </AdminSectionCard>
+            <PremiumPlansTable 
+              filteredPlans={filteredPlans}
+              plansQuery={plansQuery}
+              setPlansQuery={setPlansQuery}
+              handleAddPlan={handleAddPlan}
+              handleEditPlan={handleEditPlan}
+              handleDeletePlan={handleDeletePlan}
+            />
           </div>
 
-          {/* AUDIT LOG - Full Width */}
           <div className="col-12">
-            <AdminSectionCard>
-              <h5><span className="section-header-icon">📊</span> Lịch sử thao tác</h5>
-              <p>Theo dõi các hành động quản trị Premium ({auditRows.length} bản ghi gần đây)</p>
-              <hr className="my-3" />
-              <SimpleTable
-                columns={[
-                  { key: 'createdAt', label: 'Thời gian', render: r => <small>{r.createdAt}</small> },
-                  { key: 'email', label: 'Email', render: r => <small>{r.email}</small> },
-                  { key: 'action', label: 'Hành động', render: r => <Badge tone={auditActionTone(r.action)}>{r.action}</Badge> },
-                  { key: 'adminActor', label: 'Admin', render: r => <small>{r.adminActor}</small> },
-                  { key: 'reason', label: 'Lý do', render: r => <small>{r.reason}</small> },
-                ]}
-                rows={auditRows}
-                emptyMessage="✨ Chưa có hoạt động nào được ghi nhận"
-              />
-            </AdminSectionCard>
+            <PremiumAuditLogsTable 
+              filteredAudit={filteredAudit}
+              auditQuery={auditQuery}
+              setAuditQuery={setAuditQuery}
+            />
           </div>
         </div>
       </div>

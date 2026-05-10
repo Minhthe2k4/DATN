@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
+import { Calendar, Loader2 } from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../../utils/api'
 
 export function PremiumExtendPage() {
   const { userId } = useParams()
@@ -47,13 +48,12 @@ export function PremiumExtendPage() {
 
     try {
       const adminActor = window.localStorage.getItem('admin_actor') || 'admin'
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/members/${userId}/extend`, {
+      const response = await adminFetch(`/api/admin/premium/members/${userId}/extend`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          durationDays: days,
+          durationDays: Number(days),
           reason: form.reason.trim(),
-          adminActor
+          adminActor: 'Admin System'
         }),
       })
 
@@ -134,8 +134,12 @@ export function PremiumExtendPage() {
                 <button className="btn btn-outline-secondary px-4" onClick={() => navigate('/admin/premium')}>
                   Hủy bỏ
                 </button>
-                <button className="btn btn-warning px-4" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? '⏳ Đang xử lý...' : '⏳ Gia hạn ngay'}
+                <button className="btn btn-warning px-4 d-flex align-items-center gap-2" onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <><Loader2 className="spinner-border spinner-border-sm" size={16} /> Đang xử lý...</>
+                  ) : (
+                    <><Calendar size={16} /> Gia hạn ngay</>
+                  )}
                 </button>
               </div>
             </AdminSectionCard>

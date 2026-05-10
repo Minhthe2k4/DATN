@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { adminNavGroups } from '../data/adminData'
+import { Activity } from 'lucide-react'
 
 export function Slidebar({ isCollapsed = false, onToggleCollapse }) {
   return (
@@ -13,7 +14,7 @@ export function Slidebar({ isCollapsed = false, onToggleCollapse }) {
               onClick={onToggleCollapse}
               aria-label={isCollapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
             >
-              <span className="admin-brand-mark" aria-hidden="true"></span>
+              <Activity className="admin-brand-logo-icon" size={24} />
             </button>
             <Link to="/admin" className="admin-brand-text" aria-label="Admin home">
               <span className="admin-brand-label">VocaSmart</span>

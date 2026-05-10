@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard, Badge } from '../../components/console/AdminUi'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../../utils/api'
 
 function formatDate(dateString) {
   if (!dateString) return 'Chưa có'
@@ -27,14 +27,11 @@ export function VocabularyDetailPage() {
     let isDisposed = false
     async function loadData() {
       try {
-        const [vocabRes, lessonsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/admin/vocabulary/${id}`),
-          fetch(`${API_BASE_URL}/api/admin/lessons`)
+        const [vocabPayload, lessonsPayload] = await Promise.all([
+          adminFetch(`/api/admin/vocabulary/${id}`),
+          adminFetch(`/api/admin/lessons`)
         ])
 
-        if (!vocabRes.ok) throw new Error(`Cannot fetch vocabulary ${id}`)
-        const vocabPayload = await vocabRes.json()
-        const lessonsPayload = lessonsRes.ok ? await lessonsRes.json() : []
 
         if (!isDisposed) {
           setVocab(vocabPayload)

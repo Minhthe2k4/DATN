@@ -122,6 +122,15 @@
 	cursor: not-allowed;
 }
 
+.spin {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
 .saved-vocab-header__eyebrow {
 	margin: 0;
 	display: inline-flex;
@@ -178,17 +187,30 @@
 .search-group {
 	flex: 1;
 	min-width: 280px;
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.search-icon, .filter-icon {
+	position: absolute;
+	left: 14px;
+	color: #64748b;
+	pointer-events: none;
 }
 
 .filter-group {
 	min-width: 220px;
+	position: relative;
+	display: flex;
+	align-items: center;
 }
 
 .saved-vocab-toolbar input,
 .lesson-filter-select {
 	width: 100%;
 	height: 42px;
-	padding: 0 12px;
+	padding: 0 12px 0 40px;
 	border: 1px solid #d5dce8;
 	border-radius: 10px;
 	font-size: 14px;
@@ -290,14 +312,20 @@
 	text-transform: lowercase;
 }
 
-.saved-word-card__head span {
+.saved-word-card__head span,
+.level-badge {
 	font-size: 11px;
 	font-weight: 700;
 	padding: 4px 8px;
 	border-radius: 999px;
-	background: #eff5ff;
-	color: #1d4ed8;
 }
+
+.level-1 { background: #f1f5f9; color: #475569; }
+.level-2 { background: #ecfdf5; color: #059669; }
+.level-3 { background: #eff6ff; color: #1d4ed8; }
+.level-4 { background: #fefce8; color: #a16207; }
+.level-5 { background: #fff7ed; color: #ea580c; }
+.level-6 { background: #fef2f2; color: #dc2626; }
 
 .saved-word-card p {
 	margin: 0;
@@ -334,27 +362,58 @@
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
+	margin-top: 4px;
 }
 
 .saved-word-card__actions button {
-	height: 30px;
-	padding: 0 10px;
+	height: 32px;
+	padding: 0 12px;
 	border-radius: 8px;
-	border: 0;
-	background: #1d4ed8;
-	color: #ffffff;
+	border: 1px solid transparent;
 	font-size: 12px;
 	font-weight: 700;
 	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	transition: all 0.2s;
 }
 
-.saved-word-card__actions button.is-ghost {
-	background: #e5e7eb;
-	color: #374151;
+.btn-edit { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe !important; }
+.btn-edit:hover { background: #dbeafe; }
+
+.btn-save { background: #22c55e; color: #ffffff; }
+.btn-save:hover { background: #16a34a; }
+
+.is-danger { background: #fef2f2; color: #dc2626; border-color: #fecaca !important; }
+.is-danger:hover { background: #fee2e2; }
+
+.is-ghost { background: #f8fafc; color: #475569; border-color: #e2e8f0 !important; }
+.is-ghost:hover { background: #f1f5f9; }
+
+.edit-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
-.saved-word-card__actions button.is-danger {
-	background: #ef4444;
+.edit-field label {
+	font-size: 11px;
+	font-weight: 700;
+	color: #64748b;
+	text-transform: uppercase;
+}
+
+.phonetic-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.card-meanings {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
 }
 
 .saved-vocab-sync-btn {

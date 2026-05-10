@@ -4,15 +4,14 @@ import { lessons, vocabularyEntries } from '../../data/adminData'
 import {
   AdminPageHeader,
   AdminSectionCard,
-  Badge,
-  FilterTabs,
-  SimpleTable,
-  StatGrid,
-  Pagination,
 } from '../../components/console/AdminUi'
 import { usePagination } from '../../hooks/usePagination'
+import { adminFetch } from '../../utils/api'
+import { modal } from '../../../utils/modalUtils'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { VocabularyStats } from './components/VocabularyStats'
+import { VocabularyFilters } from './components/VocabularyFilters'
+import { VocabularyTable } from './components/VocabularyTable'
 
 function normalizeStatus(status) {
   if (status === 'Chờ rà soát' || status === 'Nháp') {
@@ -60,20 +59,22 @@ export function VocabularyManagement() {
   )
   const [lessonRows, setLessonRows] = useState(lessons)
   const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState('all')
   const [selectedLevel, setSelectedLevel] = useState('all')
   const [selectedType, setSelectedType] = useState('all')
+
+  const [statsData, setStatsData] = useState(null)
 
   useEffect(() => {
     let isDisposed = false
 
     async function loadData() {
       try {
-        const [vocabularyResponse, lessonResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/admin/vocabulary`),
-          fetch(`${API_BASE_URL}/api/admin/lessons`),
+        const [vocabularyResponse, lessonResponse, statsResponse] = await Promise.all([
+          adminFetch(`/api/admin/vocabulary`),
+          adminFetch(`/api/admin/lessons`),
+          adminFetch(`/api/admin/reports/content-summary`),
         ])
 
         if (!vocabularyResponse.ok || !lessonResponse.ok) {
@@ -85,9 +86,12 @@ export function VocabularyManagement() {
           lessonResponse.json(),
         ])
 
-        if (isDisposed) {
-          return
+        let statsPayload = null
+        if (statsResponse.ok) {
+          statsPayload = await statsResponse.json()
         }
+
+        if (isDisposed) return
 
         setEntries(Array.isArray(vocabularyPayload)
           ? vocabularyPayload.map(normalizeVocabularyRow)
@@ -97,15 +101,14 @@ export function VocabularyManagement() {
           ? lessonPayload.map(normalizeLessonRow)
           : lessons)
 
-        setLoadError('')
-      } catch {
-        if (isDisposed) {
-          return
+        if (statsPayload) {
+          setStatsData(statsPayload.vocabulary)
         }
-
+      } catch {
+        if (isDisposed) return
         setEntries(vocabularyEntries.map((entry) => ({ ...entry, status: normalizeStatus(entry.status) })))
         setLessonRows(lessons)
-        setLoadError('Không thể tải từ vựng/bài học từ backend, đang hiển thị dữ liệu mẫu.')
+        modal.error('Không thể tải từ vựng/bài học từ backend, đang hiển thị dữ liệu mẫu.')
       } finally {
         if (!isDisposed) {
           setIsLoading(false)
@@ -114,10 +117,7 @@ export function VocabularyManagement() {
     }
 
     loadData()
-
-    return () => {
-      isDisposed = true
-    }
+    return () => { isDisposed = true }
   }, [])
 
   const filteredRows = entries.filter((entry) => {
@@ -145,27 +145,6 @@ export function VocabularyManagement() {
 
   const pagination = usePagination(filteredRows, 15)
 
-  const stats = [
-    {
-      label: 'Tổng số từ vựng',
-      value: entries.length.toString(),
-      meta: 'Dữ liệu từ vựng tập trung trong hệ thống',
-      icon: 'iconoir-book',
-    },
-    {
-      label: 'Đã duyệt',
-      value: entries.filter((entry) => normalizeStatus(entry.status) === 'Đã duyệt').length.toString(),
-      meta: 'Sẵn sàng đưa vào bài học và bài đọc',
-      icon: 'iconoir-check-circle',
-    },
-    {
-      label: 'Chờ duyệt',
-      value: entries.filter((entry) => normalizeStatus(entry.status) === 'Chờ duyệt').length.toString(),
-      meta: 'Cần kiểm tra nghĩa, ví dụ và bài học',
-      icon: 'iconoir-warning-circle',
-    },
-  ]
-
   return (
     <div className="page-content">
       <div className="container-fluid">
@@ -174,16 +153,17 @@ export function VocabularyManagement() {
           title="Quản lý từ vựng"
           description="Kiểm soát vòng đời từ vựng từ lúc nhập liệu, rà soát đến khi phát hành vào nội dung học."
           actions={
-            <>
-              <Link to="/admin/vocabulary/new" className="btn btn-primary">Thêm từ vựng</Link>
-            </>
+            <Link to="/admin/vocabulary/new" className="btn btn-primary">Thêm từ vựng</Link>
           }
         />
 
         {isLoading ? <div className="alert alert-light border">Đang tải dữ liệu từ vựng từ backend...</div> : null}
-        {loadError ? <div className="alert alert-warning border">{loadError}</div> : null}
 
-        <StatGrid items={stats} />
+        <VocabularyStats
+          statsData={statsData}
+          entries={entries}
+          normalizeStatus={normalizeStatus}
+        />
 
         <div className="row g-3 mt-1">
           <div className="col-12">
@@ -191,105 +171,25 @@ export function VocabularyManagement() {
               title="Kho từ vựng"
               description="Danh sách từ hiện có, cho phép lọc theo trạng thái duyệt để xử lý nhanh theo từng nhóm."
             >
-              <div className="mb-3">
-                <div className="row g-3">
-                  <div className="col-12 col-md-auto">
-                    <FilterTabs items={['Tất cả', 'Chờ duyệt', 'Đã duyệt']} active={activeFilter} onChange={setActiveFilter} />
-                  </div>
-                  <div className="col-12 col-md-auto">
-                    <select
-                      className="form-select"
-                      value={selectedLessonId}
-                      onChange={(e) => setSelectedLessonId(e.target.value)}
-                    >
-                      <option value="all">Tất cả bài học</option>
-                      {lessonRows.map(lesson => (
-                        <option key={lesson.id} value={lesson.id}>{lesson.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-12 col-md-auto">
-                    <select
-                      className="form-select"
-                      value={selectedLevel}
-                      onChange={(e) => setSelectedLevel(e.target.value)}
-                    >
-                      <option value="all">Tất cả mức độ</option>
-                      <option value="Cơ bản">Cơ bản</option>
-                      <option value="Trung bình">Trung bình</option>
-                      <option value="Nâng cao">Nâng cao</option>
-                    </select>
-                  </div>
-                  <div className="col-12 col-md-auto">
-                    <select
-                      className="form-select"
-                      value={selectedType}
-                      onChange={(e) => setSelectedType(e.target.value)}
-                    >
-                      <option value="all">Tất cả loại từ</option>
-                      <option value="noun">Danh từ (Noun)</option>
-                      <option value="verb">Động từ (Verb)</option>
-                      <option value="adjective">Tính từ (Adjective)</option>
-                      <option value="adverb">Trạng từ (Adverb)</option>
-                      <option value="preposition">Giới từ (Preposition)</option>
-                      <option value="conjunction">Liên từ (Conjunction)</option>
-                    </select>
-                  </div>
-                  <div className="col-12 col-md">
-                    <div className="input-group">
-                      <span className="input-group-text bg-white border-end-0">
-                        <i className="iconoir-search"></i>
-                      </span>
-                      <input
-                        type="text"
-                        className="form-control border-start-0 ps-0"
-                        placeholder="Tìm kiếm từ vựng..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <SimpleTable
-                columns={[
-                  { key: 'word', label: 'Từ' },
-                  { key: 'pronunciation', label: 'Phiên âm' },
-                  { key: 'type_of_word', label: 'Từ loại' },
-                  { key: 'meaning_vi', label: 'Nghĩa Việt' },
-                  {
-                    key: 'lesson',
-                    label: 'Bài học',
-                    render: (row) => {
-                      const lessonId = resolveLessonId(row, lessonRows)
-                      const lessonName = lessonRows.find((lesson) => String(lesson.id) === String(lessonId))?.name || 'Chưa gán bài học'
-                      return lessonName
-                    },
-                  },
-                  { key: 'level', label: 'Mức độ' },
-                  {
-                    key: 'status',
-                    label: 'Trạng thái',
-                    render: (row) => <Badge tone={normalizeStatus(row.status) === 'Đã duyệt' ? 'success' : 'warning'}>{normalizeStatus(row.status)}</Badge>,
-                  },
-                  {
-                    key: 'actions',
-                    label: 'Hành động',
-                    render: (row) => (
-                      <div className="d-flex flex-wrap gap-2">
-                        <Link to={`/admin/vocabulary/${row.id}`} className="btn btn-sm btn-soft-info">Chi tiết</Link>
-                        <Link to={`/admin/vocabulary/${row.id}/edit`} className="btn btn-sm btn-soft-primary">Sửa</Link>
-                        <Link to={`/admin/vocabulary/${row.id}/delete`} className="btn btn-sm btn-soft-danger">Xóa</Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                rows={pagination.paginatedData}
+              <VocabularyFilters
+                activeFilter={activeFilter}
+                setActiveFilter={setActiveFilter}
+                selectedLessonId={selectedLessonId}
+                setSelectedLessonId={setSelectedLessonId}
+                selectedLevel={selectedLevel}
+                setSelectedLevel={setSelectedLevel}
+                selectedType={selectedType}
+                setSelectedType={setSelectedType}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                lessonRows={lessonRows}
               />
-              <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={pagination.handlePageChange}
+
+              <VocabularyTable
+                pagination={pagination}
+                lessonRows={lessonRows}
+                resolveLessonId={resolveLessonId}
+                normalizeStatus={normalizeStatus}
               />
             </AdminSectionCard>
           </div>

@@ -34,6 +34,9 @@ public class Lesson {
     @Column(name = "is_premium")
     public Boolean isPremium = false;
 
+    @Column(name = "views")
+    public Integer views = 0;
+
     @Column(name = "created_at")
     public Date createdAt;
 

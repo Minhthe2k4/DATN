@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
+import { Rocket, Loader2 } from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../../utils/api'
 
 export function PremiumGrantPage() {
   const navigate = useNavigate()
@@ -19,7 +20,7 @@ export function PremiumGrantPage() {
   })
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/admin/premium/plans`)
+    adminFetch(`/api/admin/premium/plans`)
       .then(res => res.json())
       .then(data => {
         setPlanRows(data)
@@ -71,9 +72,8 @@ export function PremiumGrantPage() {
 
     try {
       const adminActor = window.localStorage.getItem('admin_actor') || 'admin'
-      const response = await fetch(`${API_BASE_URL}/api/admin/premium/grant`, {
+      const response = await adminFetch(`/api/admin/premium/grant`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: form.email.trim(),
           planId: form.planId ? Number(form.planId) : null,
@@ -179,8 +179,12 @@ export function PremiumGrantPage() {
                 <button className="btn btn-outline-secondary px-4" onClick={() => navigate('/admin/premium')}>
                   Hủy bỏ
                 </button>
-                <button className="btn btn-primary px-4" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? '⏳ Đang xử lý...' : '🚀 Cấp quyền ngay'}
+                <button className="btn btn-primary px-4 d-flex align-items-center gap-2" onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <><Loader2 className="spinner-border spinner-border-sm" size={16} /> Đang xử lý...</>
+                  ) : (
+                    <><Rocket size={16} /> Cấp quyền ngay</>
+                  )}
                 </button>
               </div>
             </AdminSectionCard>

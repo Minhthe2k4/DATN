@@ -1,3 +1,5 @@
+CREATE DATABASE  IF NOT EXISTS `vocab_learning` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
+USE `vocab_learning`;
 -- MySQL dump 10.13  Distrib 8.0.43, for Win64 (x86_64)
 --
 -- Host: 127.0.0.1    Database: vocab_learning
@@ -30,9 +32,11 @@ CREATE TABLE `article_topics` (
   `status` tinyint(1) NOT NULL DEFAULT '1',
   `article_topic_image` text COLLATE utf8mb4_unicode_ci,
   `deleted_at` datetime DEFAULT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_topics_deleted_at` (`deleted_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -54,74 +58,13 @@ CREATE TABLE `articles` (
   `status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `article_image` text COLLATE utf8mb4_unicode_ci,
   `deleted_at` datetime DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  `views` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `topic_id` (`topic_id`),
   KEY `idx_articles_deleted_at` (`deleted_at`),
   CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `article_topics` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `flashcard_decks`
---
-
-DROP TABLE IF EXISTS `flashcard_decks`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `flashcard_decks` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `folder_id` int(11) DEFAULT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `fk_deck_user` (`user_id`),
-  KEY `fk_deck_folder` (`folder_id`),
-  CONSTRAINT `fk_deck_folder` FOREIGN KEY (`folder_id`) REFERENCES `flashcard_folders` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_deck_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `flashcard_folders`
---
-
-DROP TABLE IF EXISTS `flashcard_folders`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `flashcard_folders` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `fk_folder_user` (`user_id`),
-  CONSTRAINT `fk_folder_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `flashcards`
---
-
-DROP TABLE IF EXISTS `flashcards`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `flashcards` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `deck_id` int(11) NOT NULL,
-  `custom_vocab_id` int(11) DEFAULT NULL,
-  `front_text` text COLLATE utf8mb4_unicode_ci,
-  `back_text` text COLLATE utf8mb4_unicode_ci,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `fk_card_deck` (`deck_id`),
-  KEY `fk_card_custom_vocab` (`custom_vocab_id`),
-  CONSTRAINT `fk_card_custom_vocab` FOREIGN KEY (`custom_vocab_id`) REFERENCES `user_vocabulary_custom` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_card_deck` FOREIGN KEY (`deck_id`) REFERENCES `flashcard_decks` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -139,7 +82,7 @@ CREATE TABLE `leaderboard` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `leaderboard_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -176,11 +119,14 @@ CREATE TABLE `lessons` (
   `deleted_at` datetime DEFAULT NULL,
   `difficulty` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'Trung bình',
   `is_premium` bit(1) DEFAULT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  `views` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `topic_id` (`topic_id`),
   KEY `idx_lessons_deleted_at` (`deleted_at`),
   CONSTRAINT `lessons_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -201,13 +147,16 @@ CREATE TABLE `lookup_history` (
   `meaning_vi` text COLLATE utf8mb4_unicode_ci,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `context_translation` text COLLATE utf8mb4_unicode_ci,
+  `video_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_lookup_user` (`user_id`),
   KEY `idx_lookup_word` (`word`),
   KEY `fk_lookup_article` (`article_id`),
+  KEY `fk_lookup_video` (`video_id`),
   CONSTRAINT `fk_lookup_article` FOREIGN KEY (`article_id`) REFERENCES `articles` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_lookup_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=108 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `fk_lookup_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_lookup_video` FOREIGN KEY (`video_id`) REFERENCES `videos` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -237,7 +186,7 @@ CREATE TABLE `premium_audit_logs` (
   CONSTRAINT `fk_premium_audit_subscription` FOREIGN KEY (`subscription_id`) REFERENCES `user_subscriptions` (`id`),
   CONSTRAINT `fk_premium_audit_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`),
   CONSTRAINT `fk_premium_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -256,7 +205,7 @@ CREATE TABLE `premium_feature_limits` (
   PRIMARY KEY (`id`),
   KEY `fk_plan_feature_limits` (`plan_id`),
   CONSTRAINT `fk_plan_feature_limits` FOREIGN KEY (`plan_id`) REFERENCES `premium_plans` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=384 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=447 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -273,7 +222,7 @@ CREATE TABLE `premium_plans` (
   `duration` int(11) DEFAULT NULL COMMENT 'Thời hạn (ngày)',
   `description` text COLLATE utf8mb4_unicode_ci COMMENT 'Mô tả gói',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -301,7 +250,7 @@ CREATE TABLE `review_history` (
   CONSTRAINT `review_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `review_history_ibfk_2` FOREIGN KEY (`vocab_id`) REFERENCES `vocabulary` (`id`),
   CONSTRAINT `review_history_ibfk_3` FOREIGN KEY (`custom_vocab_id`) REFERENCES `user_vocabulary_custom` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=76 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -321,7 +270,7 @@ CREATE TABLE `review_sessions` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `review_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -341,7 +290,7 @@ CREATE TABLE `segments` (
   PRIMARY KEY (`id`),
   KEY `video_id` (`video_id`),
   CONSTRAINT `segments_ibfk_1` FOREIGN KEY (`video_id`) REFERENCES `videos` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=526 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -361,50 +310,7 @@ CREATE TABLE `spaced_config` (
   `K` int(11) DEFAULT '10' COMMENT 'Hệ số smoothing',
   `max_interval` int(11) DEFAULT '30' COMMENT 'Khoảng ôn tối đa (ngày)',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `support_responses`
---
-
-DROP TABLE IF EXISTS `support_responses`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `support_responses` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `ticket_id` int(11) DEFAULT NULL COMMENT 'Ticket liên quan',
-  `admin_id` int(11) DEFAULT NULL COMMENT 'Admin phản hồi',
-  `response` text COLLATE utf8mb4_unicode_ci COMMENT 'Nội dung',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian',
-  PRIMARY KEY (`id`),
-  KEY `ticket_id` (`ticket_id`),
-  KEY `admin_id` (`admin_id`),
-  CONSTRAINT `support_responses_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`id`),
-  CONSTRAINT `support_responses_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `support_tickets`
---
-
-DROP TABLE IF EXISTS `support_tickets`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `support_tickets` (
-  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID ticket',
-  `user_id` int(11) DEFAULT NULL COMMENT 'Người gửi',
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Tiêu đề',
-  `message` text COLLATE utf8mb4_unicode_ci COMMENT 'Nội dung',
-  `status` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian',
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `sender_name` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `support_tickets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -418,14 +324,14 @@ CREATE TABLE `topics` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID chủ đề',
   `name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` text COLLATE utf8mb4_unicode_ci COMMENT 'Mô tả',
-  `level` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status` tinyint(1) DEFAULT '1' COMMENT 'Trạng thái hoạt động',
   `created_at` datetime(6) DEFAULT NULL,
   `topic_image` text COLLATE utf8mb4_unicode_ci,
   `deleted_at` datetime DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_topics_deleted_at` (`deleted_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -451,7 +357,7 @@ CREATE TABLE `transactions` (
   KEY `subscription_id` (`subscription_id`),
   CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `transactions_ibfk_2` FOREIGN KEY (`subscription_id`) REFERENCES `user_subscriptions` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=80 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -470,7 +376,7 @@ CREATE TABLE `user_favorites` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_user_favorite` (`user_id`,`target_id`,`target_type`),
   CONSTRAINT `fk_uf_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -489,7 +395,7 @@ CREATE TABLE `user_profile` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `user_profile_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -509,7 +415,7 @@ CREATE TABLE `user_progress` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_user_progress` (`user_id`,`target_id`,`target_type`),
   CONSTRAINT `fk_up_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -532,7 +438,7 @@ CREATE TABLE `user_stats` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_stats_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -552,18 +458,12 @@ CREATE TABLE `user_subscriptions` (
   `is_premium` tinyint(1) DEFAULT '0',
   `daily_lookup_count` int(11) DEFAULT '0',
   `last_lookup_date` datetime DEFAULT NULL,
-  `daily_download_count` int(11) DEFAULT NULL,
-  `last_download_date` datetime DEFAULT NULL,
-  `daily_video_download_count` int(11) DEFAULT NULL,
-  `last_video_download_date` datetime DEFAULT NULL,
-  `monthly_test_count` int(11) DEFAULT NULL,
-  `last_test_date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `plan_id` (`plan_id`),
   CONSTRAINT `user_subscriptions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `user_subscriptions_ibfk_2` FOREIGN KEY (`plan_id`) REFERENCES `premium_plans` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -589,10 +489,11 @@ CREATE TABLE `user_vocabulary_custom` (
   `level` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `level_source` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
+  `type_of_word` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_vocabulary_custom_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -624,7 +525,7 @@ CREATE TABLE `user_vocabulary_learning` (
   CONSTRAINT `user_vocabulary_learning_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `user_vocabulary_learning_ibfk_2` FOREIGN KEY (`vocab_id`) REFERENCES `vocabulary` (`id`) ON DELETE CASCADE,
   CONSTRAINT `user_vocabulary_learning_ibfk_3` FOREIGN KEY (`custom_vocab_id`) REFERENCES `user_vocabulary_custom` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -643,10 +544,12 @@ CREATE TABLE `users` (
   `is_active` tinyint(1) DEFAULT '1' COMMENT 'Trạng thái hoạt động',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo tài khoản',
   `deleted_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `phone_number` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -669,11 +572,15 @@ CREATE TABLE `videos` (
   `file_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `subtitle_status` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `thumbnail` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  `views` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `channel_id` (`channel_id`),
   KEY `idx_videos_deleted_at` (`deleted_at`),
   CONSTRAINT `videos_ibfk_1` FOREIGN KEY (`channel_id`) REFERENCES `youtube_channels` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -687,7 +594,6 @@ CREATE TABLE `vocabulary` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID từ vựng',
   `word` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `pronunciation` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `part_of_speech` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `meaning_en` text COLLATE utf8mb4_unicode_ci COMMENT 'Định nghĩa tiếng Anh',
   `meaning_vi` text COLLATE utf8mb4_unicode_ci COMMENT 'Nghĩa tiếng Việt',
   `example` text COLLATE utf8mb4_unicode_ci COMMENT 'Câu ví dụ',
@@ -695,10 +601,13 @@ CREATE TABLE `vocabulary` (
   `level` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
+  `type_of_word` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `deleted_at` datetime(6) DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `word` (`word`),
   KEY `idx_vocab_word` (`word`)
-) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=62 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -713,15 +622,16 @@ CREATE TABLE `youtube_channels` (
   `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Tên kênh',
   `url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Link kênh',
   `description` text COLLATE utf8mb4_unicode_ci COMMENT 'Mô tả kênh',
-  `subscriber_count` int(11) DEFAULT NULL COMMENT 'Số lượng subscriber',
+  `subscriber_count` bigint(20) DEFAULT NULL COMMENT 'Số lượng subscriber',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày lưu',
   `handle` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `focus_topic` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `avatar` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_channels_deleted_at` (`deleted_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -733,4 +643,4 @@ CREATE TABLE `youtube_channels` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-28 17:23:45
+-- Dump completed on 2026-05-03 21:59:27

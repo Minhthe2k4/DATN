@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.example.DATN.dto.TranscriptChunkDto;
+import com.example.DATN.dto.user.TranscriptChunkDto;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

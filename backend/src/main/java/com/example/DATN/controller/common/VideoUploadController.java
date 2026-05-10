@@ -1,0 +1,60 @@
+package com.example.DATN.controller.common;
+
+import com.example.DATN.service.common.VideoUploadService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.util.Map;
+
+/**
+ * Controller xử lý upload video từ admin.
+ *
+ * Endpoints:
+ * POST /api/admin/videos/upload-url — nhập YouTube URL, hệ thống tự download
+ * GET /api/admin/videos/{id}/status — kiểm tra trạng thái tạo phụ đề
+ */
+@RestController
+@RequestMapping("/api/admin")
+public class VideoUploadController {
+
+    private final VideoUploadService videoUploadService;
+
+    public VideoUploadController(VideoUploadService videoUploadService) {
+        this.videoUploadService = videoUploadService;
+    }
+
+    /**
+     * [LUỒNG 1 — Đơn giản hơn, phù hợp đồ án]
+     * Admin nhập YouTube URL → hệ thống tự download bằng yt-dlp → upload Cloudinary
+     * → Whisper tạo phụ đề.
+     *
+     * Request: JSON { "title": "...", "channelId": 1, "youtubeUrl":
+     * "https://youtu.be/..." }
+     * Response: { "videoId": 123 }
+     */
+    @PostMapping("/videos/upload-url")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Map<String, Long> uploadFromYoutubeUrl(@RequestBody Map<String, Object> body)
+            throws IOException, InterruptedException {
+        String title = (String) body.get("title");
+        Long channelId = Long.valueOf(body.get("channelId").toString());
+        String youtubeUrl = (String) body.get("youtubeUrl");
+        String difficulty = (String) body.getOrDefault("difficulty", "All");
+        String status = (String) body.getOrDefault("status", "Công khai");
+        String thumbnail = (String) body.getOrDefault("thumbnail", "");
+
+        Long videoId = videoUploadService.uploadFromYoutubeUrl(title, channelId, youtubeUrl, difficulty, status,
+                thumbnail);
+        return Map.of("videoId", videoId);
+    }
+
+    /**
+     * Kiểm tra trạng thái tạo phụ đề (frontend polling mỗi 3 giây).
+     * Response: { "status": "PROCESSING" | "DONE" | "ERROR" }
+     */
+    @GetMapping("/videos/{id}/status")
+    public Map<String, String> getSubtitleStatus(@PathVariable Long id) {
+        return Map.of("status", videoUploadService.getSubtitleStatus(id));
+    }
+}

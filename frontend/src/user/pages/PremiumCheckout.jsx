@@ -53,84 +53,121 @@ const PremiumCheckout = () => {
 
   return (
     <div className="premium-checkout-container" style={{ 
-      maxWidth: '900px', 
+      maxWidth: '1000px', 
       margin: '60px auto', 
-      padding: '40px', 
-      textAlign: 'center', 
-      background: '#fff',
-      borderRadius: '24px',
-      boxShadow: '0 20px 50px rgba(0,0,0,0.08)' 
+      padding: '40px 30px', 
+      background: 'linear-gradient(135deg, #ffffff 0%, #f9fbff 100%)',
+      borderRadius: '28px',
+      boxShadow: '0 25px 60px rgba(14, 116, 144, 0.08)',
+      border: '1px solid rgba(226, 232, 240, 0.8)',
+      fontFamily: "'Manrope', sans-serif"
     }}>
-      <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', color: '#1a202c' }}>Nâng cấp Premium</h1>
-      <p style={{ color: '#718096', fontSize: '1.1rem', marginBottom: '40px' }}>
-        Mở khóa toàn bộ tiềm năng học tiếng Anh của bạn với các tính năng độc quyền.
-      </p>
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '2.8rem', fontWeight: '800', marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.04em' }}>
+          Xác nhận Gói Premium
+        </h1>
+        <p style={{ color: '#64748b', fontSize: '1.15rem', fontWeight: '500', maxWidth: '640px', margin: '0 auto' }}>
+          Sẵn sàng nâng cao kỹ năng ngôn ngữ với quyền lợi không giới hạn.
+        </p>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-        {plans.map(plan => (
-          <div 
-            key={plan.id}
-            onClick={() => setSelectedPlan(plan)}
-            style={{
-              padding: '30px',
-              border: selectedPlan?.id === plan.id ? '2px solid #3182ce' : '2px solid #e2e8f0',
-              borderRadius: '16px',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              backgroundColor: selectedPlan?.id === plan.id ? '#f0f9ff' : 'white',
-              transform: selectedPlan?.id === plan.id ? 'translateY(-5px)' : 'none',
-              position: 'relative'
-            }}
-          >
-            {selectedPlan?.id === plan.id && (
-              <div style={{ 
-                position: 'absolute', 
-                top: '-12px', 
-                left: '50%', 
-                transform: 'translateX(-50%)',
-                backgroundColor: '#3182ce',
-                color: 'white',
-                padding: '2px 12px',
-                borderRadius: '12px',
-                fontSize: '0.8rem',
-                fontWeight: 'bold'
-              }}>ĐANG CHỌN</div>
-            )}
-            <h3 style={{ margin: '0 0 10px', fontSize: '1.2rem' }}>{plan.name}</h3>
-            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#2d3748', margin: '15px 0' }}>
-              {plan.price.toLocaleString('vi-VN')} VNĐ
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '45px' }}>
+        {plans.map(plan => {
+          const isSelected = selectedPlan?.id === plan.id;
+          return (
+            <div 
+              key={plan.id}
+              onClick={() => setSelectedPlan(plan)}
+              style={{
+                padding: '32px 24px',
+                border: isSelected ? '2px solid #0ea5e9' : '1px solid #e2e8f0',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                backgroundColor: isSelected ? '#f0f9ff' : 'white',
+                transform: isSelected ? 'translateY(-4px)' : 'none',
+                boxShadow: isSelected ? '0 16px 36px rgba(14, 165, 233, 0.12)' : '0 4px 12px rgba(0, 0, 0, 0.02)',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
+              {isSelected && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-12px', 
+                  left: '50%', 
+                  transform: 'translateX(-50%)',
+                  background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
+                  color: 'white',
+                  padding: '4px 16px',
+                  borderRadius: '999px',
+                  fontSize: '0.78rem',
+                  fontWeight: '800',
+                  letterSpacing: '0.06em',
+                  boxShadow: '0 8px 16px rgba(14, 165, 233, 0.25)'
+                }}>ĐANG CHỌN</div>
+              )}
+              <div>
+                <h3 style={{ margin: '0 0 8px', fontSize: '1.4rem', fontWeight: '800', color: '#1e293b' }}>
+                  {plan.name}
+                </h3>
+                <div style={{ fontSize: '2.1rem', fontWeight: '800', color: '#0f172a', margin: '14px 0' }}>
+                  {plan.price.toLocaleString('vi-VN')} ₫
+                </div>
+
+                <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(plan.description ? plan.description.split(/\n|•|\*/).map(line => line.trim()).filter(line => line.length > 0) : []).map((desc, idx) => (
+                    <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                      <span style={{ color: '#0ea5e9', fontWeight: '800' }}>✓</span>
+                      <span>{desc}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div style={{ color: '#64748b', fontSize: '0.82rem', fontWeight: '600', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                Thời hạn sử dụng: {plan.duration} ngày
+              </div>
             </div>
-            <p style={{ color: '#4a5568', fontSize: '0.9rem', minHeight: '60px' }}>{plan.description}</p>
-            <div style={{ color: '#718096', fontSize: '0.8rem' }}>Thời hạn: {plan.duration} ngày</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <button 
-        onClick={handlePayment} 
-        disabled={loading || !selectedPlan}
-        style={{
-          padding: '16px 48px',
-          fontSize: '1.1rem',
-          fontWeight: '700',
-          backgroundColor: '#005fbc',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px',
-          cursor: (loading || !selectedPlan) ? 'not-allowed' : 'pointer',
-          transition: 'all 0.2s ease',
-          boxShadow: '0 10px 15px -3px rgba(0, 95, 188, 0.3)'
-        }}
-      >
-        {loading ? 'Đang xử lý...' : `Thanh toán ${selectedPlan?.price.toLocaleString('vi-VN')} VNĐ qua ZaloPay`}
-      </button>
+      <div style={{ textAlign: 'center' }}>
+        <button 
+          onClick={handlePayment} 
+          disabled={loading || !selectedPlan}
+          style={{
+            padding: '18px 56px',
+            fontSize: '1.15rem',
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '16px',
+            cursor: (loading || !selectedPlan) ? 'not-allowed' : 'pointer',
+            transition: 'all 0.25s ease',
+            boxShadow: '0 16px 32px rgba(14, 165, 233, 0.26)',
+            width: '100%',
+            maxWidth: '480px'
+          }}
+        >
+          {loading ? 'Đang xử lý...' : `Thanh toán ngay`}
+        </button>
 
-      <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
-        <img src="https://images.careerbuilder.vn/employer_folders/lot7/126937/159495_logo.png" alt="ZaloPay" style={{ height: '30px' }} />
+        <div style={{ marginTop: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Đối tác thanh toán
+          </span>
+          <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay.png" alt="ZaloPay" style={{ height: '28px', objectFit: 'contain' }} />
+        </div>
+
+        <p style={{ marginTop: '16px', fontSize: '0.88rem', color: '#64748b', maxWidth: '500px', margin: '16px auto 0', lineHeight: '1.5' }}>
+          Mọi giao dịch thanh toán đều được xử lý thông qua máy chủ an toàn và mã hóa của ZaloPay.
+        </p>
       </div>
-      <p style={{ marginTop: '20px', fontSize: '0.9rem', color: '#a0aec0' }}>
-        Mọi giao dịch đều được bảo mật và xử lý thông qua cổng thanh toán ZaloPay Sandbox.
-      </p>
     </div>
   );
 };

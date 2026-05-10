@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from '@/utils/toastUtils'
 import './auth.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
@@ -31,8 +32,10 @@ export function ForgotPassword() {
       }
       setStep(2)
       setMessage('Mã OTP đã được gửi đến email của bạn.')
+      toast.success('Mã OTP đã được gửi đến email của bạn.')
     } catch (err) {
       setError(err.message)
+      toast.error(err.message)
     } finally {
       setIsLoading(false)
     }
@@ -53,8 +56,10 @@ export function ForgotPassword() {
       if (!isValid) throw new Error('Mã OTP không chính xác.')
       setStep(3)
       setMessage('')
+      toast.success('Mã OTP chính xác. Vui lòng tạo mật khẩu mới.')
     } catch (err) {
       setError(err.message)
+      toast.error(err.message)
     } finally {
       setIsLoading(false)
     }
@@ -64,6 +69,7 @@ export function ForgotPassword() {
     e.preventDefault()
     if (newPassword !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp.')
+      toast.error('Mật khẩu xác nhận không khớp.')
       return
     }
     setIsLoading(true)
@@ -77,9 +83,11 @@ export function ForgotPassword() {
       })
       if (!response.ok) throw new Error('Đã có lỗi xảy ra khi đặt lại mật khẩu.')
       setMessage('Mật khẩu đã được thay đổi thành công!')
+      toast.success('Mật khẩu đã được thay đổi thành công!')
       setTimeout(() => navigate('/login'), 2000)
     } catch (err) {
       setError(err.message)
+      toast.error(err.message)
     } finally {
       setIsLoading(false)
     }

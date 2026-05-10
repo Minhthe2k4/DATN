@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { GoogleLogin } from '@react-oauth/google'
 import { setUserSession } from '../../utils/authSession'
+import { toast } from '@/utils/toastUtils'
 import './auth.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
@@ -71,59 +71,27 @@ export function Login() {
 			}
 
 			const payload = await response.json()
-			
-			// Store userId as token for simple backend auth
-			localStorage.setItem('token', payload.userId)
+
+			// Store JWT token for backend auth
+			localStorage.setItem('token', payload.token)
 
 			setUserSession({
 				userId: payload.userId,
 				username: payload.username,
 				fullName: payload.fullName,
+				avatar: payload.avatar,
 				email: payload.email,
 				role: payload.role,
+				token: payload.token,
 				loggedInAt: new Date().toISOString(),
 			})
 
+			toast.success('Đăng nhập thành công!')
 			navigate('/')
 		} catch (error) {
-			setSubmitError(error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.')
-		} finally {
-			setIsSubmitting(false)
-		}
-	}
-
-	const handleGoogleSuccess = async (credentialResponse) => {
-		try {
-			setIsSubmitting(true)
-			setSubmitError('')
-
-			const response = await fetch(`${API_BASE_URL}/api/auth/google-login`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					idToken: credentialResponse.credential
-				}),
-			})
-
-			if (!response.ok) {
-				throw new Error('Xác thực Google thất bại.')
-			}
-
-			const payload = await response.json()
-
-			localStorage.setItem('token', payload.userId)
-			setUserSession({
-				userId: payload.userId,
-				username: payload.username,
-				fullName: payload.fullName,
-				email: payload.email,
-				role: payload.role,
-				loggedInAt: new Date().toISOString(),
-			})
-
-			navigate('/')
-		} catch (error) {
-			setSubmitError(error.message)
+			const msg = error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'
+			setSubmitError(msg)
+			toast.error(msg)
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -187,17 +155,6 @@ export function Login() {
 						</button>
 						{submitError ? <p className="text-danger small mb-0">{submitError}</p> : null}
 					</form>
-
-					<div className="auth-separator" role="presentation"><span>hoặc tiếp tục với</span></div>
-					<div className="auth-social-row">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setSubmitError('Đăng nhập Google thất bại.')}
-              useOneTap
-              theme="outline"
-              size="large"
-            />
-					</div>
 
 					<p className="auth-switch">
 						Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>

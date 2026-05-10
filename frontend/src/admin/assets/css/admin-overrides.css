@@ -88,7 +88,7 @@ body.admin-mode .topbar .topbar-custom {
   align-items: center;
 }
 
-body.admin-mode .topbar .topbar-custom > ul {
+body.admin-mode .topbar .topbar-custom>ul {
   margin-bottom: 0;
   min-width: 0;
   gap: 12px;
@@ -324,7 +324,7 @@ body.admin-mode .startbar .startbar-menu .navbar-nav .nav-item .nav-link.active 
 }
 
 body.admin-mode .admin-shell.is-collapsed .startbar .admin-brand-text,
-body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .nav-link > span:not(.admin-nav-tooltip),
+body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .nav-link>span:not(.admin-nav-tooltip),
 body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .menu-label {
   display: none;
 }
@@ -408,7 +408,7 @@ body.admin-mode .page-content .row {
   margin-right: 0;
 }
 
-body.admin-mode .page-content .row > [class*="col-"] {
+body.admin-mode .page-content .row>[class*="col-"] {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
 }
@@ -423,30 +423,28 @@ body.admin-mode .page-content form .row [class*="col-"] {
 }
 
 @media (max-width: 1199.98px) {
-  .admin-shell,
   .admin-shell.is-collapsed {
     grid-template-columns: 88px minmax(0, 1fr);
   }
 
-  body.admin-mode .startbar,
   body.admin-mode .admin-shell.is-collapsed .startbar {
     width: 88px;
     min-width: 88px;
   }
 
-  body.admin-mode .startbar .admin-brand-text,
-  body.admin-mode .startbar .startbar-menu .nav-link span,
-  body.admin-mode .startbar .startbar-menu .menu-label {
+  body.admin-mode .admin-shell.is-collapsed .startbar .admin-brand-text,
+  body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .nav-link span,
+  body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .menu-label {
     display: none;
   }
 
-  body.admin-mode .startbar .brand {
+  body.admin-mode .admin-shell.is-collapsed .startbar .brand {
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
   }
 
-  body.admin-mode .startbar .startbar-menu .nav-link {
+  body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .nav-link {
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
@@ -482,50 +480,54 @@ body.admin-mode .page-content form .row [class*="col-"] {
   }
 }
 
-@media (max-width: 680px) {
-  .admin-shell,
+@media (max-width: 768px) {
   .admin-shell.is-collapsed {
-    grid-template-columns: 72px minmax(0, 1fr);
-    height: 100dvh;
-    min-height: 100dvh;
-    overflow: hidden;
+    grid-template-columns: 88px minmax(0, 1fr);
   }
 
-  body.admin-mode .startbar,
   body.admin-mode .admin-shell.is-collapsed .startbar {
-    width: 72px;
-    min-width: 72px;
+    width: 88px;
+    min-width: 88px;
+  }
+
+  body.admin-mode .startbar {
     height: 100dvh;
     box-shadow: none;
   }
 
-  body.admin-mode .startbar .brand {
+  body.admin-mode .admin-shell.is-collapsed .startbar .brand {
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
   }
 
-  body.admin-mode .startbar .admin-brand-text,
-  body.admin-mode .startbar .startbar-menu .nav-link span,
-  body.admin-mode .startbar .startbar-menu .menu-label {
+  body.admin-mode .admin-shell.is-collapsed .startbar .admin-brand-text,
+  body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .nav-link span,
+  body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .menu-label {
     display: none;
   }
 
-  body.admin-mode .startbar .startbar-menu .nav-link {
+  body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .nav-link {
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
   }
 
-  body.admin-mode .startbar .startbar-menu .nav-link .admin-nav-tooltip {
-    display: none;
-  }
-
-  body.admin-mode .page-wrapper .page-content {
-    padding: 12px 10px 16px;
-    overflow-y: auto;
+  body.admin-mode .admin-shell.is-collapsed .startbar .startbar-menu .nav-link i {
+    margin: 0;
+    font-size: 22px;
   }
 }
+
+body.admin-mode .startbar .startbar-menu .nav-link .admin-nav-tooltip {
+  display: none;
+}
+
+body.admin-mode .page-wrapper .page-content {
+  padding: 12px 10px 16px;
+  overflow-y: auto;
+}
+
 
 /* ── Admin dark mode ────────────────────────────────────── */
 body.admin-mode.dark-mode {

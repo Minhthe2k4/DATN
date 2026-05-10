@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAdminSession, clearAdminSession } from '../utils/adminSession'
+import { Sun, Moon, Bell, Search } from 'lucide-react'
 import avatar1 from '../assets/images/users/avatar-1.jpg'
 
 export function Header({ isDarkMode, onToggleDarkMode }) {
@@ -72,7 +73,7 @@ export function Header({ isDarkMode, onToggleDarkMode }) {
               <form role="search" onSubmit={(event) => event.preventDefault()}>
                 <input type="search" className="form-control top-search mb-0" placeholder="Tìm người dùng, từ vựng, bài học..." />
                 <button type="submit" aria-label="Search">
-                  <i className="iconoir-search"></i>
+                  <Search size={18} />
                 </button>
               </form>
             </li>
@@ -87,14 +88,9 @@ export function Header({ isDarkMode, onToggleDarkMode }) {
                 aria-label={isDarkMode ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối'}
               >
                 {isDarkMode ? (
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-                    <circle cx="12" cy="12" r="4.5" />
-                    <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-                  </svg>
+                  <Sun size={20} />
                 ) : (
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15.5 4.5A8 8 0 1110 19.2a7 7 0 005.5-14.7z" />
-                  </svg>
+                  <Moon size={20} />
                 )}
               </button>
             </li>
@@ -114,10 +110,7 @@ export function Header({ isDarkMode, onToggleDarkMode }) {
                 aria-expanded={isNotifOpen}
                 style={{ position: 'relative' }}
               >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3c3.314 0 6 2.686 6 6v4h2v2H4v-2h2v-4c0-3.314 2.686-6 6-6z" />
-                  <path d="M8 19h8c0 .552-.448 1-1 1h-6c-.552 0-1-.448-1-1z" />
-                </svg>
+                <Bell size={20} />
                 {unreadCount > 0 && <span className="admin-notif-badge">{unreadCount}</span>}
               </button>
 

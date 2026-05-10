@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
+import { ArrowLeft, ArrowRight, Save, Loader2, Lock, CheckCircle, Unlock } from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { 
+  fetchPlanById, 
+  savePremiumPlan 
+} from './premiumUtils'
 
 const CONFIGURABLE_FEATURES = [
   { id: 'SAVED_VOCABULARY', label: 'Lưu từ vựng', description: 'Giới hạn số lượng từ có thể lưu', defaultLimit: 50 },
   { id: 'DICTIONARY_LOOKUP', label: 'Tra cứu từ điển', description: 'Giới hạn lượt tra từ mỗi ngày', defaultLimit: 5 },
-  { id: 'ARTICLE_DOWNLOADS', label: 'Tải bài báo', description: 'Cho phép tải nội dung bài báo về máy', defaultLimit: 0 },
-  { id: 'VIDEO_TRANSCRIPT_DOWNLOADS', label: 'Tải phụ đề video', description: 'Cho phép tải phụ đề video về máy', defaultLimit: 0 },
-  { id: 'SAVED_ARTICLES', label: 'Lưu bài báo', description: 'Giới hạn số lượng bài báo có thể lưu', defaultLimit: 10 },
   { id: 'CUSTOM_VOCABULARY_SETS', label: 'Bộ từ vựng tùy chỉnh', description: 'Giới hạn số lượng bộ từ vựng cá nhân', defaultLimit: 2 },
   { id: 'MONTHLY_VOCABULARY_TESTS', label: 'Bài kiểm tra tháng', description: 'Giới hạn số lượng bài kiểm tra mỗi tháng', defaultLimit: 5 },
   { id: 'VOCABULARY_REVIEW', label: 'Ôn tập từ vựng', description: 'Quyền sử dụng tính năng ôn tập (Review)', defaultLimit: 0, lockOnly: true },
-  { id: 'FLASHCARD_DECKS', label: 'Số lượng bộ thẻ Flashcard', description: 'Giới hạn số bộ thẻ Flashcard người dùng có thể tạo', defaultLimit: 2 },
-  { id: 'FLASHCARDS_PER_DECK', label: 'Số lượng thẻ mỗi bộ', description: 'Giới hạn số thẻ tối đa trong một bộ Flashcard', defaultLimit: 20 },
-  { id: 'SRS_GOLDEN_TIME', label: 'Tính năng Thời điểm vàng (SRS)', description: 'Cho phép sử dụng tính năng học theo thời điểm vàng', defaultLimit: 0, lockOnly: true },
+  { id: 'SRS_GOLDEN_TIME', label: 'Thời điểm vàng (SRS)', description: 'Cho phép sử dụng tính năng học theo thời điểm vàng', defaultLimit: 0, lockOnly: true },
 ]
 
 export function PremiumPlanCrud() {
@@ -42,8 +41,7 @@ export function PremiumPlanCrud() {
 
   useEffect(() => {
     if (isEdit) {
-      fetch(`${API_BASE_URL}/api/admin/premium/plans/${id}`)
-        .then(res => res.json())
+      fetchPlanById(id)
         .then(plan => {
           const planLimitsMap = new Map((plan.limits || []).map(l => [l.featureName, l]))
           const mergedLimits = CONFIGURABLE_FEATURES.map(f => {
@@ -72,46 +70,26 @@ export function PremiumPlanCrud() {
   }, [id, isEdit])
 
   const handleSave = async () => {
-    if (!form.name.trim()) {
-      setError('Tên gói là bắt buộc.')
-      return
-    }
+    if (!form.name.trim()) { setError('Tên gói là bắt buộc.'); return }
     const price = Number(form.price)
     const days = Number(form.durationDays)
-    if (!Number.isFinite(price) || price < 0) {
-      setError('Giá phải lớn hơn hoặc bằng 0.')
-      return
-    }
-    if (!Number.isFinite(days) || days <= 0) {
-      setError('Thời hạn phải lớn hơn 0 ngày.')
-      return
-    }
+    if (!Number.isFinite(price) || price < 0) { setError('Giá phải lớn hơn hoặc bằng 0.'); return }
+    if (!Number.isFinite(days) || days <= 0) { setError('Thời hạn phải lớn hơn 0 ngày.'); return }
 
     setIsSaving(true)
     setError('')
 
     try {
-      const method = isEdit ? 'PUT' : 'POST'
-      const url = isEdit
-        ? `${API_BASE_URL}/api/admin/premium/plans/${id}`
-        : `${API_BASE_URL}/api/admin/premium/plans`
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          price,
-          durationDays: days,
-          description: form.description.trim(),
-          limits: form.limits
-        }),
+      await savePremiumPlan(id, {
+        name: form.name.trim(),
+        price,
+        durationDays: days,
+        description: form.description.trim(),
+        limits: form.limits
       })
-
-      if (!response.ok) throw new Error('Lưu thất bại')
       navigate('/admin/premium')
     } catch (err) {
-      setError('Lưu gói Premium thất bại. Vui lòng thử lại.')
+      setError(err.message || 'Lưu gói Premium thất bại. Vui lòng thử lại.')
     } finally {
       setIsSaving(false)
     }
@@ -233,7 +211,7 @@ export function PremiumPlanCrud() {
                                   className="form-control"
                                   disabled={currentLimit.usageLimit >= 999999}
                                   value={currentLimit.usageLimit >= 999999 ? '' : currentLimit.usageLimit}
-                                  placeholder={currentLimit.usageLimit >= 999999 ? "∞ Vô hạn" : "0"}
+                                  placeholder={currentLimit.usageLimit >= 999999 ? "Vô hạn" : "0"}
                                   onChange={(e) => {
                                     const val = parseInt(e.target.value) || 0
                                     const newLimits = form.limits.map(l =>
@@ -253,20 +231,24 @@ export function PremiumPlanCrud() {
                                     setForm({ ...form, limits: newLimits })
                                   }}
                                 >
-                                  {currentLimit.usageLimit >= 999999 ? '🔓 Vô hạn' : 'Set ∞'}
+                                  {currentLimit.usageLimit >= 999999 ? (
+                                    <span className="d-flex align-items-center gap-1">
+                                      <Unlock size={12} /> Vô hạn
+                                    </span>
+                                  ) : 'Đặt Vô hạn'}
                                 </button>
                               </div>
                             </div>
                           </div>
                         )}
                         {currentLimit.isLocked && (
-                          <div className="mt-2 small text-danger fw-semibold">
-                            <i className="iconoir-lock me-1"></i> Tính năng bị khóa
+                          <div className="mt-2 small text-danger fw-semibold d-flex align-items-center gap-1">
+                            <Lock size={14} /> Tính năng bị khóa
                           </div>
                         )}
                         {!currentLimit.isLocked && feat.lockOnly && (
-                          <div className="mt-2 small text-success fw-semibold">
-                            <i className="iconoir-check-circle me-1"></i> Có quyền sử dụng
+                          <div className="mt-2 small text-success fw-semibold d-flex align-items-center gap-1">
+                            <CheckCircle size={14} /> Có quyền sử dụng
                           </div>
                         )}
                       </div>
@@ -280,8 +262,8 @@ export function PremiumPlanCrud() {
           <div className="mt-4 pt-3 border-top d-flex justify-content-between">
             <div>
               {currentStep === 2 && (
-                <button className="btn btn-outline-primary" onClick={() => setCurrentStep(1)}>
-                  ⬅️ Quay lại
+                <button className="btn btn-outline-primary d-flex align-items-center gap-1" onClick={() => setCurrentStep(1)}>
+                  <ArrowLeft size={16} /> Quay lại
                 </button>
               )}
             </div>
@@ -290,12 +272,16 @@ export function PremiumPlanCrud() {
                 Hủy
               </button>
               {currentStep === 1 ? (
-                <button className="btn btn-primary" onClick={() => setCurrentStep(2)}>
-                  Tiếp theo: Tính năng ➡️
+                <button className="btn btn-primary d-flex align-items-center gap-1" onClick={() => setCurrentStep(2)}>
+                  Tiếp theo: Tính năng <ArrowRight size={16} />
                 </button>
               ) : (
-                <button className="btn btn-success px-4" onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? '⏳ Đang lưu...' : '💾 Lưu Gói Cước'}
+                <button className="btn btn-success px-4 d-flex align-items-center gap-1" onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? (
+                    <><Loader2 className="spinner-border spinner-border-sm me-1" size={16} /> Đang lưu...</>
+                  ) : (
+                    <><Save size={16} /> Lưu Gói Cước</>
+                  )}
                 </button>
               )}
             </div>

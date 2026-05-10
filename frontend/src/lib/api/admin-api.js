@@ -1,3 +1,5 @@
+import { getAdminSession } from '../../admin/utils/adminSession'
+
 /**
  * Admin API Service
  * Fetches admin dashboard and management data from backend
@@ -51,8 +53,13 @@ const fallbackData = {
  */
 export async function fetchAdminSummary() {
   try {
+    const session = getAdminSession()
     const response = await fetch(`${API_BASE_URL}/api/admin/dashboard/overview`, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return fallbackData.adminSummary
     const data = await response.json()
@@ -69,8 +76,13 @@ export async function fetchAdminSummary() {
  */
 export async function fetchTrendSeries() {
   try {
+    const session = getAdminSession()
     const response = await fetch(`${API_BASE_URL}/api/admin/trends`, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return fallbackData.trendSeries
     return await response.json()
@@ -86,8 +98,13 @@ export async function fetchTrendSeries() {
  */
 export async function fetchUserActivityLeaders() {
   try {
+    const session = getAdminSession()
     const response = await fetch(`${API_BASE_URL}/api/admin/users/leaders`, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return fallbackData.userActivityLeaders
     return await response.json()
@@ -103,8 +120,13 @@ export async function fetchUserActivityLeaders() {
  */
 export async function fetchTopics() {
   try {
+    const session = getAdminSession()
     const response = await fetch(`${API_BASE_URL}/api/topics`, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -128,8 +150,13 @@ export async function fetchVocabularyEntries(filters = {}) {
     const queryString = params.toString()
     const url = `${API_BASE_URL}/api/vocabulary${queryString ? '?' + queryString : ''}`
 
+    const session = getAdminSession()
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -153,8 +180,13 @@ export async function fetchLessons(filters = {}) {
     const queryString = params.toString()
     const url = `${API_BASE_URL}/api/lessons${queryString ? '?' + queryString : ''}`
 
+    const session = getAdminSession()
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -178,8 +210,13 @@ export async function fetchReadingArticles(filters = {}) {
     const queryString = params.toString()
     const url = `${API_BASE_URL}/api/readings${queryString ? '?' + queryString : ''}`
 
+    const session = getAdminSession()
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -203,8 +240,13 @@ export async function fetchVideoLessons(filters = {}) {
     const queryString = params.toString()
     const url = `${API_BASE_URL}/api/videos${queryString ? '?' + queryString : ''}`
 
+    const session = getAdminSession()
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -228,8 +270,13 @@ export async function fetchUsers(filters = {}) {
     const queryString = params.toString()
     const url = `${API_BASE_URL}/api/admin/users${queryString ? '?' + queryString : ''}`
 
+    const session = getAdminSession()
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -245,8 +292,13 @@ export async function fetchUsers(filters = {}) {
  */
 export async function fetchPremiumRequests() {
   try {
+    const session = getAdminSession()
     const response = await fetch(`${API_BASE_URL}/api/admin/premium-requests`, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -270,8 +322,13 @@ export async function fetchSupportTickets(filters = {}) {
     const queryString = params.toString()
     const url = `${API_BASE_URL}/api/admin/support/tickets${queryString ? '?' + queryString : ''}`
 
+    const session = getAdminSession()
     const response = await fetch(url, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()
@@ -287,8 +344,13 @@ export async function fetchSupportTickets(filters = {}) {
  */
 export async function fetchRevenueData() {
   try {
+    const session = getAdminSession()
     const response = await fetch(`${API_BASE_URL}/api/admin/revenue`, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return { summary: {}, trends: [], transactions: [] }
     return await response.json()
@@ -304,8 +366,13 @@ export async function fetchRevenueData() {
  */
 export async function fetchRoles() {
   try {
+    const session = getAdminSession()
     const response = await fetch(`${API_BASE_URL}/api/admin/roles`, {
       credentials: 'include',
+      headers: {
+        'Authorization': session?.token ? `Bearer ${session.token}` : '',
+        'Content-Type': 'application/json'
+      }
     })
     if (!response.ok) return []
     return await response.json()

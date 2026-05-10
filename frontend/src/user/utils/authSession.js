@@ -30,8 +30,10 @@ export function clearUserSession() {
 
 export function getAuthHeader() {
     const session = getUserSession();
-    if (session && session.userId) {
-        return { Authorization: `Bearer ${session.userId}` };
+    const token = session?.token || localStorage.getItem('token');
+    
+    if (token) {
+        return { Authorization: `Bearer ${token}` };
     }
     return {};
 }

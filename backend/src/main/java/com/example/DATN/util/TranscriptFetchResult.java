@@ -1,6 +1,6 @@
 package com.example.DATN.util;
 
-import com.example.DATN.dto.TranscriptChunkDto;
+import com.example.DATN.dto.user.TranscriptChunkDto;
 import java.util.List;
 
 /**

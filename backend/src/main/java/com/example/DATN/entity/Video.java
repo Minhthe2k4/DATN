@@ -45,6 +45,9 @@ public class Video {
     @Column(name = "status", length = 255)
     public String status;
 
+    @Column(name = "views")
+    public Integer views = 0;
+
     @Column(name = "created_at")
     public Date createdAt;
 

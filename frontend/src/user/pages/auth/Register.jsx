@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { toast } from '@/utils/toastUtils'
 import './auth.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
@@ -44,16 +45,53 @@ export function Register() {
 	const navigate = useNavigate()
 	const [fullName, setFullName] = useState('')
 	const [email, setEmail] = useState('')
+	const [phoneNumber, setPhoneNumber] = useState('')
 	const [password, setPassword] = useState('')
 	const [confirmPassword, setConfirmPassword] = useState('')
+	const [otp, setOtp] = useState(['', '', '', '', '', ''])
+	const [isVerifying, setIsVerifying] = useState(false)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [submitError, setSubmitError] = useState('')
+
+	const handleOtpChange = (element, index) => {
+		if (isNaN(element.value)) return false
+
+		const newOtp = [...otp]
+		newOtp[index] = element.value
+		setOtp(newOtp)
+
+		if (element.nextSibling && element.value !== '') {
+			element.nextSibling.focus()
+		}
+	}
+
+	const handleKeyDown = (e, index) => {
+		if (e.key === 'Backspace' && !otp[index] && e.target.previousSibling) {
+			e.target.previousSibling.focus()
+		}
+	}
+
+	const handlePaste = (e) => {
+		const data = e.clipboardData.getData('text').slice(0, 6)
+		if (!/^\d+$/.test(data)) return
+
+		const newOtp = [...otp]
+		data.split('').forEach((char, index) => {
+			newOtp[index] = char
+		})
+		setOtp(newOtp)
+
+		const inputs = e.target.parentElement.querySelectorAll('input')
+		const nextIndex = Math.min(data.length, 5)
+		inputs[nextIndex].focus()
+	}
 
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 
 		if (password !== confirmPassword) {
 			setSubmitError('Mật khẩu xác nhận không khớp.')
+			toast.error('Mật khẩu xác nhận không khớp.')
 			return
 		}
 
@@ -67,6 +105,7 @@ export function Register() {
 				body: JSON.stringify({
 					fullName: fullName.trim(),
 					email: email.trim(),
+					phoneNumber: phoneNumber.trim(),
 					password,
 				}),
 			})
@@ -81,12 +120,92 @@ export function Register() {
 				throw new Error('Đăng ký thất bại.')
 			}
 
-			navigate('/login')
+			// Chuyển sang bước xác thực OTP
+			toast.success('Đăng ký thành công! Vui lòng nhập mã OTP đã được gửi về email của bạn.')
+			setIsVerifying(true)
+			setSubmitError('')
 		} catch (error) {
-			setSubmitError(error?.message || 'Đăng ký thất bại. Vui lòng thử lại.')
+			const msg = error?.message || 'Đăng ký thất bại. Vui lòng thử lại.'
+			setSubmitError(msg)
+			toast.error(msg)
 		} finally {
 			setIsSubmitting(false)
 		}
+	}
+
+	const handleVerifyOtp = async (event) => {
+		event.preventDefault()
+		try {
+			setIsSubmitting(true)
+			setSubmitError('')
+
+			const combinedOtp = otp.join('')
+			const response = await fetch(`${API_BASE_URL}/api/auth/activate`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					email: email.trim(),
+					otp: combinedOtp.trim(),
+				}),
+			})
+
+			if (!response.ok) {
+				const message = await extractErrorMessage(response, 'Xác thực thất bại.')
+				throw new Error(message || 'Mã OTP không chính xác hoặc đã hết hạn.')
+			}
+
+			toast.success('Đăng ký và kích hoạt tài khoản thành công!')
+			navigate('/login')
+		} catch (error) {
+			const msg = error?.message || 'Xác thực thất bại. Vui lòng thử lại.'
+			setSubmitError(msg)
+			toast.error(msg)
+		} finally {
+			setIsSubmitting(false)
+		}
+	}
+
+	if (isVerifying) {
+		return (
+			<section className="auth-page">
+				<div className="auth-shell auth-shell--register">
+					<div className="auth-card">
+						<h1>Xác thực tài khoản</h1>
+						<p className="auth-subtitle">Chúng tôi đã gửi mã OTP đến email <strong>{email}</strong>. Vui lòng nhập mã để hoàn tất đăng ký.</p>
+
+						<form className="auth-form" onSubmit={handleVerifyOtp}>
+							<div className="auth-field">
+								<span>Mã OTP</span>
+								<div className="otp-container">
+									{otp.map((data, index) => (
+										<input
+											key={index}
+											type="text"
+											className="otp-input"
+											maxLength="1"
+											value={data}
+											onChange={(e) => handleOtpChange(e.target, index)}
+											onKeyDown={(e) => handleKeyDown(e, index)}
+											onPaste={handlePaste}
+											onFocus={(e) => e.target.select()}
+											required
+										/>
+									))}
+								</div>
+							</div>
+
+							<button type="submit" className="auth-submit" disabled={isSubmitting}>
+								{isSubmitting ? 'Đang xác thực...' : 'Xác nhận kích hoạt'}
+							</button>
+							{submitError ? <p className="text-danger small mb-0">{submitError}</p> : null}
+						</form>
+						<p className="auth-switch">
+							Chưa nhận được mã? <button type="button" onClick={() => setIsVerifying(false)} className="btn-link">Quay lại đăng ký</button>
+						</p>
+					</div>
+				</div>
+			</section>
+		)
 	}
 
 	return (
@@ -135,6 +254,17 @@ export function Register() {
 								placeholder="you@example.com"
 								value={email}
 								onChange={(event) => setEmail(event.target.value)}
+								required
+							/>
+						</label>
+
+						<label className="auth-field">
+							<span>Số điện thoại</span>
+							<input
+								type="tel"
+								placeholder="0123456789"
+								value={phoneNumber}
+								onChange={(event) => setPhoneNumber(event.target.value)}
 								required
 							/>
 						</label>

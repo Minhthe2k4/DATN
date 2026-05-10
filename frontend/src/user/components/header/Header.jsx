@@ -146,15 +146,23 @@ export function Header({ isSoundEnabled, onToggleSound, isDarkMode, onToggleDark
                             aria-expanded={isProfileMenuOpen}
                         >
                             <span className="header-sr-only">Mở menu tài khoản</span>
-                            <span className="avatar">{userInitial}</span>
+                            {userSession?.avatar ? (
+                                <img src={userSession.avatar} alt={userName} className="avatar-img" />
+                            ) : (
+                                <span className="avatar">{userInitial}</span>
+                            )}
                             <span className="avatar-status" aria-hidden="true" />
                         </button>
 
-                        {isProfileMenuOpen ? (
+                        {isProfileMenuOpen && (
                             <section className="profile-popover" role="menu" aria-label="Menu tài khoản">
                                 <header className="profile-popover__header">
                                     <div className="profile-popover__avatar-wrap">
-                                        <span className="avatar avatar--large">{userInitial}</span>
+                                        {userSession?.avatar ? (
+                                            <img src={userSession.avatar} alt={userName} className="avatar-img avatar-img--large" />
+                                        ) : (
+                                            <span className="avatar avatar--large">{userInitial}</span>
+                                        )}
                                         <span className="avatar-status avatar-status--large" aria-hidden="true" />
                                     </div>
                                     <div className="profile-popover__info">
@@ -221,7 +229,7 @@ export function Header({ isSoundEnabled, onToggleSound, isDarkMode, onToggleDark
                                     </button>
                                 </div>
                             </section>
-                        ) : null}
+                        )}
                     </div>
                 ) : (
                     <div className="auth-cta">

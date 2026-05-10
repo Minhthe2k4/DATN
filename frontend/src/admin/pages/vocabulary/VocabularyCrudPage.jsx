@@ -2,16 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { lessons, vocabularyEntries } from '../../data/adminData'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
+import { modal } from '../../../utils/modalUtils'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
-const TYPE_OF_WORD = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'article', 'pronoun']
-const LEVELS = ['Cơ bản', 'Trung bình', 'Nâng cao']
-const STATUSES = ['Đã duyệt', 'Chờ duyệt']
+import { adminFetch } from '../../utils/api'
+import { VocabularyForm } from './components/VocabularyForm'
+import { DeleteConfirmation } from './components/DeleteConfirmation'
+import { VocabularySidebar } from './components/VocabularySidebar'
 
 async function requestGeneratedPronunciation(word) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/vocabulary/pronunciation/generate`, {
+  const response = await adminFetch(`/api/admin/vocabulary/pronunciation/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ word }),
   })
 
@@ -48,7 +48,7 @@ function normalizeVocabularyRow(row) {
     meaning_vi: row.meaningVi ?? row.meaning_vi ?? '',
     example: row.example ?? '',
     example_vi: row.exampleVi ?? row.example_vi ?? '',
-    level: row.level ?? 'Trung bình',
+    level: row.level ?? 'A1',
     status: normalizeStatus(row.status),
     lesson_id: row.lessonId ?? row.lesson_id ?? '',
     topic_id: row.topicId ?? row.topic_id ?? '',
@@ -65,7 +65,7 @@ function getInitialForm(row, mode) {
       meaning_vi: '',
       example: '',
       example_vi: '',
-      level: 'Trung bình',
+      level: 'A1',
       status: 'Chờ duyệt',
       lesson_id: lessons[0]?.id || '',
     }
@@ -79,7 +79,7 @@ function getInitialForm(row, mode) {
     meaning_vi: row?.meaning_vi || '',
     example: row?.example || '',
     example_vi: row?.example_vi || '',
-    level: row?.level || 'Trung bình',
+    level: row?.level || 'A1',
     status: normalizeStatus(row?.status),
     lesson_id: row?.lesson_id || '',
   }
@@ -96,17 +96,18 @@ export function VocabularyCrudPage({ mode }) {
     return vocabularyEntries.find((item) => String(item.id) === String(id)) || null
   })
   const [form, setForm] = useState(() => getInitialForm(currentRow, mode))
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(mode !== 'create')
   const [isGeneratingPronunciation, setIsGeneratingPronunciation] = useState(false)
+  const lessonName = useMemo(() => {
+    return lessonOptions.find((lesson) => String(lesson.id) === String(form.lesson_id))?.name || ''
+  }, [form.lesson_id, lessonOptions])
 
   useEffect(() => {
     let isDisposed = false
 
     async function loadData() {
       try {
-        const lessonResponse = await fetch(`${API_BASE_URL}/api/admin/lessons`)
+        const lessonResponse = await adminFetch(`/api/admin/lessons`)
         if (lessonResponse.ok) {
           const lessonPayload = await lessonResponse.json()
           if (!isDisposed && Array.isArray(lessonPayload)) {
@@ -122,7 +123,7 @@ export function VocabularyCrudPage({ mode }) {
           return
         }
 
-        const vocabularyResponse = await fetch(`${API_BASE_URL}/api/admin/vocabulary/${id}`)
+        const vocabularyResponse = await adminFetch(`/api/admin/vocabulary/${id}`)
         if (!vocabularyResponse.ok) {
           throw new Error(`Cannot fetch vocabulary: ${vocabularyResponse.status}`)
         }
@@ -135,10 +136,12 @@ export function VocabularyCrudPage({ mode }) {
         const normalizedVocabulary = normalizeVocabularyRow(vocabularyPayload)
         setCurrentRow(normalizedVocabulary)
         setForm(getInitialForm(normalizedVocabulary, mode))
-        setError('')
-      } catch {
         if (!isDisposed) {
-          setError('Không thể tải dữ liệu từ vựng từ backend.')
+          // Success case - do nothing or show success if needed (usually just load data)
+        }
+    } catch (err) {
+        if (!isDisposed) {
+          modal.error('Không thể tải dữ liệu từ vựng từ backend.')
         }
       } finally {
         if (!isDisposed) {
@@ -170,14 +173,10 @@ export function VocabularyCrudPage({ mode }) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  const lessonName = useMemo(() => {
-    return lessonOptions.find((lesson) => String(lesson.id) === String(form.lesson_id))?.name || ''
-  }, [form.lesson_id, lessonOptions])
-
   const generatePronunciation = async () => {
     const word = form.word.trim()
     if (!word) {
-      setError('Nhập từ tiếng Anh trước khi gen phiên âm.')
+      modal.warning('Nhập từ tiếng Anh trước khi gen phiên âm.')
       return
     }
 
@@ -189,9 +188,8 @@ export function VocabularyCrudPage({ mode }) {
       }
 
       setForm((prev) => ({ ...prev, pronunciation: generated }))
-      setError('')
     } catch {
-      setError('Không thể gen phiên âm lúc này. Vui lòng thử lại.')
+      modal.error('Không thể gen phiên âm lúc này. Vui lòng thử lại.')
     } finally {
       setIsGeneratingPronunciation(false)
     }
@@ -221,12 +219,12 @@ export function VocabularyCrudPage({ mode }) {
     }
 
     if (mode !== 'delete') {
-      if (!payload.word) { setError('Vui lòng nhập từ tiếng Anh'); return }
-      if (!payload.type_of_word) { setError('Vui lòng chọn loại từ'); return }
-      if (!payload.meaning_en) { setError('Vui lòng nhập định nghĩa tiếng Anh'); return }
-      if (!payload.meaning_vi) { setError('Vui lòng nhập nghĩa tiếng Việt'); return }
-      if (!payload.example) { setError('Vui lòng nhập câu ví dụ'); return }
-      if (!payload.lesson_id) { setError('Vui lòng chọn bài học'); return }
+      if (!payload.word) { modal.warning('Vui lòng nhập từ tiếng Anh'); return }
+      if (!payload.type_of_word) { modal.warning('Vui lòng chọn loại từ'); return }
+      if (!payload.meaning_en) { modal.warning('Vui lòng nhập định nghĩa tiếng Anh'); return }
+      if (!payload.meaning_vi) { modal.warning('Vui lòng nhập nghĩa tiếng Việt'); return }
+      if (!payload.example) { modal.warning('Vui lòng nhập câu ví dụ'); return }
+      if (!payload.lesson_id) { modal.warning('Vui lòng chọn bài học'); return }
 
       if (!payload.pronunciation) {
         try {
@@ -237,7 +235,7 @@ export function VocabularyCrudPage({ mode }) {
           }
           setForm((prev) => ({ ...prev, pronunciation: payload.pronunciation }))
         } catch {
-          setError('Không thể tự gen phiên âm cho từ này. Vui lòng thử lại hoặc nhập tay.')
+          modal.error('Không thể tự gen phiên âm cho từ này. Vui lòng thử lại hoặc nhập tay.')
           return
         } finally {
           setIsGeneratingPronunciation(false)
@@ -245,16 +243,15 @@ export function VocabularyCrudPage({ mode }) {
       }
 
       if (!payload.pronunciation) {
-        setError('Không thể tự gen phiên âm cho từ này. Vui lòng nhập tay.')
+        modal.warning('Không thể tự gen phiên âm cho từ này. Vui lòng nhập tay.')
         return
       }
     }
 
     try {
       if (mode === 'create') {
-        const response = await fetch(`${API_BASE_URL}/api/admin/vocabulary`, {
+        const response = await adminFetch(`/api/admin/vocabulary`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             word: payload.word,
             pronunciation: payload.pronunciation,
@@ -271,16 +268,14 @@ export function VocabularyCrudPage({ mode }) {
         if (!response.ok) {
           throw new Error(await extractError(response, 'Tạo mới thất bại'))
         }
-        setError('')
-        setSuccess(`Đã thêm từ "${form.word}" thành công.`)
-        window.setTimeout(() => navigate('/admin/vocabulary'), 1500)
+        modal.success(`Đã thêm từ "${form.word}" thành công.`)
+        navigate('/admin/vocabulary')
         return
       }
 
       if (mode === 'edit') {
-        const response = await fetch(`${API_BASE_URL}/api/admin/vocabulary/${id}`, {
+        const response = await adminFetch(`/api/admin/vocabulary/${id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             word: payload.word,
             pronunciation: payload.pronunciation,
@@ -297,25 +292,22 @@ export function VocabularyCrudPage({ mode }) {
         if (!response.ok) {
           throw new Error(await extractError(response, 'Cập nhật thất bại'))
         }
-        setError('')
-        setSuccess(`Đã cập nhật từ "${form.word}" thành công.`)
-        window.setTimeout(() => navigate('/admin/vocabulary'), 1500)
+        modal.success(`Đã cập nhật từ "${form.word}" thành công.`)
+        navigate('/admin/vocabulary')
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/vocabulary/${id}${force ? '?force=true' : ''}`, {
+      const response = await adminFetch(`/api/admin/vocabulary/${id}${force ? '?force=true' : ''}`, {
         method: 'DELETE',
       })
       if (!response.ok && response.status !== 204) {
         throw new Error(await extractError(response, 'Xóa thất bại'))
       }
 
-      setError('')
-      setSuccess(force ? `Đã xóa vĩnh viễn từ "${currentRow.word}".` : `Đã xóa tạm thời từ "${currentRow.word}".`)
-      window.setTimeout(() => navigate('/admin/vocabulary'), 600)
+      modal.success(force ? `Đã xóa vĩnh viễn từ "${currentRow.word}".` : `Đã xóa tạm thời từ "${currentRow.word}".`)
+      navigate('/admin/vocabulary')
     } catch (err) {
-      setSuccess('')
-      setError(err.message || 'Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
+      modal.error(err.message || 'Thao tác thất bại. Vui lòng kiểm tra backend và thử lại.')
     }
   }
 
@@ -335,147 +327,28 @@ export function VocabularyCrudPage({ mode }) {
 
         <div className="row g-3">
           <div className="col-12 col-lg-8">
-            <AdminSectionCard title={title} description={mode === 'delete' ? 'Hành động này không thể hoàn tác.' : 'Điền đầy đủ thông tin từ vựng.'}>
+            <AdminSectionCard 
+              title={title} 
+              description={mode === 'delete' ? 'Hành động này không thể hoàn tác.' : 'Điền đầy đủ thông tin từ vựng.'}
+            >
               {mode === 'delete' ? (
-                <div>
-                  <div className="alert alert-danger" role="alert">
-                    Bạn chuẩn bị xóa từ vựng <strong>{currentRow?.word}</strong> (ID: {id}).
-                    <br /><br />
-                    - <strong>Xóa tạm thời:</strong> Từ vựng sẽ được chuyển sang trạng thái "Từ chối" và ẩn khỏi các bài học, nhưng dữ liệu vẫn được giữ lại để đối soát.
-                    <br />
-                    - <strong>Xóa vĩnh viễn:</strong> Toàn bộ thông tin về từ vựng này sẽ bị gỡ bỏ hoàn toàn khỏi hệ thống.
-                  </div>
-                  <div className="d-flex gap-2">
-                    <button type="button" className="btn btn-warning" onClick={() => onSubmit(false)}>Xóa tạm thời</button>
-                    <button type="button" className="btn btn-danger" onClick={() => onSubmit(true)}>Xóa vĩnh viễn</button>
-                    <Link to="/admin/vocabulary" className="btn btn-outline-secondary">Hủy</Link>
-                  </div>
-                </div>
+                <DeleteConfirmation currentRow={currentRow} id={id} onSubmit={onSubmit} />
               ) : (
-                <form onSubmit={(e) => { e.preventDefault(); onSubmit() }}>
-                  {/* Main Info */}
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Từ tiếng Anh <span className="text-danger">*</span></label>
-                    <input className="form-control" value={form.word} onChange={(e) => setField('word', e.target.value)} placeholder="resilient" />
-                  </div>
-
-                  <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Phiên âm <span className="text-danger">*</span></label>
-                      <div className="input-group">
-                        <input className="form-control" value={form.pronunciation} onChange={(e) => setField('pronunciation', e.target.value)} placeholder="/rɪˈzɪliənt/" />
-                        <button
-                          type="button"
-                          className="btn btn-outline-primary"
-                          onClick={generatePronunciation}
-                          disabled={isGeneratingPronunciation}
-                        >
-                          {isGeneratingPronunciation ? 'Đang gen...' : 'AI gen'}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Loại từ <span className="text-danger">*</span></label>
-                      <select className="form-select" value={form.type_of_word} onChange={(e) => setField('type_of_word', e.target.value)}>
-                        <option value="">— Chọn —</option>
-                        {TYPE_OF_WORD.map((pos) => <option key={pos} value={pos}>{pos}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Definitions */}
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Định nghĩa tiếng Anh <span className="text-danger">*</span></label>
-                    <textarea className="form-control" rows="2" value={form.meaning_en} onChange={(e) => setField('meaning_en', e.target.value)} placeholder="Able to recover quickly from difficulties."></textarea>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Nghĩa tiếng Việt <span className="text-danger">*</span></label>
-                    <textarea className="form-control" rows="2" value={form.meaning_vi} onChange={(e) => setField('meaning_vi', e.target.value)} placeholder="Kiên cường, bền bỉ, dẻo dai"></textarea>
-                  </div>
-
-                  {/* Example */}
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Câu ví dụ <span className="text-danger">*</span></label>
-                    <textarea className="form-control" rows="2" value={form.example} onChange={(e) => setField('example', e.target.value)} placeholder="The startup remained resilient during the downturn."></textarea>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Ví dụ (Tiếng Việt)</label>
-                    <textarea className="form-control" rows="2" value={form.example_vi} onChange={(e) => setField('example_vi', e.target.value)} placeholder="Công ty khởi nghiệp vẫn kiên cường trong thời kỳ suy thoái."></textarea>
-                  </div>
-
-                  {/* Classification */}
-                  <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Bài học <span className="text-danger">*</span></label>
-                      <select className="form-select" value={form.lesson_id} onChange={(e) => setField('lesson_id', e.target.value)}>
-                        <option value="">— Chọn bài học —</option>
-                        {lessonOptions.map((lesson) => <option key={lesson.id} value={lesson.id}>{lesson.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Độ khó</label>
-                      <select className="form-select" value={form.level} onChange={(e) => setField('level', e.target.value)}>
-                        {LEVELS.map((lv) => <option key={lv} value={lv}>{lv}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Status */}
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Trạng thái duyệt</label>
-                    <select className="form-select" value={form.status} onChange={(e) => setField('status', e.target.value)}>
-                      {STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="d-flex gap-2 mt-4">
-                    <button type="submit" className="btn btn-primary">{mode === 'create' ? 'Thêm từ vựng' : 'Lưu thay đổi'}</button>
-                    <Link to="/admin/vocabulary" className="btn btn-outline-secondary">Hủy</Link>
-                  </div>
-                </form>
+                <VocabularyForm 
+                  form={form} 
+                  setField={setField} 
+                  onSubmit={onSubmit}
+                  generatePronunciation={generatePronunciation}
+                  isGeneratingPronunciation={isGeneratingPronunciation}
+                  lessonOptions={lessonOptions}
+                  mode={mode}
+                />
               )}
-
-              {error && <div className="alert alert-danger mt-3">{error}</div>}
-              {success && <div className="alert alert-success mt-3">{success}</div>}
             </AdminSectionCard>
           </div>
 
-          {/* Right Sidebar */}
           <div className="col-12 col-lg-4">
-            <AdminSectionCard title="Hướng dẫn" description="Quy chuẩn nhập liệu">
-              <ul className="mb-0 ps-3 d-grid gap-1 small">
-                <li><strong>Từ:</strong> chữ thường (lowercase)</li>
-                <li><strong>Phiên âm:</strong> ký hiệu IPA /.../ </li>
-                <li><strong>Loại từ:</strong> noun, verb, adj...</li>
-                <li><strong>Định nghĩa:</strong> ngắn, dễ hiểu</li>
-                <li><strong>Ví dụ:</strong> câu hoàn chỉnh</li>
-                <li><strong>Trạng thái:</strong> Nháp → Chờ → Duyệt</li>
-              </ul>
-            </AdminSectionCard>
-
-            {currentRow && (
-              <AdminSectionCard title="Thông tin hiện tại" className="mt-3">
-                <div className="d-grid gap-2 small">
-                  <div>
-                    <strong>ID:</strong>
-                    <br />
-                    <code>{currentRow.id}</code>
-                  </div>
-                  <div>
-                    <strong>Bài học:</strong>
-                    <br />
-                    <span>{lessonName || currentRow.lesson_id || currentRow.topic_id}</span>
-                  </div>
-                  <div>
-                    <strong>Trạng thái:</strong>
-                    <br />
-                    <span className="badge bg-info">{currentRow.status}</span>
-                  </div>
-                </div>
-              </AdminSectionCard>
-            )}
+            <VocabularySidebar currentRow={currentRow} lessonName={lessonName} />
           </div>
         </div>
       </div>

@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard } from '../../components/console/AdminUi'
+import { modal } from '../../../utils/modalUtils'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { 
+  fetchUserById, 
+  updateUser, 
+  deleteUser 
+} from './utils/userUtils'
+
+import { UserForm } from './components/UserForm'
+import { UserDeleteConfirmation } from './components/UserDeleteConfirmation'
 
 export function UserCrudPage({ mode }) {
   const { id } = useParams()
@@ -20,29 +28,24 @@ export function UserCrudPage({ mode }) {
   })
 
   const [isLoading, setIsLoading] = useState(mode !== 'create')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   useEffect(() => {
     if (mode !== 'create' && id) {
       async function loadData() {
         try {
-          const res = await fetch(`${API_BASE_URL}/api/admin/users/${id}`)
-          if (res.ok) {
-            const data = await res.json()
-            setDraft({
-              username: data.username || '',
-              email: data.email || '',
-              fullName: data.fullname || '',
-              role: data.role || 'USER',
-              password: '', // Không hiển thị mật khẩu cũ
-              avatar: data.avatar || '',
-              phoneNumber: data.phoneNumber || '',
-              isActive: data.isActive
-            })
-          }
+          const data = await fetchUserById(id)
+          setDraft({
+            username: data.username || '',
+            email: data.email || '',
+            fullName: data.fullname || '',
+            role: data.role || 'USER',
+            password: '', // Không hiển thị mật khẩu cũ
+            avatar: data.avatar || '',
+            phoneNumber: data.phoneNumber || '',
+            isActive: data.isActive
+          })
         } catch (err) {
-          setError('Không thể tải dữ liệu người dùng.')
+          modal.error('Không thể tải dữ liệu người dùng.')
         } finally {
           setIsLoading(false)
         }
@@ -55,37 +58,25 @@ export function UserCrudPage({ mode }) {
 
   const handleSave = async () => {
     if (!draft.username.trim() || !draft.email.trim()) {
-      setError('Username và Email là bắt buộc.')
+      modal.warning('Username và Email là bắt buộc.')
       return
     }
-    setError('')
     try {
-      const url = `${API_BASE_URL}/api/admin/users/${id}`
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(draft),
-      })
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || 'Lưu thất bại')
-      }
-      setSuccess('Cập nhật người dùng thành công!')
-      window.setTimeout(() => navigate('/admin/users'), 1500)
+      await updateUser(id, draft)
+      modal.success('Cập nhật người dùng thành công!')
+      navigate('/admin/users')
     } catch (err) {
-      setError(err.message || 'Thao tác thất bại.')
+      modal.error(err.message || 'Thao tác thất bại.')
     }
   }
 
   const handleDelete = async (force = false) => {
-    setError('')
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}${force ? '?force=true' : ''}`, { method: 'DELETE' })
-      if (!response.ok && response.status !== 204) throw new Error('Xóa thất bại')
-      setSuccess(force ? 'Đã xóa vĩnh viễn tài khoản.' : 'Đã tạm khóa tài khoản.')
-      window.setTimeout(() => navigate('/admin/users'), 1500)
+      await deleteUser(id, force)
+      modal.success(force ? 'Đã xóa vĩnh viễn tài khoản.' : 'Đã tạm khóa tài khoản.')
+      navigate('/admin/users')
     } catch (err) {
-      setError(err.message || 'Thao tác thất bại.')
+      modal.error(err.message || 'Thao tác thất bại.')
     }
   }
 
@@ -107,76 +98,18 @@ export function UserCrudPage({ mode }) {
           <div className="col-12 col-lg-8 mx-auto">
             <AdminSectionCard title="Thông tin người dùng">
               {mode === 'delete' ? (
-                <div className="delete-confirmation">
-                  <div className="alert alert-danger mb-4">
-                     Bạn đang chuẩn bị xóa tài khoản <strong>{draft.username}</strong> ({draft.email}).
-                    <br /><br />
-                    - <strong>Xóa tạm thời (Tạm khóa):</strong> Tài khoản sẽ bị chuyển sang trạng thái "Bị khóa" và ẩn khỏi các danh sách hoạt động, nhưng dữ liệu vẫn được lưu trữ để đối soát.
-                    <br />
-                    - <strong>Xóa vĩnh viễn:</strong> Gỡ bỏ hoàn toàn tài khoản khỏi hệ thống. Toàn bộ thông tin và tiến trình học tập sẽ mất vĩnh viễn.
-                  </div>
-                  <div className="d-flex gap-3">
-                    <button className="btn btn-warning px-4" onClick={() => handleDelete(false)}>Xóa tạm thời</button>
-                    <button className="btn btn-danger px-4" onClick={() => handleDelete(true)}>Xóa vĩnh viễn</button>
-                    <button className="btn btn-outline-secondary px-4" onClick={() => navigate('/admin/users')}>Hủy</button>
-                  </div>
-                </div>
+                <UserDeleteConfirmation 
+                  draft={draft} 
+                  handleDelete={handleDelete} 
+                  onCancel={() => navigate('/admin/users')} 
+                />
               ) : (
-                <>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">Username <span className="text-danger">*</span></label>
-                      <input className="form-control" value={draft.username} onChange={e => setField('username', e.target.value)} />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">Email <span className="text-danger">*</span></label>
-                      <input className="form-control" type="email" value={draft.email} onChange={e => setField('email', e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">Họ và tên</label>
-                      <input className="form-control" value={draft.fullName} onChange={e => setField('fullName', e.target.value)} />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">Số điện thoại</label>
-                      <input className="form-control" value={draft.phoneNumber} onChange={e => setField('phoneNumber', e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold text-primary">Mật khẩu mới</label>
-                      <input className="form-control" type="password" placeholder="Để trống nếu không muốn đổi" value={draft.password} onChange={e => setField('password', e.target.value)} />
-                      <small className="text-muted">Nhập mật khẩu mới nếu khách hàng yêu cầu đổi.</small>
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">Vai trò</label>
-                      <select className="form-select" value={draft.role} onChange={e => setField('role', e.target.value)}>
-                        <option value="USER">USER</option>
-                        <option value="ADMIN">ADMIN</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="form-label fw-bold">Ảnh đại diện (Avatar URL)</label>
-                    <input className="form-control" value={draft.avatar} onChange={e => setField('avatar', e.target.value)} />
-                    {draft.avatar && (
-                      <div className="mt-3 text-center">
-                         <img src={draft.avatar} alt="Preview" className="rounded-circle border" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="d-grid">
-                    <button className="btn btn-primary btn-lg" onClick={handleSave}>Lưu thay đổi</button>
-                  </div>
-                </>
+                <UserForm 
+                  draft={draft} 
+                  setField={setField} 
+                  handleSave={handleSave} 
+                />
               )}
-              {error && <div className="alert alert-danger mt-3">{error}</div>}
-              {success && <div className="alert alert-success mt-3">{success}</div>}
             </AdminSectionCard>
           </div>
         </div>

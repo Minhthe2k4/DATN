@@ -1,57 +1,35 @@
-import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { readingArticles, topics } from '../../data/adminData'
-import { AdminPageHeader, AdminSectionCard, Badge, SimpleTable, StatGrid, Pagination } from '../../components/console/AdminUi'
+import { AdminPageHeader } from '../../components/console/AdminUi'
 import { usePagination } from '../../hooks/usePagination'
+import { modal } from '../../../utils/modalUtils'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { 
+  fetchReadingData, 
+  normalizeArticleRow, 
+  normalizeTopicRow 
+} from './utils/readingUtils'
 
-function normalizeArticleRow(row) {
-  const parsedWordsHighlighted = Number.parseInt(row.wordsHighlighted ?? row.wordHighlighted ?? 0, 10)
-  return {
-    id: row.id,
-    title: row.title ?? '',
-    topicId: row.topicId ?? null,
-    topic: row.topic ?? row.topicName ?? 'Chưa gán chủ đề',
-    difficulty: row.difficulty ?? 'Trung bình',
-    content: row.content ?? '',
-    articleImage: row.articleImage ?? row.article_image ?? '',
-    createdAt: row.createdAt ?? row.created_at ?? row.create_at ?? '',
-    wordsHighlighted: Number.isNaN(parsedWordsHighlighted) ? 0 : Math.max(parsedWordsHighlighted, 0),
-    sourceUrl: row.sourceUrl ?? row.source ?? '',
-    status: row.status ?? 'Chờ biên tập',
-  }
-}
-
-function normalizeTopicRow(row) {
-  const normalizedStatus = typeof row.status === 'boolean'
-    ? (row.status ? 'Hoạt động' : 'Tạm dừng')
-    : (row.status ?? 'Hoạt động')
-
-  return {
-    id: row.id,
-    name: row.name ?? '',
-    description: row.description ?? '',
-    status: normalizedStatus,
-    articleTopicImage: row.articleTopicImage ?? row.article_topic_image ?? '',
-    articleCount: row.articleCount ?? 0,
-    createdAt: row.createdAt ?? '',
-    updatedAt: row.updatedAt ?? '',
-    deletedAt: row.deletedAt ?? null
-  }
-}
+import { ReadingStats } from './components/ReadingStats'
+import { ReadingArticleTable } from './components/ReadingArticleTable'
+import { ReadingTopicTable } from './components/ReadingTopicTable'
+import { ReadingTopArticles } from './components/ReadingTopArticles'
+import { ReadingDifficultyChart } from './components/ReadingDifficultyChart'
 
 export function ReadingManagement() {
   const [articles, setArticles] = useState(readingArticles)
   const [topicRows, setTopicRows] = useState(topics)
   const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+  const [statsData, setStatsData] = useState(null)
 
+  // Filters for Articles
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTopicId, setFilterTopicId] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 
+  // Filters for Topics
   const [searchTopicTerm, setSearchTopicTerm] = useState('')
   const [filterTopicStatus, setFilterTopicStatus] = useState('')
 
@@ -80,21 +58,17 @@ export function ReadingManagement() {
     let disposed = false
     async function loadData() {
       try {
-        const [articleResponse, topicResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/admin/readings`),
-          fetch(`${API_BASE_URL}/api/admin/reading-topics`),
-        ])
-        if (!articleResponse.ok || !topicResponse.ok) throw new Error('Cannot fetch reading data')
-        const [articlePayload, topicPayload] = await Promise.all([articleResponse.json(), topicResponse.json()])
+        const data = await fetchReadingData()
         if (disposed) return
-        setArticles(Array.isArray(articlePayload) ? articlePayload.map(normalizeArticleRow) : readingArticles)
-        setTopicRows(Array.isArray(topicPayload) ? topicPayload.map(normalizeTopicRow) : topics)
-        setLoadError('')
+        
+        setArticles(Array.isArray(data.articles) ? data.articles.map(normalizeArticleRow) : readingArticles)
+        setTopicRows(Array.isArray(data.topics) ? data.topics.map(normalizeTopicRow) : topics)
+        if (data.stats) setStatsData(data.stats)
       } catch {
         if (disposed) return
         setArticles(readingArticles)
         setTopicRows(topics)
-        setLoadError('Không thể tải dữ liệu bài đọc từ backend, đang hiển thị dữ liệu mẫu.')
+        modal.error('Không thể tải dữ liệu bài đọc từ backend, đang hiển thị dữ liệu mẫu.')
       } finally {
         if (!disposed) setIsLoading(false)
       }
@@ -103,12 +77,17 @@ export function ReadingManagement() {
     return () => { disposed = true }
   }, [])
 
-  const stats = [
-    { label: 'Bài đọc hiện có', value: articles.length.toString(), meta: 'Phục vụ tính năng học từ qua đọc báo', icon: 'iconoir-journal-page' },
-    { label: 'Đã xuất bản', value: articles.filter((a) => a.status === 'Đã xuất bản').length.toString(), meta: 'Đang xuất hiện ngoài frontend', icon: 'iconoir-check-circle' },
-    { label: 'Chờ biên tập', value: articles.filter((a) => a.status === 'Chờ biên tập').length.toString(), meta: 'Cần rà soát chủ đề và độ khó', icon: 'iconoir-edit-pencil' },
-    { label: 'Bản nháp', value: articles.filter((a) => a.status === 'Nháp').length.toString(), meta: 'Nội dung chưa sẵn sàng công bố', icon: 'iconoir-page-search' },
-  ]
+  const topArticles = useMemo(() => {
+    return [...articles].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5)
+  }, [articles])
+
+  const difficultyData = useMemo(() => {
+    const levels = ['Dễ', 'Trung bình', 'Khó']
+    return levels.map(lvl => ({
+      name: lvl,
+      count: articles.filter(a => a.difficulty === lvl).length
+    }))
+  }, [articles])
 
   return (
     <div className="page-content">
@@ -118,142 +97,52 @@ export function ReadingManagement() {
           title="Quản lý bài đọc"
           description="Quản lý vòng đời bài đọc từ biên tập, phân loại đến xuất bản cho người học cuối."
           actions={
-            <>
-              <Link to="/admin/reading-topics/new" className="btn btn-outline-primary">Thêm chủ đề</Link>
-              <Link to="/admin/readings/new" className="btn btn-primary">Thêm bài báo mới</Link>
-            </>
+            <div className="d-flex gap-2">
+              <Link to="/admin/reading-topics/new" className="btn btn-outline-primary d-flex align-items-center gap-2">
+                <Plus size={18} /> Thêm chủ đề
+              </Link>
+              <Link to="/admin/readings/new" className="btn btn-primary d-flex align-items-center gap-2">
+                <Plus size={18} /> Thêm bài báo mới
+              </Link>
+            </div>
           }
         />
 
         {isLoading ? <div className="alert alert-light border">Đang tải dữ liệu bài đọc từ backend...</div> : null}
-        {loadError ? <div className="alert alert-warning border">{loadError}</div> : null}
 
-        <StatGrid items={stats} />
+        <ReadingStats statsData={statsData} articles={articles} />
 
         <div className="row g-3 mt-1">
-          <div className="col-12">
-            <AdminSectionCard
-              title="Kho bài đọc"
-              description="Theo dõi trạng thái biên tập, độ khó và mức độ phủ từ nổi bật của từng bài."
-              actions={
-                <div className="d-flex gap-2">
-                  <select className="form-select form-select-sm" style={{ width: '150px' }} value={filterDifficulty} onChange={(e) => setFilterDifficulty(e.target.value)}>
-                    <option value="">Tất cả độ khó</option>
-                    <option value="Cơ bản">Cơ bản</option>
-                    <option value="Trung bình">Trung bình</option>
-                    <option value="Nâng cao">Nâng cao</option>
-                  </select>
-                  <select className="form-select form-select-sm" style={{ width: '150px' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="Đã xuất bản">Đã xuất bản</option>
-                    <option value="Chờ biên tập">Chờ biên tập</option>
-                    <option value="Nháp">Nháp</option>
-                  </select>
-                  <select className="form-select form-select-sm" style={{ width: '150px' }} value={filterTopicId} onChange={(e) => setFilterTopicId(e.target.value)}>
-                    <option value="">Tất cả chủ đề</option>
-                    {topicRows.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <div className="input-group input-group-sm" style={{ width: '200px' }}>
-                    <span className="input-group-text bg-light border-end-0"><i className="iconoir-search"></i></span>
-                    <input type="text" className="form-control border-start-0" placeholder="Tìm tiêu đề bài báo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                  </div>
-                </div>
-              }
-            >
-              <SimpleTable
-                columns={[
-                  {
-                    key: 'articleImage',
-                    label: 'Ảnh',
-                    render: (row) => (
-                      <img
-                        src={row.articleImage || 'https://via.placeholder.com/40'}
-                        alt={row.title}
-                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
-                      />
-                    )
-                  },
-                  { key: 'title', label: 'Tiêu đề' },
-                  { key: 'topic', label: 'Chủ đề' },
-                  { key: 'difficulty', label: 'Độ khó' },
-                  { key: 'wordsHighlighted', label: 'Từ nổi bật' },
-                  { key: 'status', label: 'Trạng thái', render: (row) => <Badge tone={row.status === 'Đã xuất bản' ? 'success' : row.status === 'Chờ biên tập' ? 'warning' : 'neutral'}>{row.status}</Badge> },
-                  {
-                    key: 'actions',
-                    label: 'Hành động',
-                    render: (row) => (
-                      <div className="d-flex gap-2 flex-nowrap text-nowrap">
-                        <Link to={`/admin/readings/${row.id}`} className="btn btn-sm btn-soft-info">Chi tiết</Link>
-                        <Link to={`/admin/readings/${row.id}/edit`} className="btn btn-sm btn-soft-primary">Sửa</Link>
-                        <Link to={`/admin/readings/${row.id}/delete`} className="btn btn-sm btn-soft-danger">Xóa</Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                rows={articlesPagination.paginatedData}
+          <div className="col-12 col-xl-9">
+            <div className="d-flex flex-column gap-3">
+              <ReadingArticleTable 
+                articlesPagination={articlesPagination}
+                filterDifficulty={filterDifficulty}
+                setFilterDifficulty={setFilterDifficulty}
+                filterStatus={filterStatus}
+                setFilterStatus={setFilterStatus}
+                filterTopicId={filterTopicId}
+                setFilterTopicId={setFilterTopicId}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                topicRows={topicRows}
               />
-              <Pagination
-                currentPage={articlesPagination.currentPage}
-                totalPages={articlesPagination.totalPages}
-                onPageChange={articlesPagination.handlePageChange}
+
+              <ReadingTopicTable 
+                topicsPagination={topicsPagination}
+                filterTopicStatus={filterTopicStatus}
+                setFilterTopicStatus={setFilterTopicStatus}
+                searchTopicTerm={searchTopicTerm}
+                setSearchTopicTerm={setSearchTopicTerm}
               />
-            </AdminSectionCard>
+            </div>
           </div>
 
-          <div className="col-12">
-            <AdminSectionCard
-              title="Article topics"
-              description="Quản lý danh sách chủ đề dùng để phân loại bài đọc."
-              actions={
-                <div className="d-flex gap-2">
-                  <select className="form-select form-select-sm" style={{ width: '150px' }} value={filterTopicStatus} onChange={(e) => setFilterTopicStatus(e.target.value)}>
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="Hoạt động">Hoạt động</option>
-                    <option value="Tạm dừng">Tạm dừng</option>
-                  </select>
-                  <div className="input-group input-group-sm" style={{ width: '180px' }}>
-                    <input type="text" className="form-control" placeholder="Tìm tên topic..." value={searchTopicTerm} onChange={(e) => setSearchTopicTerm(e.target.value)} />
-                  </div>
-                </div>
-              }
-            >
-              <SimpleTable
-                columns={[
-                  {
-                    key: 'articleTopicImage',
-                    label: 'Ảnh',
-                    render: (row) => (
-                      <img
-                        src={row.articleTopicImage || 'https://via.placeholder.com/40'}
-                        alt={row.name}
-                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
-                      />
-                    )
-                  },
-                  { key: 'name', label: 'Tên topic' },
-                  { key: 'description', label: 'Mô tả' },
-                  { key: 'articleCount', label: 'Bài đọc' },
-                  { key: 'status', label: 'Trạng thái', render: (row) => <Badge tone={row.status === 'Hoạt động' ? 'success' : 'warning'}>{row.status}</Badge> },
-                  {
-                    key: 'actions',
-                    label: 'Hành động',
-                    render: (row) => (
-                      <div className="d-flex flex-wrap gap-2">
-                        <Link to={`/admin/reading-topics/${row.id}`} className="btn btn-sm btn-soft-info">Chi tiết</Link>
-                        <Link to={`/admin/reading-topics/${row.id}/edit`} className="btn btn-sm btn-soft-primary">Sửa</Link>
-                        <Link to={`/admin/reading-topics/${row.id}/delete`} className="btn btn-sm btn-soft-danger">Xóa</Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                rows={topicsPagination.paginatedData}
-              />
-              <Pagination
-                currentPage={topicsPagination.currentPage}
-                totalPages={topicsPagination.totalPages}
-                onPageChange={topicsPagination.handlePageChange}
-              />
-            </AdminSectionCard>
+          <div className="col-12 col-xl-3">
+            <div className="d-flex flex-column gap-3">
+              <ReadingTopArticles topArticles={topArticles} />
+              <ReadingDifficultyChart difficultyData={difficultyData} />
+            </div>
           </div>
         </div>
       </div>

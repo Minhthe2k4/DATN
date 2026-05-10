@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { AdminPageHeader, AdminSectionCard } from '../components/console/AdminUi'
 import { RotateCcw, Trash2, Search, Info } from 'lucide-react'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { adminFetch } from '../utils/api'
 
 const CATEGORIES = [
   { id: 'users', label: 'Người dùng', endpoint: 'users' },
@@ -32,7 +32,7 @@ export default function RecycleBin() {
     setIsLoading(true)
     setError('')
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/${activeCategory.endpoint}/deleted`)
+      const response = await adminFetch(`/api/admin/${activeCategory.endpoint}/deleted`)
       if (!response.ok) throw new Error('Không thể tải dữ liệu thùng rác')
       const data = await response.json()
       setItems(data)
@@ -46,7 +46,7 @@ export default function RecycleBin() {
   const handleRestore = async (id) => {
     if (!window.confirm('Bạn có chắc chắn muốn khôi phục mục này?')) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/${activeCategory.endpoint}/${id}/restore`, {
+      const response = await adminFetch(`/api/admin/${activeCategory.endpoint}/${id}/restore`, {
         method: 'PATCH'
       })
       if (!response.ok) throw new Error('Khôi phục thất bại')
@@ -61,7 +61,7 @@ export default function RecycleBin() {
   const handleHardDelete = async (id) => {
     if (!window.confirm('CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn dữ liệu và không thể khôi phục. Bạn có chắc chắn?')) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/${activeCategory.endpoint}/${id}?force=true`, {
+      const response = await adminFetch(`/api/admin/${activeCategory.endpoint}/${id}?force=true`, {
         method: 'DELETE'
       })
       if (!response.ok) throw new Error('Xóa vĩnh viễn thất bại')

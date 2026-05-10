@@ -1,12 +1,14 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
-import { getUserSession } from '@/user/utils/authSession'
+import { getUserSession, getAuthHeader } from '@/user/utils/authSession'
+import { toast } from '@/utils/toastUtils'
+import { DictionarySearch } from './components/DictionarySearch'
+import { DictionaryResult } from './components/DictionaryResult'
+import { SaveVocabModal } from './components/SaveVocabModal'
 import './dictionary.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
-
-import { Search, Volume2, Bookmark } from 'lucide-react'
 
 function EmptyIcon() {
 	return (
@@ -26,8 +28,6 @@ export function Dictionary() {
 	const [searchedWord, setSearchedWord] = useState('')
 	const [apiResult, setApiResult] = useState(null)
 	const [loading, setLoading] = useState(false)
-	const [error, setError] = useState('')
-	const [success, setSuccess] = useState('')
 	const navigate = useNavigate()
 	const session = getUserSession()
 	const premiumStatus = usePremiumStatus(session?.userId)
@@ -40,62 +40,44 @@ export function Dictionary() {
 		definitionVi: '',
 		exampleEng: '',
 		exampleVi: '',
-		saveType: 'SRS', // 'SRS' or 'FLASHCARD'
-		deckId: '',
 	})
-	const [decks, setDecks] = useState([])
 
 	const hasResult = searchedWord.trim().length > 0
 
 	const resultEntry = useMemo(() => {
-		if (!hasResult) {
-			return null
-		}
-		if (apiResult) {
-			return apiResult
-		}
-		return null
-	}, [hasResult, searchedWord, apiResult])
+		if (!hasResult) return null
+		return apiResult || null
+	}, [hasResult, apiResult])
 
-	const onSubmitSearch = async (event) => {
-		event.preventDefault()
-		if (!searchText.trim()) {
-			setError('Please enter a word')
-			return
-		}
-
+	const fetchWordLookup = async (w) => {
+		if (!w || !w.trim()) return
 		setLoading(true)
-		setError('')
 		setApiResult(null)
+		setSearchText(w.trim())
 
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/dictionary/lookup`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					word: searchText.trim(),
+					word: w.trim(),
 					contextSentence: '',
 				}),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}`)
-			}
+			if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
 			const data = await response.json()
-			
 			if (data.error) {
-				setError(data.error || 'Word not found')
-				setSearchedWord(searchText)
-				setApiResult(null)
+				toast.error(data.error || 'Không tìm thấy từ này')
+				setSearchedWord(w.trim())
 				return
 			}
 
-			setSearchedWord(searchText)
-			
+			setSearchedWord(w.trim())
 			if (data && data.meanings && data.meanings.length > 0) {
 				const transformedEntry = {
-					word: data.word || searchText.trim(),
+					word: data.word || w.trim(),
 					typeOfWord: data.meanings[0]?.typeOfWord || 'noun',
 					uk: data.phonetic || '',
 					us: data.phonetic || '',
@@ -113,16 +95,32 @@ export function Dictionary() {
 				}
 				setApiResult(transformedEntry)
 			} else {
-				setError('Không tìm thấy định nghĩa cho từ này')
+				toast.info('Không tìm thấy định nghĩa cho từ này')
 				setApiResult(null)
 			}
 		} catch (err) {
-			setError(err.message || 'Failed to lookup word')
-			setSearchedWord(searchText)
-			setApiResult(null)
+			toast.error('Lỗi khi tra từ điển')
+			setSearchedWord(w.trim())
 		} finally {
 			setLoading(false)
 		}
+	}
+
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search)
+		const wordParam = params.get('word')
+		if (wordParam && wordParam.trim()) {
+			fetchWordLookup(wordParam.trim())
+		}
+	}, [])
+
+	const onSubmitSearch = async (event) => {
+		if (event) event.preventDefault()
+		if (!searchText.trim()) {
+			toast.warning('Vui lòng nhập từ khóa')
+			return
+		}
+		await fetchWordLookup(searchText)
 	}
 
 	const handleOpenSaveModal = (meaning) => {
@@ -134,123 +132,61 @@ export function Dictionary() {
 				definitionVi: meaning.meaningVi || '',
 				exampleEng: meaning.examples[0] || meaning.example || '',
 				exampleVi: '',
-				saveType: 'SRS',
-				deckId: '',
 			})
-			fetchDecks()
 			setShowSaveModal(true)
 		}
 	}
 
-	const fetchDecks = async () => {
-		try {
-			const authToken = localStorage.getItem('token') || session?.userId
-			const response = await fetch(`${API_BASE_URL}/api/user/flashcards/decks`, {
-				headers: { 'Authorization': `Bearer ${authToken}` }
-			})
-			if (response.ok) {
-				const data = await response.json()
-				setDecks(data)
-			}
-		} catch (err) {
-			console.error('Failed to fetch decks:', err)
-		}
-	}
-
-	const handleCloseSaveModal = () => {
-		setShowSaveModal(false)
-	}
-
 	const handleSaveFormChange = (field, value) => {
-		setSaveFormData(prev => ({
-			...prev,
-			[field]: value
-		}))
+		setSaveFormData(prev => ({ ...prev, [field]: value }))
 	}
 
-	const playAudio = (url) => {
-		if (!url) return
-		const audio = new Audio(url)
-		audio.play().catch(err => console.error('Audio playback failed:', err))
+	const playAudio = (url, wordToSpeak = '') => {
+		if (url && url.startsWith('http')) {
+			const audio = new Audio(url)
+			audio.play().catch(() => {
+				if (wordToSpeak && 'speechSynthesis' in window) {
+					window.speechSynthesis.cancel()
+					const utterance = new window.SpeechSynthesisUtterance(wordToSpeak)
+					utterance.lang = 'en-US'
+					window.speechSynthesis.speak(utterance)
+				}
+			})
+		} else if (wordToSpeak && 'speechSynthesis' in window) {
+			window.speechSynthesis.cancel()
+			const utterance = new window.SpeechSynthesisUtterance(wordToSpeak)
+			utterance.lang = 'en-US'
+			window.speechSynthesis.speak(utterance)
+		}
 	}
 
 	const handleSaveWord = async () => {
 		if (!saveFormData.word || !saveFormData.definitionEng || !saveFormData.definitionVi) {
-			alert('Vui lòng nhập đầy đủ các trường')
-			return
-		}
-		if (saveFormData.saveType === 'FLASHCARD' && !saveFormData.deckId) {
-			alert('Vui lòng chọn bộ thẻ Flashcard')
+			toast.warning('Vui lòng nhập đầy đủ các trường')
 			return
 		}
 
 		setLoading(true)
 		try {
 			const authToken = localStorage.getItem('token') || session?.userId;
-			
-			// 1. First save to Custom Vocabulary to get an ID if needed
 			const vocabResponse = await fetch(`${API_BASE_URL}/api/user/vocab-custom/save`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${authToken}`
+					...getAuthHeader()
 				},
-				body: JSON.stringify({
-					word: saveFormData.word,
-					pronunciation: saveFormData.pronunciation,
-					meaningEn: saveFormData.definitionEng,
-					meaningVi: saveFormData.definitionVi,
-					example: saveFormData.exampleEng,
-					exampleVi: saveFormData.exampleVi,
-				}),
+				body: JSON.stringify({ ...saveFormData, meaningEn: saveFormData.definitionEng, meaningVi: saveFormData.definitionVi, example: saveFormData.exampleEng, addToSRS: true }),
 			})
 
 			if (!vocabResponse.ok) {
 				const errorMsg = await vocabResponse.text()
-				if (errorMsg === 'Từ đã được lưu') {
-					// Word exists, we might still want to add it to a deck/SRS
-					// But for now let's assume if it exists, we can find it or just alert
-				} else {
-					throw new Error(errorMsg || 'Failed to save word')
-				}
+				if (errorMsg !== 'Từ đã được lưu') throw new Error(errorMsg || 'Failed to save word')
 			}
 
-			const savedVocab = vocabResponse.ok ? await vocabResponse.json() : null;
-
-			// 2. Handle specific learning type
-			if (saveFormData.saveType === 'SRS') {
-				// We need a specific endpoint for SRS initialization or we can assume backend does it
-				// For now, let's call a hypothetical SRS init endpoint if we had one, 
-				// or just rely on the fact that saving to custom vocab might trigger it.
-				// Actually, SpacedRepetitionService.initializeLearning(user, customVocab) should be called.
-				// I'll add a call to a new endpoint for this.
-				await fetch(`${API_BASE_URL}/api/user/srs/initialize`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${authToken}`
-					},
-					body: JSON.stringify({ customVocabId: savedVocab?.id || null, word: saveFormData.word })
-				})
-			} else if (saveFormData.saveType === 'FLASHCARD') {
-				await fetch(`${API_BASE_URL}/api/user/flashcards/decks/${saveFormData.deckId}/cards`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${authToken}`
-					},
-					body: JSON.stringify({
-						customVocab: { id: savedVocab?.id },
-						frontText: saveFormData.word,
-						backText: saveFormData.definitionVi
-					})
-				})
-			}
-
-			alert('Lưu từ thành công')
+			toast.success('Lưu vào lộ trình ôn tập Thời điểm vàng thành công')
 			setShowSaveModal(false)
 		} catch (err) {
-			alert('Lỗi khi lưu từ vựng: ' + err.message)
+			toast.error('Lỗi khi lưu từ vựng: ' + err.message)
 		} finally {
 			setLoading(false)
 		}
@@ -259,215 +195,34 @@ export function Dictionary() {
 	return (
 		<section className="dictionary-page">
 			<div className="dictionary-page__container">
-				<form className="dictionary-search" onSubmit={onSubmitSearch}>
-					<div className="dictionary-search__input-wrap">
-						<Search size={20} />
-						<input
-							type="text"
-							placeholder="Tìm từ vựng"
-							value={searchText}
-							onChange={(event) => setSearchText(event.target.value)}
-							disabled={loading}
-						/>
-					</div>
-					<button type="submit" className="dictionary-search__lang" disabled={loading}>
-						{loading ? 'Đang tải...' : 'Anh - Anh'}
-					</button>
-				</form>
-
-				{error && (
-					<div className="dictionary-error-banner">
-						{error}
-					</div>
-				)}
+				<DictionarySearch 
+					value={searchText}
+					onChange={setSearchText}
+					onSearch={onSubmitSearch}
+					loading={loading}
+				/>
 
 				{!hasResult ? (
 					<div className="dictionary-empty">
 						<EmptyIcon />
 						<p>Vui lòng nhập từ khóa để tra từ điển.</p>
 					</div>
-				) : resultEntry && (
-					<section className="dictionary-result">
-						<header className="dictionary-result__topbar">
-							<div className="dictionary-result__tabs">
-								<button type="button" className="is-active">Anh - Anh</button>
-								<button type="button">Tiếng Việt</button>
-								<button type="button">Chat GPT</button>
-							</div>
-						</header>
-
-						<div className="dictionary-entry">
-							<div className="dictionary-entry__head">
-								<h1>{resultEntry.word}</h1>
-								<span className="dictionary-pill">{resultEntry.typeOfWord}</span>
-							</div>
-
-							<div className="dictionary-pronunciation-grid">
-								<div className="dictionary-pronunciation-line">
-									<strong>UK</strong>
-									<button type="button" aria-label="Phát âm UK" onClick={() => playAudio(resultEntry.ukAudio)} disabled={!resultEntry.ukAudio}>
-										<Volume2 size={16} />
-									</button>
-									<span>{resultEntry.uk}</span>
-								</div>
-
-								<div className="dictionary-pronunciation-line">
-									<strong>US</strong>
-									<button type="button" aria-label="Phát âm US" onClick={() => playAudio(resultEntry.usAudio)} disabled={!resultEntry.usAudio}>
-										<Volume2 size={16} />
-									</button>
-									<span>{resultEntry.us}</span>
-								</div>
-							</div>
-
-							<div className="dictionary-meanings-block">
-								{resultEntry.meanings.map((meaning) => (
-									<article key={meaning.id} className="dictionary-meaning-row">
-										<div className="dictionary-meaning-row__title">
-											<div className="meaning-title-content">
-												{meaning.level && <span className="dictionary-pill dictionary-pill--level">{meaning.level}</span>}
-												<span className="dictionary-pill">{meaning.typeOfWord}</span>
-												<strong>{meaning.definition}</strong>
-											</div>
-											<button type="button" className="dictionary-save-icon" aria-label="Lưu nghĩa" onClick={() => handleOpenSaveModal(meaning)}>
-												<Bookmark size={15} />
-											</button>
-										</div>
-										
-										{meaning.meaningVi && (
-											<div className="dictionary-meaning-vi">
-												🇻🇳 {meaning.meaningVi}
-											</div>
-										)}
-
-										{meaning.examples && meaning.examples.length > 0 && (
-											<div className="dictionary-examples">
-												<strong>Ví dụ:</strong>
-												<ul>
-													{meaning.examples.map((ex, idx) => (
-														<li key={idx}>{ex}</li>
-													))}
-												</ul>
-											</div>
-										)}
-									</article>
-								))}
-							</div>
-						</div>
-					</section>
+				) : (
+					<DictionaryResult 
+						result={resultEntry}
+						onPlayAudio={playAudio}
+						onSaveMeaning={handleOpenSaveModal}
+					/>
 				)}
 
 				{showSaveModal && (
-					<div className="dictionary-save-modal-overlay" onClick={handleCloseSaveModal}>
-						<div className="dictionary-save-modal" onClick={(e) => e.stopPropagation()}>
-							<h2 className="dictionary-save-modal__title">Lưu từ vựng</h2>
-							
-							<div className="dictionary-save-modal__form">
-								<div className="dictionary-save-form__group">
-									<label>Từ tiếng Anh</label>
-									<input
-										type="text"
-										value={saveFormData.word}
-										onChange={(e) => handleSaveFormChange('word', e.target.value)}
-									/>
-								</div>
-
-								<div className="dictionary-save-form__group">
-									<label>Phien am</label>
-									<input
-										type="text"
-										value={saveFormData.pronunciation}
-										onChange={(e) => handleSaveFormChange('pronunciation', e.target.value)}
-									/>
-								</div>
-
-								<div className="dictionary-save-form__row">
-									<div className="dictionary-save-form__group">
-										<label>Định nghĩa (English)</label>
-										<textarea
-											value={saveFormData.definitionEng}
-											onChange={(e) => handleSaveFormChange('definitionEng', e.target.value)}
-											rows="3"
-										/>
-									</div>
-									<div className="dictionary-save-form__group">
-										<label>Định nghĩa (Việt)</label>
-										<textarea
-											value={saveFormData.definitionVi}
-											onChange={(e) => handleSaveFormChange('definitionVi', e.target.value)}
-											rows="3"
-										/>
-									</div>
-								</div>
-
-								<div className="dictionary-save-form__row">
-									<div className="dictionary-save-form__group">
-										<label>Ví dụ (English)</label>
-										<textarea
-											value={saveFormData.exampleEng}
-											onChange={(e) => handleSaveFormChange('exampleEng', e.target.value)}
-											rows="2"
-										/>
-									</div>
-									<div className="dictionary-save-form__group">
-										<label>Ví dụ (Việt)</label>
-										<textarea
-											value={saveFormData.exampleVi}
-											onChange={(e) => handleSaveFormChange('exampleVi', e.target.value)}
-											rows="2"
-										/>
-									</div>
-								</div>
-
-								<div className="dictionary-save-type-selector">
-									<label className="save-type-option">
-										<input 
-											type="radio" 
-											name="saveType" 
-											value="SRS" 
-											checked={saveFormData.saveType === 'SRS'} 
-											onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
-										/>
-										<span>Học theo thời điểm vàng (SRS)</span>
-									</label>
-									<label className="save-type-option">
-										<input 
-											type="radio" 
-											name="saveType" 
-											value="FLASHCARD" 
-											checked={saveFormData.saveType === 'FLASHCARD'} 
-											onChange={(e) => handleSaveFormChange('saveType', e.target.value)}
-										/>
-										<span>Lưu vào bộ Flashcard</span>
-									</label>
-								</div>
-
-								{saveFormData.saveType === 'FLASHCARD' && (
-									<div className="dictionary-save-form__group mt-3">
-										<label>Chọn bộ thẻ</label>
-										<select 
-											value={saveFormData.deckId} 
-											onChange={(e) => handleSaveFormChange('deckId', e.target.value)}
-											className="form-select"
-										>
-											<option value="">-- Chọn bộ thẻ --</option>
-											{decks.map(deck => (
-												<option key={deck.id} value={deck.id}>{deck.name} ({deck.cardCount} thẻ)</option>
-											))}
-										</select>
-										<button type="button" className="btn-link mt-1" onClick={() => navigate('/flashcards')}>+ Tạo bộ thẻ mới</button>
-									</div>
-								)}
-							</div>
-
-							<div className="dictionary-save-modal__actions">
-								<button type="button" className="dict-modal-btn dict-modal-btn--cancel" onClick={handleCloseSaveModal}>Hủy</button>
-								<button type="button" className="dict-modal-btn dict-modal-btn--save" onClick={handleSaveWord} disabled={loading}>
-									{loading ? 'Đang lưu...' : 'Lưu'}
-								</button>
-							</div>
-						</div>
-					</div>
+					<SaveVocabModal 
+						formData={saveFormData}
+						onFormChange={handleSaveFormChange}
+						onClose={() => setShowSaveModal(false)}
+						onSave={handleSaveWord}
+						loading={loading}
+					/>
 				)}
 			</div>
 		</section>
