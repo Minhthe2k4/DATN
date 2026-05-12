@@ -26,9 +26,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+// Service quản lý nội dung bài đọc và chủ đề bài đọc.
+// Xử lý các nghiệp vụ: CRUD bài báo, thu thập nội dung tự động (Crawler),
+// và phân tích cấu trúc bài viết để hiển thị trên ứng dụng.
 @Service
 public class AdminReadingService {
     private static final Logger log = LoggerFactory.getLogger(AdminReadingService.class);
+    // Các Pattern Regex dùng để bóc tách nội dung từ HTML khi Crawl bài báo
     private static final Pattern META_CONTENT_PATTERN = Pattern
             .compile("(?is)<meta[^>]+(?:property|name)\\s*=\\s*['\"]%s['\"][^>]+content\\s*=\\s*['\"](.*?)['\"][^>]*>");
     private static final Pattern TITLE_PATTERN = Pattern.compile("(?is)<title[^>]*>(.*?)</title>");
@@ -40,7 +44,7 @@ public class AdminReadingService {
     private static final Pattern LIST_ITEM_PATTERN = Pattern.compile("(?is)<li[^>]*>(.*?)</li>");
     private static final Pattern FIGCAPTION_PATTERN = Pattern.compile("(?is)<figcaption[^>]*>(.*?)</figcaption>");
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)(<img\\b[^>]*>)");
-    private static final Pattern IMAGE_PATTERN = Pattern.compile("(?is)<img[^>]+src\\s*=\\s*['\"](.*?)['\"][^>]*>");
+    private static final Pattern IMAGE_PATTERN = Pattern.compile("(?is)<img[^+src\\s*=\\s*['\"](.*?)['\"][^>]*>");
     private static final Pattern CAPTION_CLASS_PATTERN = Pattern.compile(
             "(?is)<p[^>]+(?:class|id)\\s*=\\s*['\"][^'\"]*(caption|legend|photo-caption|image-caption|figcaption|credit)[^'\"]*['\"][^>]*>");
     private static final int MAX_CONTENT_NODES = 140;
@@ -57,6 +61,7 @@ public class AdminReadingService {
         this.articleTopicRepository = articleTopicRepository;
     }
 
+    // Lấy danh sách toàn bộ bài báo phục vụ trang quản lý.
     public List<AdminReadingArticleDto> findAllArticles() {
         return articleRepository.findArticleManagementRows().stream().map(this::toArticleDto).toList();
     }
@@ -199,10 +204,12 @@ public class AdminReadingService {
         }
     }
 
+    // Lấy danh sách toàn bộ chủ đề bài báo.
     public List<AdminReadingTopicDto> findAllTopics() {
         return articleTopicRepository.findArticleTopicManagementRows().stream().map(this::toTopicDto).toList();
     }
 
+    // Xem chi tiết một chủ đề bài báo.
     public AdminReadingTopicDto findTopicById(Long id) {
         ArticleTopic topic = articleTopicRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading topic not found"));
@@ -223,6 +230,7 @@ public class AdminReadingService {
                 topic.deletedAt);
     }
 
+    // Tạo mới một chủ đề bài báo.
     public AdminReadingTopicDto createTopic(UpsertReadingTopicRequest request) {
         String name = request == null || request.name() == null ? "" : request.name().trim();
         if (articleTopicRepository.existsByNameIgnoreCase(name)) {
@@ -235,6 +243,7 @@ public class AdminReadingService {
         return findTopicById(saved.id);
     }
 
+    // Cập nhật thông tin chủ đề bài báo.
     public AdminReadingTopicDto updateTopic(Long id, UpsertReadingTopicRequest request) {
         String name = request == null || request.name() == null ? "" : request.name().trim();
         if (articleTopicRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
@@ -248,6 +257,7 @@ public class AdminReadingService {
         return findTopicById(id);
     }
 
+    // Xóa chủ đề bài báo (Xóa vĩnh viễn hoặc xóa mềm).
     public void deleteTopic(Long id, boolean force) {
         if (force) {
             articleTopicRepository.hardDelete(id);

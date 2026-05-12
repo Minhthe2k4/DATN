@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controller quản lý lộ trình học từ vựng từ các bộ từ vựng có sẵn (Oxford, TOEIC...).
+ */
 @RestController
 @RequestMapping("/api/user/lessons")
 public class UserLessonController {

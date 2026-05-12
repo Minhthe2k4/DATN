@@ -13,9 +13,14 @@ import { UserStats } from './components/UserStats'
 import { UserDashboardCharts } from './components/UserDashboardCharts'
 import { UserTable } from './components/UserTable'
 
+// Component quản lý người dùng dành cho Admin.
+// Cung cấp cái nhìn tổng quan về số lượng người dùng, trạng thái Premium và quản lý tài khoản.
 export function UserManagement() {
+  // Danh sách người dùng (dạng row) hiển thị trên bảng
   const [rows, setRows] = useState(users)
+  // Query tìm kiếm theo email, username hoặc tên
   const [query, setQuery] = useState('')
+  // Bộ lọc trạng thái (Tất cả, Hoạt động, Bị khóa)
   const [activeFilter, setActiveFilter] = useState('Tất cả')
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')

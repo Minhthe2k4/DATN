@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
  * API công khai cho người dùng xem video
  * Không yêu cầu quyền admin
  */
+/**
+ * Controller quản lý Use Case: Học qua Video.
+ * Cung cấp dữ liệu về Kênh (Channel), Video và Phụ đề (Segments) để đồng bộ với trình phát.
+ */
 @RestController
 @RequestMapping("/api/videos")
 public class UserVideoController {
@@ -68,9 +72,8 @@ public class UserVideoController {
     }
 
     /**
-     * Lấy danh sách phụ đề (segments) của video
-     * GET /api/user/videos/{videoId}/segments
-     * Frontend dùng để hiển thị phụ đề đồng bộ khi xem video
+     * Lấy danh sách phụ đề (segments) của video.
+     * Dữ liệu này chứa text, thời gian bắt đầu/kết thúc để Frontend hiển thị phụ đề chạy theo video.
      */
     @GetMapping("/{videoId}/segments")
     public List<Segment> getVideoSegments(@PathVariable Long videoId) {

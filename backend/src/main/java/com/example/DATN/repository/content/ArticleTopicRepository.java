@@ -9,17 +9,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
+// Repository quản lý các chủ đề của bài báo (Article Topics).
 public interface ArticleTopicRepository extends JpaRepository<ArticleTopic, Long> {
+        // Xóa vĩnh viễn chủ đề khỏi database.
         @Modifying
         @Transactional
         @Query(value = "DELETE FROM article_topics WHERE id = :id", nativeQuery = true)
         void hardDelete(Long id);
 
+        // Khôi phục chủ đề đã bị xóa mềm.
         @Modifying
         @Transactional
         @Query(value = "UPDATE article_topics SET deleted_at = NULL, status = false WHERE id = :id", nativeQuery = true)
         void restore(Long id);
 
+        // Lấy danh sách chủ đề bài báo kèm theo số lượng bài viết phục vụ trang quản trị.
         @Query("""
                         select t.id as id,
                                t.name as name,
@@ -37,6 +41,7 @@ public interface ArticleTopicRepository extends JpaRepository<ArticleTopic, Long
                         """)
         List<ArticleTopicManagementProjection> findArticleTopicManagementRows();
 
+        // Lấy danh sách các chủ đề đã bị xóa mềm (phục vụ thùng rác).
         @Query(value = """
                         select t.id as id,
                                t.name as name,
@@ -55,6 +60,7 @@ public interface ArticleTopicRepository extends JpaRepository<ArticleTopic, Long
                         """, nativeQuery = true)
         List<ArticleTopicManagementProjection> findDeletedRows();
 
+        // Lấy danh sách các chủ đề đang hoạt động dành cho người dùng học tập.
         @Query("""
                         select t.id as id,
                                t.name as name,

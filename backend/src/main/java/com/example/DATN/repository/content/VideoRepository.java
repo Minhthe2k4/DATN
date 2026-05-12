@@ -10,12 +10,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
+// Repository quản lý kho dữ liệu Video.
 public interface VideoRepository extends JpaRepository<Video, Long> {
+    // Xóa vĩnh viễn video khỏi database.
     @Modifying
     @Transactional
     @Query(value = "DELETE FROM videos WHERE id = :id", nativeQuery = true)
     void hardDelete(Long id);
 
+    // Khôi phục video đã bị xóa mềm.
     @Modifying
     @Transactional
     @Query(value = "UPDATE videos SET deleted_at = NULL, status = 'Nháp' WHERE id = :id", nativeQuery = true)
@@ -27,7 +30,7 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
 
     boolean existsByTitleIgnoreCaseAndIdNot(String title, Long id);
 
-    // Query cho admin - lấy thông tin video chi tiết
+    // Lấy danh sách video kèm theo thông tin kênh phục vụ bảng quản lý của Admin.
     @Query("""
             select v.id as id,
             	   v.title as title,
@@ -51,6 +54,7 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
             """)
     List<VideoManagementProjection> findVideoManagementRows();
 
+    // Lấy danh sách các video đã bị xóa mềm (phục vụ thùng rác).
     @Query(value = """
             select v.id as id,
                    v.title as title,

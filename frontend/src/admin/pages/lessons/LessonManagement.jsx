@@ -17,18 +17,25 @@ import { LessonFilters } from './components/LessonFilters'
 import { LessonTable } from './components/LessonTable'
 import { LessonSidebars } from './components/LessonSidebars'
 
+/**
+ * Component quản lý danh sách bài học dành cho Admin.
+ * Hỗ trợ các chức năng: Xem danh sách bài học, lọc theo chủ đề/độ khó/Premium, 
+ * và thống kê nhanh tình hình nội dung bài học.
+ */
 export function LessonManagement() {
+  // Trạng thái lưu trữ danh sách bài học và chủ đề (lấy từ Backend hoặc Seed data)
   const [lessonRows, setLessonRows] = useState(lessonSeed)
   const [topicRows, setTopicRows] = useState(topics)
   const [isLoading, setIsLoading] = useState(true)
   
-  // Filters
+  // Các trạng thái phục vụ bộ lọc (Search, Topic, Difficulty, Premium, Status)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTopicId, setFilterTopicId] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState('')
   const [filterPremium, setFilterPremium] = useState('All')
   const [filterStatus, setFilterStatus] = useState('')
 
+  // Dữ liệu thống kê bài học (số lượng, lượt xem, tỉ lệ hoàn thành)
   const [statsData, setStatsData] = useState(null)
 
   useEffect(() => {
@@ -77,9 +84,13 @@ export function LessonManagement() {
     return () => { isDisposed = true }
   }, [])
 
+  /**
+   * Tính toán phân bổ độ khó của các bài học hiện có.
+   * Kết quả được dùng để hiển thị biểu đồ tròn (Pie Chart) trong Sidebar.
+   */
   const difficultyDistribution = useMemo(() => {
     const total = lessonRows.length
-    const DIFFICULTIES = ['Dễ', 'Trung bình', 'Khó']
+    const DIFFICULTIES = ['Dễ', 'Trung bình', ' Khó']
     
     return DIFFICULTIES.map((diff) => {
       const count = lessonRows.filter((l) => l.difficulty === diff).length
@@ -95,6 +106,9 @@ export function LessonManagement() {
     })
   }, [lessonRows])
 
+  /**
+   * Lấy danh sách 5 bài học có lượt xem (views) cao nhất.
+   */
   const topLessons = useMemo(() => {
     return [...lessonRows]
       .sort((a, b) => b.views - a.views)

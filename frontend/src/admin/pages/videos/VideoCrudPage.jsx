@@ -147,6 +147,8 @@ export function VideoCrudPage({ mode }) {
                   transcript: videoData.transcript || '',
                   segments: Array.isArray(segsData) ? segsData : []
                 })
+                modal.success('Xử lý video và tạo phụ đề AI hoàn tất!')
+                navigate('/admin/videos')
               }
             }
           }
@@ -179,8 +181,6 @@ export function VideoCrudPage({ mode }) {
       const data = await uploadVideoUrl(videoDraft)
       setUploadedVideoId(data.videoId)
       setSubtitleStatus('PROCESSING')
-      modal.success('Video đang được xử lý và tạo phụ đề AI. Bạn đang được chuyển hướng về trang danh sách...')
-      navigate('/admin/videos')
     } catch (err) {
       modal.error(err.message || 'Thao tác thất bại.')
     } finally {
@@ -371,6 +371,7 @@ export function VideoCrudPage({ mode }) {
                   changeSpeed={changeSpeed}
                   setField={setField}
                   setIsPlaying={setIsPlaying}
+                  setShowControls={setShowControls}
                 />
               </AdminSectionCard>
             </div>

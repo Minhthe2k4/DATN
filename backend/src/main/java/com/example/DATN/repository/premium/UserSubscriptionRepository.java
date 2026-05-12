@@ -10,9 +10,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+// Repository quản lý thông tin đăng ký (Subscriptions) của người dùng.
+// Lưu trữ trạng thái sở hữu Premium, thời gian hiệu lực và liên kết với các gói cước.
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, Long> {
-    Optional<UserSubscription> findByUserId(Long userId);
-
+    // Đếm số lượng người dùng duy nhất đang sở hữu Premium còn hạn.
     @Query("SELECT COUNT(DISTINCT us.user.id) FROM UserSubscription us WHERE us.status = 'ACTIVE' AND us.isPremium = true AND (us.endDate IS NULL OR us.endDate > :now)")
     long countDistinctActivePremiumUsers(@Param("now") LocalDateTime now);
 

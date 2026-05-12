@@ -10,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Repository quản lý phụ đề video (Segments).
+ * Mỗi Segment chứa nội dung text và thời gian để hiển thị khớp với tiến trình phát video.
+ */
 @Repository
 public interface SegmentRepository extends JpaRepository<Segment, Long> {
 

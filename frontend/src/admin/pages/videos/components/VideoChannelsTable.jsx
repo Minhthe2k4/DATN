@@ -2,9 +2,11 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { AdminSectionCard, SimpleTable, Pagination, Badge } from '../../../components/console/AdminUi'
 
+// Component hiển thị bảng danh sách các kênh YouTube.
+// Cho phép Admin tìm kiếm kênh và thực hiện các thao tác quản lý (Xem, Sửa, Xóa).
 export function VideoChannelsTable({
-  channelsPagination,
-  searchChannelTerm,
+  channelsPagination, // Object phân trang chứa dữ liệu kênh
+  searchChannelTerm, // State tìm kiếm theo tên kênh
   setSearchChannelTerm
 }) {
   return (

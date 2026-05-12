@@ -20,6 +20,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+// Service quản lý tài khoản người dùng và hồ sơ cá nhân.
+// Xử lý các nghiệp vụ: CRUD người dùng, quản lý trạng thái kích hoạt,
+// và phân tích dữ liệu bảng xếp hạng (Leaderboard) dành cho quản trị viên.
 @Service
 public class AdminUserService {
     private final UserRepository userRepository;
@@ -33,6 +36,7 @@ public class AdminUserService {
         this.userStatsRepository = userStatsRepository;
     }
 
+    // Lấy danh sách toàn bộ người dùng kèm theo trạng thái Premium.
     public List<AdminUserDto> findAll() {
         return userRepository.findUserManagementRows(new Date()).stream().map(this::toDto).toList();
     }

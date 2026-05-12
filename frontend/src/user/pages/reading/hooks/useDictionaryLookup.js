@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { toast } from '@/utils/toastUtils';
+import { modal } from '@/utils/modalUtils';
 import { normalizeWordToken } from '../utils';
 import { getUserSession } from '../../../utils/authSession';
 
@@ -63,8 +64,14 @@ export function useDictionaryLookup(articleId, premiumStatus, onVocabSaved) {
                 errorMsg = error.response.data.message;
             }
 
-            if (error?.response?.status === 403 && errorMsg.includes('Premium')) {
-                toast.error('🔒 ' + errorMsg);
+            const isPremiumError = error?.response?.status === 403 || 
+                                 errorMsg.toLowerCase().includes('premium') || 
+                                 errorMsg.toLowerCase().includes('khóa') || 
+                                 errorMsg.toLowerCase().includes('gói cước');
+
+            if (isPremiumError) {
+                closeLookupModal();
+                modal.premium(errorMsg);
             } else {
                 toast.error(errorMsg);
             }

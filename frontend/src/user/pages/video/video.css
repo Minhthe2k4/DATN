@@ -376,19 +376,69 @@
 .video-card__interaction {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    margin-top: 8px;
-    padding-top: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid #f1f5f9;
 }
 
-.video-card__body {
-    padding: 12px;
+.list-favorite-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
 }
 
-.channel-video-card__body {
+.list-favorite-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.list-favorite-btn.active {
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+
+.list-progress-container {
+    flex-grow: 1;
+}
+
+.difficulty-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    z-index: 2;
+}
+
+.word-count-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(15, 23, 42, 0.75);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    z-index: 2;
+}
+
+.video-card__body, .channel-video-card__body {
     padding: 12px;
     display: flex;
     flex-direction: column;

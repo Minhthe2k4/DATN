@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { videoLessons, youtubeChannels } from '../../data/adminData'
@@ -5,10 +6,10 @@ import { AdminPageHeader } from '../../components/console/AdminUi'
 import { usePagination } from '../../hooks/usePagination'
 import { modal } from '../../../utils/modalUtils'
 
-import { 
-  fetchVideoManagementData, 
-  normalizeChannelRow, 
-  normalizeVideoRow 
+import {
+  fetchVideoManagementData,
+  normalizeChannelRow,
+  normalizeVideoRow
 } from './utils/videoUtils'
 
 import { VideoStats } from './components/VideoStats'
@@ -16,12 +17,17 @@ import { VideoChannelsTable } from './components/VideoChannelsTable'
 import { VideosListTable } from './components/VideosListTable'
 import { VideoSidebars } from './components/VideoSidebars'
 
+// Component quản lý nội dung Video dành cho Admin.
+// Cho phép quản lý các video học tập và các kênh YouTube liên quan.
 export function VideoManagement() {
+  // Danh sách các kênh video và danh sách video cụ thể
   const [channels, setChannels] = useState(youtubeChannels)
   const [videos, setVideos] = useState(videoLessons)
   const [isLoading, setIsLoading] = useState(true)
+  // Dữ liệu thống kê tổng hợp cho Dashboard video
   const [statsData, setStatsData] = useState(null)
 
+  // Bộ lọc cho danh sách video (Tìm kiếm, Kênh, Độ khó, Trạng thái)
   const [searchTerm, setSearchTerm] = useState('')
   const [searchChannelTerm, setSearchChannelTerm] = useState('')
   const [filterChannelId, setFilterChannelId] = useState('')
@@ -51,7 +57,7 @@ export function VideoManagement() {
       try {
         const data = await fetchVideoManagementData()
         if (disposed) return
-        
+
         setChannels(Array.isArray(data.channels) ? data.channels.map(normalizeChannelRow) : youtubeChannels)
         setVideos(Array.isArray(data.videos) ? data.videos.map(normalizeVideoRow) : videoLessons)
         if (data.stats) setStatsData(data.stats)
@@ -109,13 +115,13 @@ export function VideoManagement() {
         <div className="row g-3 mt-1">
           <div className="col-12 col-xl-9">
             <div className="d-flex flex-column gap-3">
-              <VideoChannelsTable 
-                channelsPagination={channelsPagination} 
-                searchChannelTerm={searchChannelTerm} 
-                setSearchChannelTerm={setSearchChannelTerm} 
+              <VideoChannelsTable
+                channelsPagination={channelsPagination}
+                searchChannelTerm={searchChannelTerm}
+                setSearchChannelTerm={setSearchChannelTerm}
               />
 
-              <VideosListTable 
+              <VideosListTable
                 videosPagination={videosPagination}
                 filterDifficulty={filterDifficulty}
                 setFilterDifficulty={setFilterDifficulty}

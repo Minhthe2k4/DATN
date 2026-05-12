@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserSession } from '../utils/authSession';
 
+/**
+ * Trang xử lý nâng cấp gói Premium (Checkout Page).
+ * Cho phép người dùng chọn gói cước và thực hiện thanh toán qua ZaloPay.
+ */
 const PremiumCheckout = () => {
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -21,6 +25,7 @@ const PremiumCheckout = () => {
       .catch(err => console.error("Error fetching plans:", err));
   }, []);
 
+  // Xử lý khi người dùng nhấn nút "Thanh toán"
   const handlePayment = async () => {
     if (!session?.userId) {
       alert("Vui lòng đăng nhập để nâng cấp Premium!");
@@ -35,10 +40,12 @@ const PremiumCheckout = () => {
 
     setLoading(true);
     try {
+      // 1. Gọi API Backend để khởi tạo đơn hàng phía ZaloPay
       const response = await fetch(`/api/payment/create-order?userId=${session.userId}&planId=${selectedPlan.id}`);
       const data = await response.json();
       
       if (data.url) {
+        // 2. Nếu tạo đơn hàng thành công, điều hướng người dùng sang trang thanh toán của ZaloPay
         window.location.href = data.url; // Redirect to ZaloPay sandbox
       } else {
         alert("Có lỗi xảy ra khi tạo link thanh toán!");

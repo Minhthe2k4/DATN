@@ -61,10 +61,18 @@ public class PremiumService {
                     return subscriptionRepository.save(newSub);
                 });
 
+        if (sub.plan == null) {
+            System.out.println("[DEBUG] User has NO plan assigned. Attempting to assign default.");
+            sub.plan = planRepository.findAll().stream()
+                    .filter(p -> p.name.equalsIgnoreCase("Free"))
+                    .findFirst()
+                    .orElseGet(() -> planRepository.findAll().stream().findFirst().orElse(null));
+        }
+
         // Fetch dynamic limit from database
         int dailyLimit;
         if (sub.plan == null) {
-            System.out.println("[DEBUG] User has NO plan assigned. Falling back to default.");
+            System.out.println("[DEBUG] Still no plan available in DB. Falling back to hardcoded default.");
             dailyLimit = (sub.isPremium != null && sub.isPremium) ? 999999 : 5;
         } else {
             System.out.println("[DEBUG] User on plan: " + sub.plan.name + " (ID: " + sub.plan.id + ")");
@@ -204,10 +212,15 @@ public class PremiumService {
         // 1. Check Locked status
         boolean isLocked;
         if (sub.plan == null) {
-            isLocked = planRepository.findAll().stream()
-                    .filter(p -> p.name.equalsIgnoreCase("Free")).findFirst()
-                    .flatMap(p -> featureLimitRepository.findByPlanIdAndFeatureName(p.id, featureId))
-                    .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
+            System.out.println("[DEBUG] User has NO plan assigned for action " + featureId + ". Attempting to assign default.");
+            sub.plan = planRepository.findAll().stream()
+                    .filter(p -> p.name.equalsIgnoreCase("Free"))
+                    .findFirst()
+                    .orElseGet(() -> planRepository.findAll().stream().findFirst().orElse(null));
+        }
+
+        if (sub.plan == null) {
+            isLocked = false; // Fallback if no plans exist in DB
         } else {
             isLocked = featureLimitRepository.findByPlanIdAndFeatureName(sub.plan.id, featureId)
                     .map(com.example.DATN.entity.PremiumFeatureLimit::getIsLocked).orElse(false);
@@ -275,6 +288,10 @@ public class PremiumService {
                 .orElse(false);
     }
 
+    /**
+     * Thực hiện nâng cấp tài khoản người dùng lên Premium.
+     * Được gọi sau khi Admin phê duyệt giao dịch thành công.
+     */
     @Transactional
     public void upgradeUserAfterPayment(Long userId, Long planId) {
         UserSubscription sub = subscriptionRepository.findLatestByUserId(userId).stream().findFirst()

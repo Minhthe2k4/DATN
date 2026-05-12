@@ -16,12 +16,18 @@ const CATEGORIES = [
   { id: 'video-channels', label: 'Kênh YouTube', endpoint: 'video-channels' },
 ]
 
+// Component Thùng rác tập trung dành cho quản trị viên.
+// Cho phép xem, khôi phục hoặc xóa vĩnh viễn dữ liệu từ nhiều phân hệ khác nhau (User, Topic, Lesson, v.v.).
+// Hoạt động dựa trên cơ chế Soft Delete (xóa mềm) thông qua trường 'deletedAt' trong cơ sở dữ liệu.
 export default function RecycleBin() {
+  // Danh mục dữ liệu đang được chọn để xem trong thùng rác
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0])
+  // Danh sách các mục đã bị xóa tạm thời của danh mục hiện tại
   const [items, setItems] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  // Tìm kiếm nhanh trong danh sách đã xóa
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {

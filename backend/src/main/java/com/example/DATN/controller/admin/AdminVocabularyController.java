@@ -20,6 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller quản lý kho từ vựng dành cho Admin.
+ * Hỗ trợ các thao tác CRUD từ vựng và tích hợp dịch vụ tự động tạo phiên âm (IPA).
+ */
 @RestController
 @RequestMapping("/api/admin/vocabulary")
 public class AdminVocabularyController {
@@ -33,17 +37,27 @@ public class AdminVocabularyController {
         this.pronunciationGeneratorService = pronunciationGeneratorService;
     }
 
+    /**
+     * Lấy toàn bộ danh sách từ vựng có trên hệ thống.
+     */
     @GetMapping
     public List<AdminVocabularyDto> findAll() {
         return adminVocabularyService.findAll();
     }
 
+    /**
+     * Tạo mới một mục từ vựng.
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public AdminVocabularyDto create(@RequestBody UpsertVocabularyRequest request) {
         return adminVocabularyService.create(request);
     }
 
+    /**
+     * Endpoint hỗ trợ tự động sinh phiên âm IPA và link audio cho từ vựng.
+     * Giúp Admin tiết kiệm thời gian nhập liệu thủ công.
+     */
     @PostMapping("/pronunciation/generate")
     public GeneratePronunciationResponse generatePronunciation(@RequestBody GeneratePronunciationRequest request) {
         PronunciationGeneratorService.GenerationResult result = pronunciationGeneratorService
@@ -54,11 +68,18 @@ public class AdminVocabularyController {
                 result.source());
     }
 
+    /**
+     * Cập nhật thông tin từ vựng hiện có.
+     */
     @PutMapping("/{id}")
     public AdminVocabularyDto update(@PathVariable Long id, @RequestBody UpsertVocabularyRequest request) {
         return adminVocabularyService.update(id, request);
     }
 
+    /**
+     * Xóa từ vựng khỏi hệ thống.
+     * @param force Nếu true xóa vĩnh viễn, false thực hiện xóa mềm.
+     */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(
@@ -67,16 +88,25 @@ public class AdminVocabularyController {
         adminVocabularyService.delete(id, force);
     }
 
+    /**
+     * Xem danh sách từ vựng trong thùng rác.
+     */
     @GetMapping("/deleted")
     public List<VocabularyManagementProjection> getDeletedVocabulary() {
         return adminVocabularyService.getDeletedVocabulary();
     }
 
+    /**
+     * Lấy thông tin chi tiết một từ vựng.
+     */
     @GetMapping("/{id}")
     public AdminVocabularyDto findById(@PathVariable Long id) {
         return adminVocabularyService.findById(id);
     }
 
+    /**
+     * Khôi phục từ vựng đã xóa mềm.
+     */
     @PatchMapping("/{id}/restore")
     public void restore(@PathVariable Long id) {
         adminVocabularyService.restore(id);

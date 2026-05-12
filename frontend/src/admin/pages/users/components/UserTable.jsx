@@ -2,10 +2,12 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { AdminSectionCard, FilterTabs, SimpleTable, Badge, Pagination } from '../../components/console/AdminUi'
 
+// Component hiển thị danh sách người dùng dưới dạng bảng.
+// Hỗ trợ phân trang, lọc theo vai trò/trạng thái và điều hướng đến các trang chi tiết/sửa/xóa.
 export function UserTable({ 
-  pagination, 
-  activeFilter, 
-  setActiveFilter 
+  pagination, // Đối tượng chứa dữ liệu người dùng đã phân trang
+  activeFilter, // Trạng thái bộ lọc hiện tại (Tất cả, Hoạt động, Bị khóa)
+  setActiveFilter // Hàm cập nhật bộ lọc
 }) {
   return (
     <AdminSectionCard

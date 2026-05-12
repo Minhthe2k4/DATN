@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 
 export function SpeakerIcon() {
     return (
@@ -19,9 +20,15 @@ export function DictionaryModal({
     pronunciationUk,
     pronunciationUs
 }) {
-    if (!lookupState.open || lookupState.saveModalOpen) return null;
+    const [container, setContainer] = React.useState(null);
+    
+    React.useEffect(() => {
+        setContainer(document.body);
+    }, []);
 
-    return (
+    if (!container || !lookupState.open || lookupState.saveModalOpen) return null;
+
+    return createPortal(
         <div className="dictionary-modal" role="dialog" aria-modal="true" aria-label="Tra tu theo ngu canh bai doc">
             <button type="button" className="dictionary-modal__backdrop" onClick={closeLookupModal} aria-label="Dong" />
             <div className="dictionary-modal__content" onClick={(event) => event.stopPropagation()}>
@@ -155,6 +162,7 @@ export function DictionaryModal({
                     </>
                 ) : null}
             </div>
-        </div>
+        </div>,
+        container
     );
 }

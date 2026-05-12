@@ -5,7 +5,11 @@ import './auth.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
+/**
+ * Hàm hỗ trợ trích xuất thông báo lỗi từ phản hồi của Backend.
+ */
 async function extractErrorMessage(response, fallbackMessage) {
+	// Lấy kiểu dữ liệu trả về (JSON hoặc Text)
 	const contentType = response.headers.get('content-type') || ''
 
 	if (contentType.includes('application/json')) {
@@ -99,6 +103,14 @@ export function Register() {
 			setIsSubmitting(true)
 			setSubmitError('')
 
+			// LUỒNG ĐĂNG KÝ - GIAI ĐOẠN 1: Gửi thông tin cơ bản
+
+			/**
+			 * BƯỚC 1: ĐĂNG KÝ THÔNG TIN CƠ BẢN.
+			 * Gửi yêu cầu POST /api/auth/register tới AuthController.
+			 * AuthService sẽ lưu User vào DB ở trạng thái chưa kích hoạt (isActive=false) 
+			 * và gửi OTP qua Email.
+			 */
 			const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -140,6 +152,12 @@ export function Register() {
 			setSubmitError('')
 
 			const combinedOtp = otp.join('')
+			// LUỒNG ĐĂNG KÝ - GIAI ĐOẠN 2: Xác thực mã OTP để kích hoạt tài khoản
+			/**
+			 * BƯỚC 2: KÍCH HOẠT TÀI KHOẢN QUA OTP.
+			 * Gửi yêu cầu POST /api/auth/activate tới AuthController.
+			 * AuthService sẽ đối soát OTP từ bộ nhớ tạm/DB và cập nhật isActive=true trong UserRepository.
+			 */
 			const response = await fetch(`${API_BASE_URL}/api/auth/activate`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },

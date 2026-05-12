@@ -6,14 +6,6 @@ export function DictionaryResult({ result, onPlayAudio, onSaveMeaning }) {
 
 	return (
 		<section className="dictionary-result">
-			<header className="dictionary-result__topbar">
-				<div className="dictionary-result__tabs">
-					<button type="button" className="is-active">Anh - Anh</button>
-					<button type="button">Tiếng Việt</button>
-					<button type="button">Chat GPT</button>
-				</div>
-			</header>
-
 			<div className="dictionary-entry">
 				<div className="dictionary-entry__head">
 					<h1>{result.word}</h1>
@@ -51,7 +43,7 @@ export function DictionaryResult({ result, onPlayAudio, onSaveMeaning }) {
 									<Bookmark size={15} />
 								</button>
 							</div>
-							
+
 							{meaning.meaningVi && (
 								<div className="dictionary-meaning-vi">
 									🇻🇳 {meaning.meaningVi}

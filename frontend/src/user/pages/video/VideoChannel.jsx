@@ -9,6 +9,12 @@ import { ChannelHeader } from './components/ChannelHeader'
 import { VideoItemCard } from './components/VideoItemCard'
 import './videoChannel.css'
 
+/**
+ * Trang chi tiết kênh Video (Video Channel Detail).
+ * Chức năng:
+ * 1. Hiển thị thông tin kênh và danh sách các video thuộc kênh đó.
+ * 2. Tải thống kê tương tác (yêu thích, tiến độ) cho toàn bộ video trong kênh.
+ */
 export function VideoChannel() {
 	const { channelSlug } = useParams()
 	const [channel, setChannel] = useState(null)
@@ -21,9 +27,11 @@ export function VideoChannel() {
 		loadChannel()
 	}, [channelSlug])
 
+	// Tải thông tin chi tiết của kênh dựa trên slug từ URL
 	const loadChannel = async () => {
 		try {
 			setIsLoading(true)
+			// Bước 1: Tìm ID của kênh từ danh sách tất cả các kênh
 			const allChannels = await fetchAllVideoChannels()
 			const matchedChannel = allChannels.find(ch => {
 				const chSlug = ch.handle?.replace('@', '')?.toLowerCase() || `channel-${ch.id}`
@@ -36,13 +44,14 @@ export function VideoChannel() {
 				return
 			}
 
+			// Bước 2: Tải danh sách video của kênh đó
 			const data = await fetchChannelWithVideos(matchedChannel.id)
 			const transformedChannel = {
-				id: data.channelId,
-				slug: data.channelHandle?.replace('@', '')?.toLowerCase() || `channel-${data.channelId}`,
-				name: data.channelName,
-				handle: data.channelHandle,
-				avatar: makeChannelAvatar(data.channelName),
+				id: data.id,
+				slug: data.handle?.replace('@', '')?.toLowerCase() || `channel-${data.id}`,
+				name: data.name,
+				handle: data.handle,
+				avatar: makeChannelAvatar(data.name),
 				coverColor: '#93c5fd',
 				videos: data.videos.length,
 				videoList: data.videos.map(video => ({
@@ -65,6 +74,7 @@ export function VideoChannel() {
 		}
 	}
 
+    // Tải thông tin tương tác (yêu thích, tiến độ) hàng loạt cho tất cả video trong kênh
     useEffect(() => {
         if (channel?.videoList?.length > 0 && userId) {
             axios.post('/api/user/interaction/bulk-stats', {

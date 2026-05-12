@@ -24,22 +24,28 @@ import { RevenueTrendsChart } from './components/RevenueTrendsChart'
 import { RevenuePlansTable } from './components/RevenuePlansTable'
 import { RevenueTransactionsSection } from './components/RevenueTransactionsSection'
 
+// Component quản lý doanh thu dành cho Admin.
+// Cung cấp các biểu đồ thống kê xu hướng doanh thu (Ngày/Tháng/Năm) và danh sách giao dịch chi tiết.
 export function RevenueManagement() {
+  // Tổng quan doanh thu (Hôm nay, Hôm qua, Tổng cộng)
   const [summary, setSummary] = useState({
     ...revenueSummary,
     totalRevenueToday: 0,
     totalRevenueYesterday: 0,
     totalAllTimeRevenue: 0
   })
+  // Doanh thu chi tiết theo từng gói Premium
   const [planRows, setPlanRows] = useState(revenueByPlan.map((item) => ({ ...item, net: item.gross - item.refunds })))
   
-  // Trends
+  // Dữ liệu xu hướng doanh thu (Trends) theo các mốc thời gian
   const [dailyTrend, setDailyTrend] = useState([])
   const [monthlyTrend, setMonthlyTrend] = useState(monthlyRevenueTrend)
   const [yearlyTrend, setYearlyTrend] = useState([])
   
+  // Chế độ xem xu hướng (Mặc định là Tháng)
   const [activeTrend, setActiveTrend] = useState('MONTH') // DAY, MONTH, YEAR
 
+  // Danh sách các giao dịch thanh toán
   const [transactionRows, setTransactionRows] = useState(revenueTransactions)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')

@@ -16,8 +16,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Service xử lý Use Case: Xác thực người dùng (UC_Authentication)
- * Bao gồm các luồng: Đăng nhập, Đăng ký và Quản lý phiên làm việc.
+ * Service layer xử lý logic nghiệp vụ cho Use Case: Xác thực người dùng
+ * (UC_Authentication).
+ * Đóng vai trò trung gian:
+ * - Nhận dữ liệu DTO từ Controller.
+ * - Thực hiện kiểm tra nghiệp vụ (Mã hóa mật khẩu, kiểm tra email tồn tại).
+ * - Tương tác với Repository (UserRepository, UserProfileRepository) để
+ * lưu/truy vấn dữ liệu.
+ * - Trả về kết quả đã được xử lý (AuthUserResponse) kèm theo JWT Token.
  */
 @Service
 public class AuthService {
@@ -27,7 +33,6 @@ public class AuthService {
     private final com.example.DATN.util.JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
-    // Lưu trữ OTP tạm thời: Email -> {OTP, ExpiryTime}
     private static class OtpData {
         String otp;
         long expiryTime;
@@ -38,6 +43,7 @@ public class AuthService {
         }
     }
 
+    // Lưu trữ OTP tạm thời: Email -> {OTP, ExpiryTime}
     private final java.util.Map<String, OtpData> otpStorage = new java.util.concurrent.ConcurrentHashMap<>();
 
     public AuthService(UserRepository userRepository, UserProfileRepository userProfileRepository,
@@ -49,18 +55,46 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
-    /**
-     * Luồng chính của UC_DangNhap:
-     * 1. Kiểm tra tính hợp lệ của dữ liệu đầu vào (Email, Password).
-     * 2. Truy vấn người dùng đang hoạt động (isActive=true) từ bảng 'users'.
-     * 3. Kiểm tra trạng thái tài khoản (có bị khóa hay không).
-     * 4. Đối soát mật khẩu (hỗ trợ cả mã hóa BCrypt).
-     * 5. Trả về thông tin phiên đăng nhập kèm Profile người dùng.
-     */
+    // Kiểm tra và làm sạch dữ liệu đầu vào
+    private String normalizeRequired(String value, String message) {
+        String normalized = defaultString(value, "").trim();
+        if (normalized.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+        }
+        return normalized;
+    }
+
+    private String defaultString(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value;
+    }
+
+    private AuthUserResponse toResponse(User user, String fullName, String avatar) {
+        return new AuthUserResponse(
+                user.id == null ? null : user.id.longValue(),
+                defaultString(user.username, ""),
+                defaultString(fullName, defaultString(user.username, "")),
+                defaultString(user.email, ""),
+                defaultString(user.role, "USER"),
+                // Tạo JWT Token thông qua JwtUtil
+                jwtUtil.generateToken(user.email),
+                avatar);
+    }
+
+    private AuthUserResponse toResponse(User user) {
+        UserProfile profile = userProfileRepository.findFirstByUser_Id(user.id.longValue()).orElse(null);
+        String fullName = profile != null ? profile.fullName : user.username;
+        String avatar = profile != null ? profile.avatar : null;
+        return toResponse(user, fullName, avatar);
+    }
+
     public AuthUserResponse login(AuthLoginRequest request) {
         String email = normalizeRequired(request == null ? null : request.email(), "Email is required");
         String password = normalizeRequired(request == null ? null : request.password(), "Password is required");
 
+        // Tìm người dùng theo email
         User user = userRepository.findActiveByEmail(email)
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email hoặc mật khẩu không đúng."));
@@ -73,18 +107,29 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email hoặc mật khẩu không đúng.");
         }
 
+        // Tạo token và trả về thông tin người dùng với token cho Controller
         return toResponse(user);
     }
 
-    /**
-     * Luồng chính của UC_DangKy:
-     * 1. Xác thực các ràng buộc dữ liệu (Độ dài mật khẩu, định dạng Email).
-     * 2. Kiểm tra sự tồn tại của Email trong cơ sở dữ liệu (Tránh trùng lặp).
-     * 3. Tự động sinh Username từ Email.
-     * 4. Mã hóa mật khẩu bằng BCrypt trước khi lưu.
-     * 5. Khởi tạo đồng thời bản ghi trong bảng 'users' và 'user_profiles'.
-     */
+    // Hàm sinh Username tự động:
+    // Tách phần prefix của Email và xử lý trùng lặp bằng cách thêm hậu tố số.
+    private String generateUsernameFromEmail(String email) {
+        String base = email.split("@")[0].trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]", "");
+        if (base.isBlank()) {
+            base = "user";
+        }
+
+        String candidate = base;
+        int index = 1;
+        while (userRepository.existsActiveByUsername(candidate)) {
+            candidate = base + index;
+            index++;
+        }
+        return candidate;
+    }
+
     public AuthUserResponse register(AuthRegisterRequest request) {
+        // Validate dữ liệu đầu vào.
         String fullName = normalizeRequired(request == null ? null : request.fullName(), "Full name is required");
         String email = normalizeRequired(request == null ? null : request.email(), "Email is required");
         String password = normalizeRequired(request == null ? null : request.password(), "Password is required");
@@ -95,10 +140,12 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu phải có ít nhất 6 ký tự.");
         }
 
+        // Kiểm tra email đã tồn tại qua UserRepository.
         if (userRepository.existsActiveByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email đã được đăng ký.");
         }
 
+        // Tạo username tự động từ email.
         String username = generateUsernameFromEmail(email);
 
         User user = new User();
@@ -128,9 +175,7 @@ public class AuthService {
         return toResponse(savedUser, fullName, null);
     }
 
-    /**
-     * Kích hoạt tài khoản bằng mã OTP gửi qua email
-     */
+    // Kích hoạt tài khoản bằng mã OTP gửi qua email
     public AuthUserResponse activateAccount(String email, String otp) {
         email = normalizeRequired(email, "Email is required");
         otp = normalizeRequired(otp, "OTP is required");
@@ -149,28 +194,8 @@ public class AuthService {
         return toResponse(user);
     }
 
-    private AuthUserResponse toResponse(User user) {
-        UserProfile profile = userProfileRepository.findFirstByUser_Id(user.id.longValue()).orElse(null);
-        String fullName = profile != null ? profile.fullName : user.username;
-        String avatar = profile != null ? profile.avatar : null;
-        return toResponse(user, fullName, avatar);
-    }
-
-    private AuthUserResponse toResponse(User user, String fullName, String avatar) {
-        return new AuthUserResponse(
-                user.id == null ? null : user.id.longValue(),
-                defaultString(user.username, ""),
-                defaultString(fullName, defaultString(user.username, "")),
-                defaultString(user.email, ""),
-                defaultString(user.role, "USER"),
-                jwtUtil.generateToken(user.email),
-                avatar);
-    }
-
-    /**
-     * Logic đối soát mật khẩu:
-     * Hỗ trợ kiểm tra cả mật khẩu đã mã hóa BCrypt và mật khẩu thô (nếu có).
-     */
+    // Logic đối soát mật khẩu:
+    // Hỗ trợ kiểm tra cả mật khẩu đã mã hóa BCrypt và mật khẩu thô (nếu có).
     private boolean passwordMatches(String rawPassword, String storedPassword) {
         String safeStored = defaultString(storedPassword, "");
         if (safeStored.startsWith("$2")) {
@@ -179,28 +204,7 @@ public class AuthService {
         return rawPassword.equals(safeStored);
     }
 
-    /**
-     * Hàm sinh Username tự động:
-     * Tách phần prefix của Email và xử lý trùng lặp bằng cách thêm hậu tố số.
-     */
-    private String generateUsernameFromEmail(String email) {
-        String base = email.split("@")[0].trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]", "");
-        if (base.isBlank()) {
-            base = "user";
-        }
-
-        String candidate = base;
-        int index = 1;
-        while (userRepository.existsActiveByUsername(candidate)) {
-            candidate = base + index;
-            index++;
-        }
-        return candidate;
-    }
-
-    /**
-     * Luồng UC_QuenMatKhau - Bước 1: Gửi OTP
-     */
+    // Quên mật khẩu
     public void forgotPassword(String email) {
         email = normalizeRequired(email, "Email is required");
 
@@ -210,15 +214,15 @@ public class AuthService {
 
         String otp = String.format("%06d", new java.util.Random().nextInt(999999));
         long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000); // 5 phút
+
+        // Lưu trữ OTP tạm thời
         otpStorage.put(email, new OtpData(otp, expiryTime));
 
-        // Gửi mail thực tế
+        // Gửi mail
         emailService.sendOtpEmail(email, otp);
     }
 
-    /**
-     * Luồng UC_QuenMatKhau - Bước 2: Xác thực OTP
-     */
+    // Xác thực OTP
     public boolean verifyOtp(String email, String otp) {
         email = normalizeRequired(email, "Email is required");
         otp = normalizeRequired(otp, "OTP is required");
@@ -236,9 +240,7 @@ public class AuthService {
         return otp.equals(storedData.otp);
     }
 
-    /**
-     * Luồng UC_QuenMatKhau - Bước 3: Đổi mật khẩu
-     */
+    // Đổi mật khẩu
     public void resetPassword(ResetPasswordRequest request) {
         String email = normalizeRequired(request.email(), "Email is required");
         String otp = normalizeRequired(request.otp(), "OTP is required");
@@ -262,10 +264,7 @@ public class AuthService {
         otpStorage.remove(email);
     }
 
-    /**
-     * Lấy thông tin người dùng hiện tại dựa trên Authentication principal.
-     * Được sử dụng bởi endpoint /api/auth/verify để đồng bộ phiên làm việc.
-     */
+    // Lấy thông tin người dùng hiện tại dựa trên Authentication principal.
     public AuthUserResponse getCurrentUserResponse(org.springframework.security.core.Authentication auth) {
         if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof CustomUserDetails)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Phiên làm việc không hợp lệ.");
@@ -278,18 +277,4 @@ public class AuthService {
         return toResponse(user);
     }
 
-    private String normalizeRequired(String value, String message) {
-        String normalized = defaultString(value, "").trim();
-        if (normalized.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
-        }
-        return normalized;
-    }
-
-    private String defaultString(String value, String fallback) {
-        if (value == null || value.isBlank()) {
-            return fallback;
-        }
-        return value;
-    }
 }

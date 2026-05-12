@@ -120,7 +120,8 @@ public class UserLessonService {
                                                 v.pronunciation,
                                                 v.meaningEn,
                                                 v.meaningVi,
-                                                v.example))
+                                                v.example,
+                                                v.exampleVi))
                                 .collect(Collectors.toList());
         }
 

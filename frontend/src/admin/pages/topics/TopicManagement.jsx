@@ -24,23 +24,35 @@ function normalizeTopicRow(row) {
   }
 }
 
+/**
+ * Component quản lý danh sách chủ đề bài học dành cho Admin.
+ * Cho phép xem thống kê, tìm kiếm, lọc và điều hướng đến trang tạo mới/chỉnh sửa chủ đề.
+ */
 export function TopicManagement() {
+  // Danh sách dòng dữ liệu chủ đề hiển thị trên bảng
   const [topicRows, setTopicRows] = useState(topicSeed)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  
+  // Các trạng thái phục vụ bộ lọc (Search & Filter)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
 
+  // Dữ liệu thống kê tổng quan (số lượng chủ đề, tỉ lệ bài học)
   const [statsData, setStatsData] = useState(null)
 
   useEffect(() => {
     let isDisposed = false
 
+    /**
+     * Tải dữ liệu chủ đề và thống kê từ Backend.
+     * Sử dụng Promise.all để tối ưu hóa thời gian tải bằng cách gọi song song các API.
+     */
     async function loadData() {
       try {
         const [topicResponse, statsResponse] = await Promise.all([
-          adminFetch(`/api/admin/topics`),
-          adminFetch(`/api/admin/reports/content-summary`),
+          adminFetch(`/api/admin/topics`),             // Lấy danh sách toàn bộ chủ đề
+          adminFetch(`/api/admin/reports/content-summary`), // Lấy báo cáo thống kê nội dung
         ])
 
         if (!topicResponse.ok) {
@@ -55,15 +67,18 @@ export function TopicManagement() {
 
         if (isDisposed) return
 
+        // Cập nhật danh sách chủ đề (thực hiện chuẩn hóa dữ liệu trước khi set state)
         if (Array.isArray(topicPayload)) {
           setTopicRows(topicPayload.map(normalizeTopicRow))
         }
+        // Cập nhật số liệu thống kê cho Dashboard con
         if (statsPayload) {
           setStatsData(statsPayload.topic)
         }
         setLoadError('')
       } catch {
         if (isDisposed) return
+        // Dự phòng (Fallback): Nếu Backend lỗi, hiển thị dữ liệu mẫu để Admin vẫn thấy được giao diện
         setTopicRows(topicSeed)
         setLoadError('Không thể tải danh sách chủ đề từ backend, đang hiển thị dữ liệu mẫu.')
       } finally {

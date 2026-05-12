@@ -29,6 +29,13 @@ export function SpeakerIcon() {
     )
 }
 
+/**
+ * Trang chi tiết bài đọc (Reading Detail).
+ * Luồng xử lý:
+ * 1. Tải nội dung bài báo và các từ vựng đã lưu của người dùng.
+ * 2. Tokenize nội dung: Chuyển text thô thành các thẻ <span> tương tác.
+ * 3. Xử lý sự kiện click: Khi người dùng click vào từ, hiển thị DictionaryModal để tra cứu.
+ */
 export function ReadingDetail() {
     const { topicId, articleId } = useParams()
     const session = getUserSession()
@@ -62,14 +69,18 @@ export function ReadingDetail() {
         void audio.play().catch(() => {})
     }
 
+    // Xử lý khi người dùng click vào một từ trong nội dung bài báo
     const handleArticleWordClick = (event) => {
         const token = event.target.closest('.reading-inline-word')
         if (!token) return
 
+        // Tìm câu ngữ cảnh chứa từ đó để gửi cho AI/Dictionary tra cứu chính xác hơn
         const container = token.closest('p, li, blockquote, figcaption, h2, h3, h4')
         const fullText = container?.textContent || article?.title || ''
         const rawWord = token.textContent || ''
         const sentence = cleanContextSentence(extractSentence(fullText, rawWord))
+        
+        // Mở Modal tra từ
         void openLookupModal(rawWord, sentence)
     }
 

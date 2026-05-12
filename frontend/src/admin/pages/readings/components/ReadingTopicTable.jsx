@@ -2,10 +2,12 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { AdminSectionCard, SimpleTable, Badge, Pagination } from '../../../components/console/AdminUi'
 
+// Component hiển thị bảng danh sách các chủ đề bài báo (Article Topics).
+// Cho phép Admin lọc theo trạng thái, tìm kiếm và quản lý vòng đời của chủ đề.
 export function ReadingTopicTable({ 
-  topicsPagination, 
-  filterTopicStatus, setFilterTopicStatus,
-  searchTopicTerm, setSearchTopicTerm
+  topicsPagination, // Object phân trang chứa dữ liệu đã lọc
+  filterTopicStatus, setFilterTopicStatus, // State lọc theo trạng thái
+  searchTopicTerm, setSearchTopicTerm // State tìm kiếm theo tên
 }) {
   return (
     <AdminSectionCard

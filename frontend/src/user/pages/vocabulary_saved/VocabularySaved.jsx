@@ -16,6 +16,14 @@ import { VocabLevelColumn } from './components/VocabLevelColumn'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
+/**
+ * Component quản lý Sổ tay từ vựng cá nhân (Personal Dictionary).
+ * Chức năng:
+ * 1. Hiển thị danh sách từ vựng đã lưu, phân loại theo 6 cấp độ thuộc lòng.
+ * 2. Tìm kiếm, lọc từ vựng theo bài học hoặc từ vựng tự thêm.
+ * 3. Đồng bộ từ vựng từ LocalStorage lên Cloud (Backend).
+ * 4. Chỉnh sửa thông tin từ vựng cá nhân.
+ */
 export function VocabularySaved() {
 	const navigate = useNavigate()
 	const session = getUserSession()
@@ -30,10 +38,12 @@ export function VocabularySaved() {
 	const [isLoading, setIsLoading] = useState(false)
 	const [filterLesson, setFilterLesson] = useState('all')
 
+	// Logic lọc danh sách từ vựng dựa trên từ khóa tìm kiếm và bài học
 	const filteredItems = useMemo(() => {
 		let result = items
 		const q = searchTerm.trim().toLowerCase()
 
+		// Tìm kiếm đa trường: từ, phiên âm, nghĩa Anh/Việt, ví dụ
 		if (q) {
 			result = result.filter((item) => {
 				const text = [item.word, item.pronunciation, item.meaningEn, item.meaningVi, item.example]
@@ -44,6 +54,7 @@ export function VocabularySaved() {
 			})
 		}
 
+		// Lọc theo bài học cụ thể hoặc chỉ từ vựng tự thêm (custom)
 		if (filterLesson !== 'all') {
 			result = result.filter(item => {
 				if (filterLesson === 'custom') return item.isCustom || !item.lessonId
@@ -88,6 +99,7 @@ export function VocabularySaved() {
 		}
 	}
 
+	// LUỒNG ĐỒNG BỘ: Đẩy từ vựng lưu tạm ở LocalStorage lên Database sau khi đăng nhập
 	const syncLocalToCloud = async () => {
 		if (!isLoggedIn) return
 		const localItems = readSavedVocabulary().filter(it => !it.isCloud)
@@ -109,6 +121,7 @@ export function VocabularySaved() {
 				level: 'A1'
 			}))
 
+			// Gửi yêu cầu lưu hàng loạt (Batch save) và khởi tạo SRS cho các từ này
 			const response = await fetch(`${API_BASE_URL}/api/user/learning/complete-lesson/custom`, {
 				method: 'POST',
 				headers: {
@@ -138,6 +151,7 @@ export function VocabularySaved() {
 		}
 	}, [isLoggedIn, session?.userId])
 
+	// Phân nhóm từ vựng theo 6 cấp độ thuộc lòng để hiển thị thành các cột
 	const groupedByLevel = useMemo(() => {
 		const groups = new Map()
 		for (let level = 1; level <= 6; level += 1) {

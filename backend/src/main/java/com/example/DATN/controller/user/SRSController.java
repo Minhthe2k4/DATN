@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * Controller tiếp nhận yêu cầu liên quan đến thuật toán Spaced Repetition (SRS).
+ * Quản lý việc khởi tạo lộ trình học và cập nhật tiến độ ôn tập "Thời điểm vàng".
+ */
 @RestController
 @RequestMapping("/api/user/srs")
 public class SRSController {

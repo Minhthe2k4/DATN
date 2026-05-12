@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getUserSession, getAuthHeader } from '../../utils/authSession'
 import axios from 'axios'
+import { modal } from '@/utils/modalUtils'
+import { toast } from '@/utils/toastUtils'
 import './videoWatch.css'
 
 import { VideoWatchHeader } from './components/VideoWatchHeader'
@@ -11,6 +13,13 @@ import { AiDictionaryPanel } from './components/AiDictionaryPanel'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
+/**
+ * Trang xem Video tích hợp học tiếng Anh.
+ * Chức năng chính:
+ * 1. Phát video (YouTube/Stream).
+ * 2. Hiển thị phụ đề (Subtitle Panel) đồng bộ theo thời gian thực.
+ * 3. Cho phép click vào từng từ trong phụ đề để tra cứu và lưu từ vựng (AiDictionaryPanel).
+ */
 export function VideoWatch() {
 	const { channelSlug, videoId } = useParams()
 
@@ -196,8 +205,10 @@ export function VideoWatch() {
 		else document.exitFullscreen()
 	}
 
+	// Xử lý khi người dùng click vào một từ trong phụ đề video
 	const handleWordClick = async (word, context) => {
 		if (videoRef.current) {
+			// Tạm dừng video để người dùng tập trung tra từ
 			videoRef.current.pause()
 			setIsPlaying(false)
 		}
@@ -228,10 +239,21 @@ export function VideoWatch() {
 				exampleVi: data.contextTranslation || '',
 				contextTranslation: data.contextTranslation || ''
 			}))
+			// Hiển thị Panel kết quả tra từ (AI Dictionary)
 		} catch (err) {
 			console.error('Lỗi tra từ:', err)
-			alert(err?.response?.data?.message || 'Không thể kết nối đến máy chủ tra từ.')
+			const errorMsg = err?.response?.data?.message || 'Không thể kết nối đến máy chủ tra từ.'
+			const isPremiumError = err?.response?.status === 403 ||
+				errorMsg.toLowerCase().includes('premium') ||
+				errorMsg.toLowerCase().includes('khóa') ||
+				errorMsg.toLowerCase().includes('gói cước')
+
 			setShowSaveModal(false)
+			if (isPremiumError) {
+				modal.premium(errorMsg)
+			} else {
+				toast.error(errorMsg)
+			}
 		} finally {
 			setIsLookingUp(false)
 		}
@@ -239,7 +261,7 @@ export function VideoWatch() {
 
 	const handleSaveWord = async () => {
 		if (!userId) {
-			alert('Vui lòng đăng nhập để lưu từ')
+			toast.warning('Vui lòng đăng nhập để lưu từ')
 			return
 		}
 		try {
@@ -250,12 +272,12 @@ export function VideoWatch() {
 				exampleVi: saveFormData.exampleVi, addToSRS: true,
 			}
 			await axios.post(`${API_BASE_URL}/api/videos/save-word`, payload, { headers: getAuthHeader() })
-			alert('Đã lưu từ vựng thành công!')
+			toast.success('Đã lưu từ vựng thành công!')
 			setShowSaveModal(false)
 			fetchSavedVocab()
 		} catch (err) {
 			console.error('Lỗi lưu từ:', err)
-			alert(err?.response?.data?.message || 'Không thể lưu từ vựng')
+			toast.error(err?.response?.data?.message || 'Không thể lưu từ vựng')
 		}
 	}
 
@@ -291,16 +313,16 @@ export function VideoWatch() {
 	return (
 		<section className="video-watch-page">
 			<div className="video-watch-page__container">
-				<VideoWatchHeader 
-					video={video} 
-					channelSlug={channelSlug} 
-					channelName={channelName} 
-					progressPercent={progressPercent} 
+				<VideoWatchHeader
+					video={video}
+					channelSlug={channelSlug}
+					channelName={channelName}
+					progressPercent={progressPercent}
 				/>
 
 				<div className="video-watch__layout">
 					<div className="video-watch__player-side">
-						<VideoPlayer 
+						<VideoPlayer
 							videoRef={videoRef}
 							videoStreamUrl={videoStreamUrl}
 							onTimeUpdate={handleVideoTimeUpdate}
@@ -352,7 +374,7 @@ export function VideoWatch() {
 										})}
 									</div>
 
-									<AiDictionaryPanel 
+									<AiDictionaryPanel
 										show={showSaveModal}
 										isLookingUp={isLookingUp}
 										formData={saveFormData}
@@ -368,7 +390,7 @@ export function VideoWatch() {
 						</div>
 					</div>
 
-					<SubtitlePanel 
+					<SubtitlePanel
 						segments={segments}
 						activeSubtitleId={activeSubtitleId}
 						onSubtitleClick={handleClickSubtitle}

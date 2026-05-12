@@ -1,6 +1,10 @@
 import React from 'react'
 import { Sparkles } from 'lucide-react'
 
+/**
+ * Modal dùng để nhập liệu và lưu từ vựng thủ công vào sổ tay cá nhân.
+ * Được sử dụng trong trang Dictionary, tra từ bài báo và trang quản lý từ vựng.
+ */
 export function SaveVocabModal({ formData, onFormChange, onClose, onSave, loading }) {
 	return (
 		<div className="dictionary-save-modal-overlay" onClick={onClose}>

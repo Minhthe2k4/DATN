@@ -1,5 +1,5 @@
 import { StatGrid } from '../../../components/console/AdminUi'
-import { Youtube, PlayCircle, CheckCircle, Edit3 } from 'lucide-react'
+import { Video, PlayCircle, CheckCircle, Edit3 } from 'lucide-react'
 
 export function VideoStats({ statsData, channels, videos }) {
   const stats = [
@@ -7,7 +7,7 @@ export function VideoStats({ statsData, channels, videos }) {
       label: 'Kênh YouTube',
       value: statsData?.totalChannels?.toString() ?? channels.length.toString(),
       meta: 'Kênh đang được quản lý',
-      icon: <Youtube className="text-danger" />
+      icon: <Video className="text-danger" />
     },
     {
       label: 'Tổng video',

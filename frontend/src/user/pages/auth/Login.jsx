@@ -7,9 +7,15 @@ import './auth.css'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 async function extractErrorMessage(response, fallbackMessage) {
+	/**
+	 * Hàm hỗ trợ trích xuất thông báo lỗi từ phản hồi của Backend.
+	 * Giúp hiển thị lỗi cụ thể (ví dụ: "Sai mật khẩu") thay vì thông báo chung chung.
+	 */
+	//Lấy kiểu dữ liệu trả về (JSON hoặc Text)
 	const contentType = response.headers.get('content-type') || ''
 
 	if (contentType.includes('application/json')) {
+
 		const payload = await response.json().catch(() => null)
 		if (payload?.message) {
 			return payload.message
@@ -56,6 +62,10 @@ export function Login() {
 			setIsSubmitting(true)
 			setSubmitError('')
 
+			// LUỒNG ĐĂNG NHẬP:
+			// 1. Thu thập dữ liệu từ Form (email, password).
+			// 2. Gọi API POST /api/auth/login tại AuthController (Backend).
+			// 3. Chờ phản hồi từ AuthService -> AuthController -> Trình duyệt.
 			const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -72,7 +82,8 @@ export function Login() {
 
 			const payload = await response.json()
 
-			// Store JWT token for backend auth
+			// LƯU TRỮ PHIÊN ĐĂNG NHẬP:
+			// Lưu JWT token vào localStorage để xác thực các yêu cầu backend sau này
 			localStorage.setItem('token', payload.token)
 
 			setUserSession({
@@ -87,6 +98,7 @@ export function Login() {
 			})
 
 			toast.success('Đăng nhập thành công!')
+			// Chuyển hướng về trang chủ
 			navigate('/')
 		} catch (error) {
 			const msg = error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'

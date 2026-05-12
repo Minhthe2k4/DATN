@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+// Controller quản lý toàn bộ người dùng trong hệ thống dành cho Admin.
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
@@ -27,26 +28,31 @@ public class AdminUserController {
         this.adminUserService = adminUserService;
     }
 
+    // Lấy danh sách toàn bộ người dùng.
     @GetMapping
     public List<AdminUserDto> findAll() {
         return adminUserService.findAll();
     }
 
+    // Lấy danh sách người dùng dẫn đầu (Leaders) trong hệ thống.
     @GetMapping("/leaders")
     public List<AdminUserLeaderDto> getLeaders() {
         return adminUserService.getLeaders();
     }
 
+    // Cập nhật thông tin chi tiết người dùng.
     @PutMapping("/{id}")
     public AdminUserDto update(@PathVariable Long id, @RequestBody UpdateAdminUserRequest request) {
         return adminUserService.update(id, request);
     }
 
+    // Kích hoạt hoặc vô hiệu hóa (Khóa) tài khoản người dùng.
     @PatchMapping("/{id}/activation")
     public AdminUserDto updateActivation(@PathVariable Long id, @RequestBody UpdateUserActivationRequest request) {
         return adminUserService.updateActivation(id, request == null ? null : request.active());
     }
 
+    // Xóa tài khoản người dùng (Xóa mềm hoặc xóa vĩnh viễn).
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(

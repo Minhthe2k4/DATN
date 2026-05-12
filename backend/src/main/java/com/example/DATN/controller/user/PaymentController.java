@@ -61,6 +61,10 @@ public class PaymentController {
         return ResponseEntity.ok(premiumPlanRepository.findAll());
     }
 
+    /**
+     * Khởi tạo đơn hàng thanh toán qua ZaloPay.
+     * Quy trình: Kiểm tra User/Plan -> Tạo giao dịch ZaloPay -> Lưu Transaction tạm thời -> Trả về Order URL.
+     */
     @GetMapping("/create-order")
     public ResponseEntity<PaymentResponse> createPayment(
             @RequestParam("userId") Long userId,
@@ -154,6 +158,10 @@ public class PaymentController {
         }
     }
 
+    /**
+     * Nhận phản hồi từ cổng thanh toán ZaloPay sau khi người dùng hoàn tất giao dịch.
+     * Nếu thành công, chuyển trạng thái giao dịch sang AWAITING để chờ Admin duyệt.
+     */
     @GetMapping("/verify-payment")
     public ResponseEntity<?> verifyPayment(@RequestParam Map<String, String> params) {
         // ZaloPay trả về apptransid trong params redirect

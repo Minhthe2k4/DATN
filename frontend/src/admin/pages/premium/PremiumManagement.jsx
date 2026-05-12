@@ -29,12 +29,19 @@ import { PremiumMembersTable } from './components/PremiumMembersTable'
 import { PremiumPlansTable } from './components/PremiumPlansTable'
 import { PremiumAuditLogsTable } from './components/PremiumAuditLogsTable'
 
+// Component quản lý hệ thống Premium dành cho Admin.
+// Bao gồm: Quản lý yêu cầu đăng ký, danh sách thành viên, cấu hình gói cước và nhật ký hoạt động.
 export function PremiumManagement() {
   const navigate = useNavigate()
+  // Danh sách các yêu cầu nâng cấp đang chờ xử lý
   const [requestRows, setRequestRows] = useState(premiumRequests)
+  // Danh sách thành viên đang sở hữu Premium
   const [memberRows, setMemberRows] = useState(premiumMembers)
+  // Danh sách các gói Premium có sẵn (tháng, năm, vĩnh viễn...)
   const [planRows, setPlanRows] = useState([])
+  // Nhật ký kiểm soát (Audit Logs) các thao tác quản trị
   const [auditRows, setAuditRows] = useState([])
+  
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [actionError, setActionError] = useState('')

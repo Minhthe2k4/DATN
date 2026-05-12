@@ -16,9 +16,9 @@
 }
 
 .vlesson-shell {
-	max-width: 1180px;
+	max-width: 1100px;
 	margin: 0 auto;
-	padding: 14px 18px 22px;
+	padding: 8px 16px 12px;
 }
 
 .vlesson-entry-overlay {
@@ -100,7 +100,7 @@
 
 .vlesson-header h1 {
 	margin: 0;
-	font-size: clamp(24px, 2.2vw, 30px);
+	font-size: clamp(20px, 1.8vw, 24px);
 	color: var(--vl-text);
 	letter-spacing: 0;
 	line-height: 1.2;
@@ -348,10 +348,10 @@
 }
 
 .flashcard {
-	margin-top: 10px;
+	margin-top: 8px;
 	perspective: 1000px;
-	height: min(500px, calc(100vh - 250px));
-	width: min(460px, 100%);
+	height: min(420px, calc(100vh - 220px));
+	width: min(440px, 100%);
 	margin-left: auto;
 	margin-right: auto;
 	position: relative;
@@ -438,8 +438,8 @@
 }
 
 .flashcard h2 {
-	margin: 14px 0 6px;
-	font-size: clamp(34px, 5vw, 44px);
+	margin: 10px 0 4px;
+	font-size: clamp(28px, 4vw, 36px);
 	color: #0f172a;
 	font-weight: 700;
 	letter-spacing: -0.01em;
@@ -453,12 +453,25 @@
 	letter-spacing: 0.01em;
 }
 
-.flashcard__example {
+.flashcard__example-group {
 	margin-top: 14px;
+	width: 100%;
+}
+
+.flashcard__example {
+	margin: 0;
 	font-size: 16px;
 	color: #334155;
 	line-height: 1.65;
 	font-weight: 500;
+}
+
+.flashcard__example-vi {
+	margin-top: 6px;
+	font-size: 14px;
+	color: #64748b;
+	font-style: italic;
+	line-height: 1.5;
 }
 
 .flashcard__meaning {
@@ -506,7 +519,7 @@
 .typing-stage__head h3 {
 	margin: 0;
 	color: #0f172a;
-	font-size: 20px;
+	font-size: 18px;
 }
 
 .letter-inputs {
@@ -597,7 +610,7 @@
 	justify-content: center;
 	padding: 0 16px;
 	pointer-events: none;
-	z-index: 900;
+	z-index: 2000;
 	animation: popupRise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -632,12 +645,14 @@
 .vtest-word-popup__badge {
 	display: inline-flex;
 	align-items: center;
-	padding: 5px 10px;
+	justify-content: center;
+	padding: 6px 16px;
 	border-radius: 999px;
-	font-size: 12px;
+	font-size: 11px;
 	font-weight: 800;
 	text-transform: uppercase;
-	letter-spacing: 0.35px;
+	letter-spacing: 0.8px;
+	min-width: 100px;
 }
 
 .vtest-word-popup__badge.is-correct {
@@ -703,6 +718,18 @@
 	color: #1e293b;
 }
 
+.vtest-word-popup__example-box {
+	margin-top: 6px;
+	padding-top: 6px;
+	border-top: 1px dashed #e2e8f0;
+}
+
+.vtest-word-popup__example-vi {
+	font-size: 13px;
+	color: #64748b;
+	margin-top: 2px;
+}
+
 .vtest-word-popup__footer {
 	display: flex;
 	justify-content: flex-end;
@@ -754,7 +781,7 @@
 	align-items: center;
 	justify-content: center;
 	padding: 16px;
-	z-index: 1400;
+	z-index: 2000;
 	animation: doneOverlayIn 0.25s ease-out;
 }
 

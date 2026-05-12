@@ -2,13 +2,15 @@ import React from 'react'
 import { AdminSectionCard, SimpleTable, Badge, Pagination } from '../../../components/console/AdminUi'
 import { formatCurrency } from '../utils/revenueUtils'
 
+// Component hiển thị danh sách các giao dịch thanh toán kèm bộ lọc chi tiết.
+// Cung cấp các công cụ tra cứu giao dịch theo trạng thái, email khách hàng và khoảng thời gian.
 export function RevenueTransactionsSection({
-  transactionFilter,
-  setTransactionFilter,
-  handleApplyTransactionFilter,
-  handleResetTransactionFilter,
-  reconciliation,
-  pagination
+  transactionFilter, // Đối tượng chứa trạng thái các bộ lọc hiện tại
+  setTransactionFilter, // Hàm cập nhật bộ lọc
+  handleApplyTransactionFilter, // Hàm thực thi lọc dữ liệu
+  handleResetTransactionFilter, // Hàm đặt lại bộ lọc về mặc định
+  reconciliation, // Dữ liệu thống kê nhanh (Tổng, Thành công, Hoàn tiền, Đang xử lý)
+  pagination // Đối tượng phân trang dữ liệu giao dịch
 }) {
   return (
     <div className="col-12">

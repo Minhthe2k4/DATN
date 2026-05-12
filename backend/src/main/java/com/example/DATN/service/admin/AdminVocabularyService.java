@@ -15,6 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Service quản lý kho từ vựng và mối liên kết với bài học.
+ * Đảm nhiệm các logic nghiệp vụ phức tạp: CRUD từ vựng, quản lý quan hệ n-n (Lesson-Vocabulary),
+ * chuẩn hóa dữ liệu IPA và xử lý trạng thái phê duyệt nội dung.
+ */
 @Service
 public class AdminVocabularyService {
     private final VocabularyRepository vocabularyRepository;
@@ -30,15 +35,21 @@ public class AdminVocabularyService {
         this.lessonVocabularyRepository = lessonVocabularyRepository;
     }
 
+    /**
+     * Lấy toàn bộ danh sách từ vựng phục vụ trang quản lý tổng thể.
+     */
     public List<AdminVocabularyDto> findAll() {
         return vocabularyRepository.findVocabularyManagementRows().stream().map(this::toDto).toList();
     }
 
+    /**
+     * Tìm chi tiết từ vựng và tra cứu xem từ này đang thuộc bài học nào.
+     */
     public AdminVocabularyDto findById(Long id) {
         Vocabulary vocabulary = vocabularyRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vocabulary not found"));
 
-        // Get lessonId from LessonVocabulary table
+        // Truy vấn ID bài học từ bảng trung gian LessonVocabulary
         Long lessonId = findLessonIdForVocabulary(id);
 
         return new AdminVocabularyDto(
@@ -59,6 +70,10 @@ public class AdminVocabularyService {
                 vocabulary.deletedAt);
     }
 
+    /**
+     * Tạo mới một từ vựng và thiết lập liên kết với bài học ngay lập tức.
+     */
+    @Transactional
     public AdminVocabularyDto create(UpsertVocabularyRequest request) {
         String word = request == null || request.word() == null ? "" : request.word().trim();
         if (vocabularyRepository.existsByWordIgnoreCase(word)) {
@@ -71,7 +86,7 @@ public class AdminVocabularyService {
         try {
             Vocabulary saved = vocabularyRepository.save(vocabulary);
 
-            // Save lesson-vocabulary relationship
+            // Lưu mối quan hệ bài học - từ vựng vào bảng trung gian
             if (lessonId != null) {
                 LessonVocabulary lessonVocab = new LessonVocabulary();
                 lessonVocab.lessonId = lessonId;

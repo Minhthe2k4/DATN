@@ -8,6 +8,13 @@ import { VideoPageHeader } from './components/VideoPageHeader'
 import { ChannelCard } from './components/ChannelCard'
 import { FavoriteVideoCard } from './components/FavoriteVideoCard'
 
+/**
+ * Trang danh sách Video và Kênh (Video Hub).
+ * Chức năng:
+ * 1. Hiển thị danh sách các kênh YouTube học tiếng Anh đã được biên soạn.
+ * 2. Quản lý danh sách Video yêu thích của người dùng.
+ * 3. Tìm kiếm kênh và video nhanh chóng.
+ */
 export function Video() {
     const session = getUserSession()
     const userId = session?.userId ? Number(session.userId) : null
@@ -24,10 +31,12 @@ export function Video() {
 		loadChannels()
 	}, [])
 
+	// Tải danh sách tất cả các kênh video từ hệ thống
 	const loadChannels = async () => {
 		try {
 			setIsLoading(true)
 			const data = await fetchAllVideoChannels()
+			// Transform dữ liệu từ API sang định dạng hiển thị (slug, subscriber, thumbnail...)
 			const transformedChannels = data.map(channel => ({
 				id: channel.id,
 				slug: channel.handle?.replace('@', '') || `channel-${channel.id}`,
@@ -82,6 +91,7 @@ export function Video() {
         }
     }, [favoriteVideos, userId])
 
+    // Xử lý bật/tắt trạng thái yêu thích của Video
     const handleToggleFavorite = async (e, videoId) => {
         e.preventDefault()
         e.stopPropagation()
@@ -90,9 +100,11 @@ export function Video() {
                 params: { targetId: videoId, targetType: 'VIDEO' },
                 headers: getAuthHeader()
             })
+            // Nếu bỏ yêu thích, cập nhật lại danh sách hiển thị
             if (!res.data.isFavorite) {
                 setFavoriteVideos(prev => prev.filter(v => v.id !== videoId))
             }
+            // Cập nhật lại stats để UI hiển thị icon trái tim chính xác
             setInteractionStats(prev => ({
                 ...prev,
                 [videoId]: { ...prev[videoId], isFavorite: res.data.isFavorite }

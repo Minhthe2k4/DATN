@@ -242,6 +242,8 @@ public class ReadingDictionaryService {
                     data.get("definitionEn"),
                     data.get("definitionVi"),
                     data.get("contextTranslation"));
+        } catch (ResponseStatusException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI Lookup failed: " + ex.getMessage());
         }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+// Controller quản lý dữ liệu tài chính và doanh thu dành cho Admin.
 @RestController
 @RequestMapping("/api/admin/revenue")
 public class AdminRevenueController {
@@ -19,11 +20,13 @@ public class AdminRevenueController {
         this.adminRevenueService = adminRevenueService;
     }
 
+    // Lấy thông tin tổng quan doanh thu (thống kê ngày, tháng, năm và theo gói).
     @GetMapping("/overview")
     public AdminRevenueOverviewResponse getOverview() {
         return adminRevenueService.getOverview();
     }
 
+    // Tra cứu danh sách các giao dịch thanh toán kèm bộ lọc.
     @GetMapping("/transactions")
     public List<AdminRevenueOverviewResponse.RevenueTransactionItem> findTransactions(
             @RequestParam(required = false) String status,

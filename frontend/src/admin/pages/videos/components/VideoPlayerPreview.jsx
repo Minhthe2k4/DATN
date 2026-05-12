@@ -30,7 +30,8 @@ export function VideoPlayerPreview({
   toggleFullscreen,
   changeSpeed,
   setField,
-  setIsPlaying
+  setIsPlaying,
+  setShowControls
 }) {
   return (
     <div className="card-body p-0">

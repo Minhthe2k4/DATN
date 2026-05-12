@@ -31,7 +31,7 @@ public class UserVocabularyCustomService {
     }
 
     public UserVocabularyCustom save(UserVocabularyCustom vocab, boolean addToSRS) {
-        // Kiểm tra quyền qua PremiumService - CHỈ khi thêm vào SRS
+        // Kiểm tra quyền qua PremiumService - Chỉ khi thêm vào SRS
         if (addToSRS && vocab.user != null) {
             premiumService.checkAndIncrementActionLimit(vocab.user.id, "SAVED_VOCABULARY", "Lưu từ vựng");
         }
@@ -105,7 +105,7 @@ public class UserVocabularyCustomService {
             throw new RuntimeException("User not found");
         }
 
-        // Kiểm tra quyền qua PremiumService (Hạn mức động từ Admin) - CHỈ khi thêm vào
+        // Kiểm tra quyền qua PremiumService (Hạn mức động từ Admin) - Chỉ khi thêm vào
         // SRS
         // Lưu ý: checkAndIncrementActionLimit sẽ ném lỗi FORBIDDEN nếu hết hạn hoặc bị
         // khóa
@@ -117,7 +117,7 @@ public class UserVocabularyCustomService {
         List<UserVocabularyCustom> toSave = new ArrayList<>();
 
         for (UserVocabularyCustom vocab : vocabularies) {
-            // Check if already exists to prevent duplicates in batch
+            // Kiểm tra nếu đã tồn tại để ngăn chặn trùng lặp trong batch
             if (!existsByUserIdAndWord(userId, vocab.word)) {
                 vocab.user = user;
                 if (vocab.createdAt == null) {
@@ -134,7 +134,7 @@ public class UserVocabularyCustomService {
 
         List<UserVocabularyCustom> savedList = userVocabularyCustomRepository.saveAll(toSave);
 
-        // Initialize learning tracking if requested
+        // Khởi tạo theo dõi học tập nếu được yêu cầu
         if (addToSRS) {
             for (UserVocabularyCustom saved : savedList) {
                 spacedRepetitionService.initializeLearning(user, saved);

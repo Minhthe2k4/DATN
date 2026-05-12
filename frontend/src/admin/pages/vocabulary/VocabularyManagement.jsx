@@ -52,18 +52,29 @@ function normalizeVocabularyRow(row) {
   }
 }
 
+/**
+ * Component quản lý kho từ vựng tổng thể của hệ thống.
+ * Cho phép Admin thực hiện: Tìm kiếm từ vựng, lọc theo loại từ/độ khó/bài học,
+ * và theo dõi trạng thái phê duyệt (Nháp -> Chờ duyệt -> Đã duyệt).
+ */
 export function VocabularyManagement() {
+  // Bộ lọc trạng thái duyệt (Tất cả, Đã duyệt, Chờ duyệt)
   const [activeFilter, setActiveFilter] = useState('Tất cả')
+  
+  // Danh sách từ vựng và bài học liên quan (để hiển thị thông tin bài học của từ)
   const [entries, setEntries] = useState(
     vocabularyEntries.map((entry) => ({ ...entry, status: normalizeStatus(entry.status) }))
   )
   const [lessonRows, setLessonRows] = useState(lessons)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Các trạng thái phục vụ bộ lọc nâng cao
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState('all')
   const [selectedLevel, setSelectedLevel] = useState('all')
   const [selectedType, setSelectedType] = useState('all')
 
+  // Dữ liệu thống kê kho từ vựng (phân loại theo từ loại, mức độ)
   const [statsData, setStatsData] = useState(null)
 
   useEffect(() => {

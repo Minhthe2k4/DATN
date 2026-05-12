@@ -29,6 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import jakarta.annotation.PostConstruct;
 
+// Service quản lý nghiệp vụ Premium và gói cước.
+// Xử lý các quy trình: Duyệt yêu cầu nâng cấp, quản lý thành viên, gia hạn/hủy Premium,
+// và cấu hình các gói dịch vụ (Price, Duration, Feature Limits).
 @Service
 @Transactional
 public class AdminPremiumService {
@@ -57,6 +60,7 @@ public class AdminPremiumService {
 
     }
 
+    // Khởi tạo các gói cước mặc định khi hệ thống bắt đầu chạy (vd: Gói Free).
     @PostConstruct
     @Transactional
     public void initDefaultPlans() {

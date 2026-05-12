@@ -36,13 +36,13 @@ export function UserDashboardCharts({ newestUsers, premiumData, statusData }) {
       <div className="col-12 col-md-4">
         <AdminSectionCard title="Tỷ lệ Premium">
           <div style={{ height: '180px' }}>
-            <PieDistribution data={premiumData} colors={['#f59e0b', '#94a3b8']} />
+            <PieDistribution data={premiumData} valueKey="count" colors={['#f59e0b', '#94a3b8']} />
           </div>
           <div className="mt-3">
             {premiumData.map((item, idx) => (
               <div key={item.name} className="d-flex justify-content-between align-items-center mb-1 small">
                 <span className="text-muted">
-                  <span className="d-inline-block rounded-circle me-2" style={{ width: '8px', height: '8px', backgroundColor: ['#f59e0b', '#94a3b8'][idx] }}></span>
+                  <span className="d-inline-block rounded-circle me-2" style={{ width: '8px', height: '8px', backgroundColor: ['#f59e0b', '#94a3b8'][idx % 2] }}></span>
                   {item.name}
                 </span>
                 <span className="fw-bold">{item.count}</span>
@@ -55,13 +55,13 @@ export function UserDashboardCharts({ newestUsers, premiumData, statusData }) {
       <div className="col-12 col-md-4">
         <AdminSectionCard title="Trạng thái tài khoản">
           <div style={{ height: '180px' }}>
-            <PieDistribution data={statusData} colors={['#10b981', '#ef4444']} />
+            <PieDistribution data={statusData} valueKey="count" colors={['#10b981', '#ef4444']} />
           </div>
           <div className="mt-3">
             {statusData.map((item, idx) => (
               <div key={item.name} className="d-flex justify-content-between align-items-center mb-1 small">
                 <span className="text-muted">
-                  <span className="d-inline-block rounded-circle me-2" style={{ width: '8px', height: '8px', backgroundColor: ['#10b981', '#ef4444'][idx] }}></span>
+                  <span className="d-inline-block rounded-circle me-2" style={{ width: '8px', height: '8px', backgroundColor: ['#10b981', '#ef4444'][idx % 2] }}></span>
                   {item.name}
                 </span>
                 <span className="fw-bold">{item.count}</span>

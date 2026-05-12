@@ -16,6 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Service xử lý các nghiệp vụ quản trị chủ đề.
+ * Đảm nhiệm việc tính toán số lượng bài học, kiểm tra trùng lặp và quản lý trạng thái (Xóa mềm).
+ */
 @Service
 public class AdminTopicService {
     private final TopicRepository topicRepository;
@@ -26,10 +30,17 @@ public class AdminTopicService {
         this.lessonRepository = lessonRepository;
     }
 
+    /**
+     * Lấy toàn bộ danh sách chủ đề phục vụ trang quản lý.
+     * Dữ liệu được lấy thông qua Projection để tối ưu hiệu năng tính toán số lượng bài học.
+     */
     public List<AdminTopicDto> findAll() {
         return topicRepository.findTopicManagementRows().stream().map(this::toDto).toList();
     }
 
+    /**
+     * Tìm chi tiết chủ đề kèm theo số lượng bài học tương ứng.
+     */
     public AdminTopicDto findById(Long id) {
         Topic topic = topicRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found"));
@@ -47,6 +58,10 @@ public class AdminTopicService {
                 topic.deletedAt);
     }
 
+    /**
+     * Tạo mới một chủ đề. 
+     * Kiểm tra trùng tên (không phân biệt hoa thường) trước khi lưu.
+     */
     public AdminTopicDto create(UpsertTopicRequest request) {
         String name = request == null || request.name() == null ? "" : request.name().trim();
         if (topicRepository.existsByNameIgnoreCase(name)) {
@@ -72,18 +87,26 @@ public class AdminTopicService {
         return findById(id);
     }
 
+    /**
+     * Xóa chủ đề.
+     * @param force Nếu là true, xóa vĩnh viễn khỏi DB. Nếu là false, thực hiện xóa mềm (đánh dấu deletedAt).
+     */
     public void delete(Long id, boolean force) {
         if (force) {
             topicRepository.hardDelete(id);
         } else {
             Topic topic = topicRepository.findById(id)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found"));
-            topic.status = false; // Soft delete
-            topic.deletedAt = new Date();
+            topic.status = false; // Đánh dấu tạm dừng hoạt động
+            topic.deletedAt = new Date(); // Ghi nhận thời điểm xóa mềm
             topicRepository.save(topic);
         }
     }
 
+    /**
+     * Chuyển đổi dữ liệu từ Request DTO sang Entity.
+     * Thực hiện kiểm tra các trường thông tin bắt buộc.
+     */
     private void apply(Topic topic, UpsertTopicRequest request) {
         String name = request == null ? "" : defaultString(request.name(), "").trim();
         if (name.isBlank()) {

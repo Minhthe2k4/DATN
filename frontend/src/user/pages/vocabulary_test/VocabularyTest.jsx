@@ -15,7 +15,14 @@ import { FillBlankQuestion } from './components/FillBlankQuestion'
 import { MatchingQuestion } from './components/MatchingQuestion'
 import { ResultsScreen } from './components/ResultsScreen'
 
-// --- Main Export ---
+/**
+ * Component quản lý Use Case: Ôn tập từ vựng (SRS Review Session).
+ * Chức năng:
+ * 1. Tải danh sách các từ vựng đến hạn ôn tập (Review Queue).
+ * 2. Tự động tạo các loại câu hỏi đa dạng (Trắc nghiệm, Đúng/Sai, Điền từ, Nối từ).
+ * 3. Đo lường tốc độ phản hồi (Response Time) để phục vụ thuật toán SRS.
+ * 4. Đồng bộ kết quả hàng loạt lên Backend để cập nhật lịch ôn tập "Thời điểm vàng".
+ */
 export function VocabularyTest() {
 	const navigate = useNavigate()
 	const [questions, setQuestions] = useState([])
@@ -48,13 +55,14 @@ export function VocabularyTest() {
 		}
 	}, [currentIndex, isLoading, isFinished, questions.length])
 
+	// Tải hàng đợi các từ vựng cần ôn tập và kho từ vựng mồi (distractors)
 	const fetchReviewQueue = async () => {
 		try {
 			setIsLoading(true)
 			const session = getUserSession();
 			const token = localStorage.getItem('token') || session?.userId;
 			
-			// 1. Fetch all words for distractors pool
+			// 1. Tải toàn bộ kho từ vựng để làm phương án nhiễu (distractors) cho câu hỏi trắc nghiệm
 			const allResponse = await fetch('/api/user/learning/all-vocab', {
 				headers: { ...getAuthHeader() },
 				credentials: 'include'
@@ -65,14 +73,14 @@ export function VocabularyTest() {
 				setAllVocabPool(pool)
 			}
 
-			// 2. Check minimum pool size (at least 4 words saved total)
+			// 2. Yêu cầu tối thiểu 4 từ vựng trong kho để có thể tạo câu hỏi trắc nghiệm hợp lệ
 			if (pool.length < 4) {
 				setNotEnoughTotalWords(true)
 				setIsLoading(false)
 				return
 			}
 
-			// 3. Fetch due reviews
+			// 3. Tải danh sách từ vựng đã đến hạn ôn tập (Due Reviews) dựa trên thuật toán SRS
 			const response = await fetch('/api/user/learning/review-queue', {
 				headers: { ...getAuthHeader() },
 				credentials: 'include'
@@ -80,6 +88,7 @@ export function VocabularyTest() {
 			if (response.ok) {
 				const data = await response.json()
 				if (data.length > 0) {
+					// Sử dụng helper generateQuestions để tạo ngẫu nhiên các loại câu hỏi từ dữ liệu thô
 					const generated = generateQuestions(data, pool)
 					setQuestions(generated)
 					setOriginalQuestions(generated)
@@ -95,6 +104,7 @@ export function VocabularyTest() {
 	}
 
 
+	// Gửi kết quả ôn tập hàng loạt lên Backend để tính toán lịch ôn tập mới
 	const handleSync = async () => {
 		const results = answerDetails.map((detail) => ({
 			vocabId: detail.vocabId,
@@ -151,10 +161,13 @@ export function VocabularyTest() {
 		}
 	}
 
+	// Xử lý khi người dùng trả lời một câu hỏi
 	const handleAnswer = (payload) => {
 		const isCorrect = payload?.isCorrect ?? false
 		const question = questions[currentIndex]
 		const meta = question.itemMetadata
+		
+		// Tính toán tốc độ phản hồi (Response Time)
 		const now = performance.now()
 		const responseTimeMs = Math.round(now - startTimeRef.current)
 		
@@ -173,7 +186,7 @@ export function VocabularyTest() {
 			})
 		}
 
-		// Buffer everything in answerDetails ONLY if it's the first attempt (not in review phase)
+		// Chỉ ghi nhận kết quả vào danh sách đồng bộ ở lần làm đầu tiên (không tính lúc Review từ sai)
 		if (!isReviewPhase) {
 			setAnswerDetails((prev) => {
 				const next = [...prev]
@@ -196,7 +209,7 @@ export function VocabularyTest() {
 			})
 		}
 
-		// If incorrect, add to failedQueue for later review
+		// Nếu trả lời sai, thêm vào hàng đợi để ôn tập lại ngay cuối buổi học
 		if (!isCorrect) {
 			setFailedQueue(prev => [...prev, question])
 		}

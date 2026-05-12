@@ -9,9 +9,16 @@ export function FlashcardStudy({
 	onSkip, 
 	onNextStep 
 }) {
+	const cardRef = React.useRef(null)
+
+	React.useEffect(() => {
+		cardRef.current?.focus()
+	}, [word])
+
 	return (
 		<>
 			<div
+				ref={cardRef}
 				role="button"
 				tabIndex={0}
 				className={`flashcard${isFlipped ? ' is-flipped' : ''}`}
@@ -40,7 +47,7 @@ export function FlashcardStudy({
 						</button>
 					</div>
 					<h2>{word.word}</h2>
-					<p className="flashcard__phonetic">{word.phonetic}</p>
+					<p className="flashcard__phonetic">{word.pronunciation}</p>
 					<p className="flashcard__example">{word.example}</p>
 					<p className="flashcard__tap-note">Nhấn vào thẻ để lật mặt.</p>
 				</div>
@@ -52,7 +59,12 @@ export function FlashcardStudy({
 						<p><strong>Nghĩa tiếng Anh:</strong> {word.meaningEn}</p>
 						<p><strong>Nghĩa tiếng Việt:</strong> {word.meaningVi}</p>
 					</div>
-					<p className="flashcard__example">{word.example}</p>
+					<div className="flashcard__example-group">
+						<p className="flashcard__example">{word.example}</p>
+						{word.exampleVi && (
+							<p className="flashcard__example-vi">{word.exampleVi}</p>
+						)}
+					</div>
 				</div>
 			</div>
 

@@ -10,12 +10,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Repository quản lý kho từ vựng hệ thống (System Vocabulary).
+ * Chứa các từ vựng chính thống đã được biên soạn và kiểm duyệt.
+ * Hỗ trợ các truy vấn quản lý vòng đời từ vựng và tra cứu thông tin phục vụ Admin.
+ */
 public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
+        /**
+         * Xóa vĩnh viễn từ vựng khỏi Database.
+         */
         @Modifying
         @Transactional
         @Query(value = "DELETE FROM vocabulary WHERE id = :id", nativeQuery = true)
         void hardDelete(Long id);
 
+        /**
+         * Khôi phục từ vựng đã bị xóa mềm và đặt trạng thái về 'Chờ duyệt'.
+         */
         @Modifying
         @Transactional
         @Query(value = "UPDATE vocabulary SET deleted_at = NULL, status = 'Chờ duyệt' WHERE id = :id", nativeQuery = true)
@@ -25,6 +36,10 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
 
         long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime start, LocalDateTime end);
 
+        /**
+         * Tìm các từ vựng mới mà người dùng chưa đưa vào lộ trình học tập.
+         * Phục vụ Use Case: Khám phá từ vựng mới (UC_KhamPhaTuVung).
+         */
         @Query("""
                         select v from Vocabulary v
                         where v.id not in (
@@ -36,12 +51,19 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
         List<Vocabulary> findNewWordsForUser(@org.springframework.data.repository.query.Param("userId") Long userId,
                         org.springframework.data.domain.Pageable pageable);
 
+        /**
+         * Tra cứu nhanh từ vựng theo mặt chữ (không phân biệt hoa thường).
+         * Dùng để kiểm tra sự tồn tại của từ trước khi thực hiện các tác vụ biên tập.
+         */
         java.util.Optional<Vocabulary> findFirstByWordIgnoreCase(String word);
 
         boolean existsByWordIgnoreCase(String word);
 
         boolean existsByWordIgnoreCaseAndIdNot(String word, Long id);
 
+        /**
+         * Lấy danh sách từ vựng kèm theo thông tin quản lý.
+         */
         @Query("""
                         select v.id as id,
                                v.word as word,
@@ -63,6 +85,9 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
                         """)
         List<VocabularyManagementProjection> findVocabularyManagementRows();
 
+        /**
+         * Lấy danh sách từ vựng trong thùng rác (đã bị xóa mềm).
+         */
         @Query(value = """
                         select v.id as id,
                                v.word as word,

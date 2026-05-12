@@ -16,6 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+// Service xử lý các nghiệp vụ quản trị bài học.
+// Chịu trách nhiệm liên kết bài học với chủ đề, quản lý trạng thái xóa mềm 
+// và xử lý các thuộc tính bài học (độ khó, trạng thái Premium).
 @Service
 public class AdminLessonService {
     private final LessonRepository lessonRepository;
@@ -26,10 +29,12 @@ public class AdminLessonService {
         this.topicRepository = topicRepository;
     }
 
+    // Lấy toàn bộ danh sách bài học phục vụ bảng quản lý của Admin.
     public List<AdminLessonDto> findAll() {
         return lessonRepository.findLessonManagementRows().stream().map(this::toDto).toList();
     }
 
+    // Lấy chi tiết bài học kèm theo thông tin gán chủ đề.
     public AdminLessonDto findById(Long id) {
         Lesson lesson = lessonRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found"));
@@ -49,6 +54,7 @@ public class AdminLessonService {
                 lesson.deletedAt);
     }
 
+    // Tạo mới một bài học. Kiểm tra trùng tên trước khi lưu.
     public AdminLessonDto create(UpsertLessonRequest request) {
         String name = request == null || request.name() == null ? "" : request.name().trim();
         if (lessonRepository.existsByNameIgnoreCase(name)) {
@@ -61,6 +67,7 @@ public class AdminLessonService {
         return findById(saved.id);
     }
 
+    // Cập nhật thông tin bài học hiện có.
     public AdminLessonDto update(Long id, UpsertLessonRequest request) {
         String name = request == null || request.name() == null ? "" : request.name().trim();
         if (lessonRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
@@ -74,18 +81,21 @@ public class AdminLessonService {
         return findById(id);
     }
 
+    // Xóa bài học (Xóa mềm hoặc xóa vĩnh viễn).
     public void delete(Long id, boolean force) {
         if (force) {
             lessonRepository.hardDelete(id);
         } else {
             Lesson lesson = lessonRepository.findById(id)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found"));
-            lesson.status = "Tạm dừng"; // Soft delete
+            lesson.status = "Tạm dừng"; // Trạng thái khi bị xóa mềm
             lesson.deletedAt = new Date();
             lessonRepository.save(lesson);
         }
     }
 
+    // Chuyển đổi và áp dụng dữ liệu từ Request DTO vào Entity Lesson.
+    // Xử lý liên kết với Topic và thiết lập các thuộc tính bài học.
     private void apply(Lesson lesson, UpsertLessonRequest request) {
         String name = request == null ? "" : defaultString(request.name(), "").trim();
         if (name.isBlank()) {
@@ -97,6 +107,7 @@ public class AdminLessonService {
                     "Vui lòng nhập đầy đủ các trường thông tin bắt buộc");
         }
 
+        // Tìm chủ đề tương ứng để gán bài học vào (Topic - Lesson: 1-n)
         Topic topic = topicRepository.findById(request.topicId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Topic not found"));
 
@@ -106,6 +117,7 @@ public class AdminLessonService {
         lesson.difficulty = normalizeDifficulty(request == null ? null : request.difficulty());
         lesson.status = defaultString(request == null ? null : request.status(), "Đang mở");
         lesson.lessonImage = request == null ? null : request.lessonImage();
+        // Thiết lập trạng thái Premium (Gating Content)
         lesson.isPremium = request != null && Boolean.TRUE.equals(request.isPremium());
     }
 
@@ -139,10 +151,12 @@ public class AdminLessonService {
         return value;
     }
 
+    // Truy vấn danh sách các bài học đã bị xóa mềm phục vụ Thùng rác.
     public List<LessonManagementProjection> getDeletedLessons() {
         return lessonRepository.findDeletedRows();
     }
 
+    // Khôi phục bài học đã bị xóa mềm bằng cách xóa giá trị deletedAt.
     @Transactional
     public void restore(Long id) {
         lessonRepository.restore(id);

@@ -122,6 +122,16 @@ public class WhisperTranscriptionService {
                 audioPath.toString());
         pb.redirectErrorStream(true);
         Process process = pb.start();
+
+        // Đọc log để tránh treo buffer
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // System.out.println("[FFmpeg] " + line); // Bật nếu cần debug
+            }
+        }
+
         int exitCode = process.waitFor();
 
         if (exitCode != 0) {

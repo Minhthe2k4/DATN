@@ -8,6 +8,10 @@ import { VocabReviewOverlay } from './components/VocabReviewOverlay'
 import { VocabStatsCard } from './components/VocabStatsCard'
 import { VocabTrainingCard } from './components/VocabTrainingCard'
 
+/**
+ * Trang tổng quan học từ vựng (Vocabulary Dashboard).
+ * Hiển thị tiến độ học tập, biểu đồ trình độ và nút bắt đầu ôn tập "Thời điểm vàng" (SRS).
+ */
 export function Vocabulary() {
 	const navigate = useNavigate()
 	const session = getUserSession()
@@ -73,10 +77,13 @@ export function Vocabulary() {
 	const isSRSUnlocked = premiumStatus?.featureLimits?.SRS_GOLDEN_TIME?.IS_LOCKED === false
 	const isDashboardLocked = !premiumStatus?.isPremium && !isSRSUnlocked
 
+	// Xử lý khi nhấn nút "Ôn tập ngay"
 	const handleReviewClick = () => {
 		if (isReviewLoading || dashboard.reviewCount === 0) return
 		setIsReviewLoading(true)
 		setReviewLoadingProgress(0)
+		
+		// Giả lập hiệu ứng Loading mượt mà trước khi vào bài kiểm tra SRS
 		reviewLoadingIntervalRef.current = window.setInterval(() => {
 			setReviewLoadingProgress((prev) => (prev >= 96 ? prev : prev + 4))
 		}, 28)
@@ -85,6 +92,7 @@ export function Vocabulary() {
 			setReviewLoadingProgress(100)
 			window.setTimeout(() => {
 				setIsReviewLoading(false)
+				// Chuyển hướng sang trang làm bài kiểm tra ôn tập
 				navigate('/vocabulary-test')
 			}, 120)
 		}, 760)

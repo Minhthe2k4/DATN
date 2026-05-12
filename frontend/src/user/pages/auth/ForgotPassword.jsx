@@ -21,6 +21,7 @@ export function ForgotPassword() {
     setIsLoading(true)
     setError('')
     try {
+      // LUỒNG QUÊN MẬT KHẨU - BƯỚC 1: Gửi yêu cầu lấy lại mật khẩu -> Backend gửi OTP qua Email
       const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,6 +48,7 @@ export function ForgotPassword() {
     setError('')
     try {
       const combinedOtp = otp.join('')
+      // LUỒNG QUÊN MẬT KHẨU - BƯỚC 2: Xác thực mã OTP người dùng vừa nhập
       const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,6 +78,7 @@ export function ForgotPassword() {
     setError('')
     try {
       const combinedOtp = otp.join('')
+      // LUỒNG QUÊN MẬT KHẨU - BƯỚC 3: Gửi mật khẩu mới kèm OTP để Backend cập nhật
       const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

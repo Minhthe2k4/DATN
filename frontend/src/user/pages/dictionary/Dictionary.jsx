@@ -23,6 +23,11 @@ function EmptyIcon() {
 	)
 }
 
+/**
+ * Trang từ điển chính (Dedicated Dictionary Page).
+ * Use Case: Tra cứu từ vựng độc lập (UC_TraTuDien).
+ * Chức năng: Tra cứu chi tiết một từ (nhiều nghĩa, phiên âm, audio) và cho phép lưu vào sổ tay cá nhân.
+ */
 export function Dictionary() {
 	const [searchText, setSearchText] = useState('')
 	const [searchedWord, setSearchedWord] = useState('')
@@ -49,6 +54,7 @@ export function Dictionary() {
 		return apiResult || null
 	}, [hasResult, apiResult])
 
+	// Hàm thực hiện gọi API tra cứu từ vựng từ Backend
 	const fetchWordLookup = async (w) => {
 		if (!w || !w.trim()) return
 		setLoading(true)
@@ -56,12 +62,13 @@ export function Dictionary() {
 		setSearchText(w.trim())
 
 		try {
+			// Gọi endpoint tra cứu từ điển chuyên sâu (Full Dictionary Lookup)
 			const response = await fetch(`${API_BASE_URL}/api/dictionary/lookup`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					word: w.trim(),
-					contextSentence: '',
+					contextSentence: '', // Không có ngữ cảnh câu văn như lúc đọc báo
 				}),
 			})
 
@@ -75,6 +82,8 @@ export function Dictionary() {
 			}
 
 			setSearchedWord(w.trim())
+			
+			// Transform dữ liệu trả về từ API sang định dạng hiển thị của trang Dictionary
 			if (data && data.meanings && data.meanings.length > 0) {
 				const transformedEntry = {
 					word: data.word || w.trim(),
@@ -141,10 +150,12 @@ export function Dictionary() {
 		setSaveFormData(prev => ({ ...prev, [field]: value }))
 	}
 
+	// Phát âm thanh: Ưu tiên dùng file Audio từ API, nếu không có sẽ dùng trình đọc của Browser (TTS)
 	const playAudio = (url, wordToSpeak = '') => {
 		if (url && url.startsWith('http')) {
 			const audio = new Audio(url)
 			audio.play().catch(() => {
+				// Fallback sang Text-to-Speech nếu audio file lỗi
 				if (wordToSpeak && 'speechSynthesis' in window) {
 					window.speechSynthesis.cancel()
 					const utterance = new window.SpeechSynthesisUtterance(wordToSpeak)

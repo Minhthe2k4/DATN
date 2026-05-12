@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { readingArticles, topics } from '../../data/adminData'
@@ -5,10 +6,10 @@ import { AdminPageHeader } from '../../components/console/AdminUi'
 import { usePagination } from '../../hooks/usePagination'
 import { modal } from '../../../utils/modalUtils'
 
-import { 
-  fetchReadingData, 
-  normalizeArticleRow, 
-  normalizeTopicRow 
+import {
+  fetchReadingData,
+  normalizeArticleRow,
+  normalizeTopicRow
 } from './utils/readingUtils'
 
 import { ReadingStats } from './components/ReadingStats'
@@ -17,19 +18,23 @@ import { ReadingTopicTable } from './components/ReadingTopicTable'
 import { ReadingTopArticles } from './components/ReadingTopArticles'
 import { ReadingDifficultyChart } from './components/ReadingDifficultyChart'
 
+// Component quản lý nội dung bài đọc dành cho Admin.
+// Cho phép quản lý bài báo và các chủ đề của bài đọc (Reading Topics).
 export function ReadingManagement() {
+  // Danh sách bài đọc và chủ đề bài đọc
   const [articles, setArticles] = useState(readingArticles)
   const [topicRows, setTopicRows] = useState(topics)
   const [isLoading, setIsLoading] = useState(true)
+  // Số liệu thống kê cho Dashboard bài đọc
   const [statsData, setStatsData] = useState(null)
 
-  // Filters for Articles
+  // Bộ lọc cho danh sách bài báo (Tìm kiếm, Chủ đề, Độ khó, Trạng thái)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterTopicId, setFilterTopicId] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 
-  // Filters for Topics
+  // Bộ lọc cho danh sách chủ đề bài báo
   const [searchTopicTerm, setSearchTopicTerm] = useState('')
   const [filterTopicStatus, setFilterTopicStatus] = useState('')
 
@@ -60,7 +65,7 @@ export function ReadingManagement() {
       try {
         const data = await fetchReadingData()
         if (disposed) return
-        
+
         setArticles(Array.isArray(data.articles) ? data.articles.map(normalizeArticleRow) : readingArticles)
         setTopicRows(Array.isArray(data.topics) ? data.topics.map(normalizeTopicRow) : topics)
         if (data.stats) setStatsData(data.stats)
@@ -115,7 +120,7 @@ export function ReadingManagement() {
         <div className="row g-3 mt-1">
           <div className="col-12 col-xl-9">
             <div className="d-flex flex-column gap-3">
-              <ReadingArticleTable 
+              <ReadingArticleTable
                 articlesPagination={articlesPagination}
                 filterDifficulty={filterDifficulty}
                 setFilterDifficulty={setFilterDifficulty}
@@ -128,7 +133,7 @@ export function ReadingManagement() {
                 topicRows={topicRows}
               />
 
-              <ReadingTopicTable 
+              <ReadingTopicTable
                 topicsPagination={topicsPagination}
                 filterTopicStatus={filterTopicStatus}
                 setFilterTopicStatus={setFilterTopicStatus}

@@ -31,6 +31,7 @@ public class UserVocabularyCustomController {
     @Autowired
     private UserHomepageService userHomepageService;
 
+    // Endpoint lưu một từ vựng mới do người dùng tự nhập hoặc tra cứu
     @PostMapping("/save")
     public ResponseEntity<?> saveCustomVocab(
             @RequestBody UserVocabularyCustom vocab,
@@ -106,7 +107,7 @@ public class UserVocabularyCustomController {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> featureLimits = (Map<String, Object>) premiumStatus.get("featureLimits");
 
-                // 1. Check if Manual Saving (Sets) is locked
+                // 1. Kiểm tra xem tính năng lưu từ vựng có bị khóa bởi Admin không
                 @SuppressWarnings("unchecked")
                 Map<String, Object> setsLimitMap = (Map<String, Object>) featureLimits.get("CUSTOM_VOCABULARY_SETS");
                 if (setsLimitMap != null && Boolean.TRUE.equals(setsLimitMap.get("IS_LOCKED"))) {
@@ -118,6 +119,7 @@ public class UserVocabularyCustomController {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> vocabLimitMap = (Map<String, Object>) featureLimits.get("SAVED_VOCABULARY");
 
+                // 2. Kiểm tra hạn mức lưu từ tối đa của gói cước (Miễn phí vs Premium)
                 int limit = vocabLimitMap != null ? (int) vocabLimitMap.get("FREE_LIMIT") : (isPremium ? 999999 : 50);
                 long currentCount = userVocabularyCustomService.countByUser_Id(userId);
 

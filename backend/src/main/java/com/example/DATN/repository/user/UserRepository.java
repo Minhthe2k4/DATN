@@ -12,23 +12,31 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
+// Repository layer cho thực thể User.
+// Quản lý các thao tác truy vấn dữ liệu người dùng, hỗ trợ xác thực (Authentication)
+// và phân quyền (Authorization). Sử dụng cơ chế Soft Delete (deleted_at).
 public interface UserRepository extends JpaRepository<User, Long> {
+  // Xóa vĩnh viễn tài khoản người dùng khỏi hệ thống.
   @Modifying
   @Transactional
   @Query(value = "DELETE FROM users WHERE id = :id", nativeQuery = true)
   void hardDelete(Long id);
 
+  // Khôi phục tài khoản đã bị xóa mềm.
   @Modifying
   @Transactional
   @Query(value = "UPDATE users SET deleted_at = NULL, is_active = true WHERE id = :id", nativeQuery = true)
   void restore(Long id);
 
+  // Đếm số lượng người dùng đang hoạt động.
   @Query("select count(u) from User u where u.deletedAt is null and u.isActive = true")
   long countByIsActiveTrue();
 
+  // Đếm số lượng tài khoản đang bị khóa.
   @Query("select count(u) from User u where u.deletedAt is null and (u.isActive = false or u.isActive is null)")
   long countByIsActiveFalse();
 
+  // Đếm số lượng người dùng mới trong một khoảng thời gian.
   @Query("""
       select count(u)
       from User u
@@ -40,9 +48,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
       @Param("start") LocalDateTime start,
       @Param("end") LocalDateTime end);
 
+  // Tổng số lượng người dùng hiện có (không tính đã xóa).
   @Query("select count(u) from User u where u.deletedAt is null")
   long count();
 
+  // Truy vấn danh sách người dùng kèm theo thông tin Premium phục vụ Dashboard Admin.
   @Query(value = """
       select u.id as id,
            u.username as username,
@@ -133,6 +143,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
       """)
   Optional<User> findActiveById(@Param("id") Long id);
 
+  // Tìm người dùng đang hoạt động (không bị xóa) theo Email.
+  // Được sử dụng trong luồng Đăng nhập và Quên mật khẩu.
   @Query("""
       select u
       from User u

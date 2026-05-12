@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+// Controller quản lý hệ thống Premium dành cho Admin.
+// Cung cấp các API để kiểm soát yêu cầu nâng cấp, thành viên Premium và lịch sử hoạt động.
 @RestController
 @RequestMapping("/api/admin/premium")
 public class AdminPremiumController {
@@ -33,6 +35,7 @@ public class AdminPremiumController {
         this.adminPremiumService = adminPremiumService;
     }
 
+    // Tra cứu danh sách các yêu cầu nâng cấp Premium từ người dùng.
     @GetMapping("/requests")
     public List<AdminPremiumRequestDto> findRequests(
             @RequestParam(required = false) String status,
@@ -42,6 +45,7 @@ public class AdminPremiumController {
         return adminPremiumService.findRequests(status, email, fromDate, toDate);
     }
 
+    // Tra cứu danh sách các thành viên hiện đang sử dụng dịch vụ Premium.
     @GetMapping("/members")
     public List<AdminPremiumMemberDto> findMembers(
             @RequestParam(required = false) String status,
@@ -50,6 +54,7 @@ public class AdminPremiumController {
         return adminPremiumService.findMembers(status, email, expiringInDays);
     }
 
+    // Lấy nhật ký kiểm soát (Audit Logs) các thao tác quản trị Premium.
     @GetMapping("/audit-logs")
     public List<AdminPremiumAuditLogDto> findAuditLogs(
             @RequestParam(required = false) Integer limit) {

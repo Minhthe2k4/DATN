@@ -24,6 +24,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+// Service quản lý nội dung Video và Kênh YouTube.
+// Đảm nhiệm logic xử lý thông tin video, đồng bộ hóa phụ đề từ YouTube
+// và quản lý các đoạn cắt (Segments) của video để phục vụ việc học tập.
 @Service
 public class AdminVideoService {
     private final VideoRepository videoRepository;
@@ -36,13 +39,14 @@ public class AdminVideoService {
             SegmentRepository segmentRepository) {
         this.videoRepository = videoRepository;
         this.youTubeChannelRepository = youTubeChannelRepository;
-        // this.topicRepository = topicRepository;
     }
 
+    // Lấy danh sách toàn bộ các kênh video phục vụ trang quản lý.
     public List<AdminVideoChannelDto> findAllChannels() {
         return youTubeChannelRepository.findChannelManagementRows().stream().map(this::toChannelDto).toList();
     }
 
+    // Xem chi tiết một kênh YouTube.
     public AdminVideoChannelDto findChannelById(Long id) {
         YouTubeChannel channel = youTubeChannelRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Channel not found"));
@@ -66,6 +70,7 @@ public class AdminVideoService {
                 channel.deletedAt);
     }
 
+    // Tạo mới một kênh YouTube.
     public AdminVideoChannelDto createChannel(UpsertVideoChannelRequest request) {
         String name = request == null || request.name() == null ? "" : request.name().trim();
         if (youTubeChannelRepository.existsByNameIgnoreCase(name)) {
@@ -78,6 +83,7 @@ public class AdminVideoService {
         return findChannelById(saved.id);
     }
 
+    // Cập nhật thông tin kênh YouTube.
     public AdminVideoChannelDto updateChannel(Long id, UpsertVideoChannelRequest request) {
         String name = request == null || request.name() == null ? "" : request.name().trim();
         if (youTubeChannelRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
@@ -91,6 +97,7 @@ public class AdminVideoService {
         return findChannelById(id);
     }
 
+    // Xóa kênh YouTube (Xóa vĩnh viễn hoặc xóa mềm).
     public void deleteChannel(Long id, boolean force) {
         if (force) {
             youTubeChannelRepository.hardDelete(id);
@@ -311,15 +318,8 @@ public class AdminVideoService {
         return value;
     }
 
-    /**
-     * Fetch captions từ YouTube video
-     * Trả về TranscriptResponseDto với:
-     * - videoId
-     * - title
-     * - transcript (full text)
-     * - language
-     * - sourceUrl
-     */
+    // Tự động lấy phụ đề (Captions) và thông tin metadata từ YouTube video.
+    // Kết nối với YouTube API/Scraper để lấy dữ liệu về tiêu đề, ảnh, kênh và phụ đề chi tiết.
     public TranscriptResponseDto fetchYouTubeCaptions(String youtubeUrl) {
         try {
             // Validate URL

@@ -10,12 +10,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
+// Repository quản lý dữ liệu bài báo (Reading Articles).
 public interface ArticleRepository extends JpaRepository<Article, Long> {
+  // Xóa vĩnh viễn bài báo khỏi database.
   @Modifying
   @Transactional
   @Query(value = "DELETE FROM articles WHERE id = :id", nativeQuery = true)
   void hardDelete(Long id);
 
+  // Khôi phục bài báo đã bị xóa mềm.
   @Modifying
   @Transactional
   @Query(value = "UPDATE articles SET deleted_at = NULL, status = 'Nháp' WHERE id = :id", nativeQuery = true)
@@ -23,6 +26,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 
   long countByStatus(String status);
 
+  // Đếm số lượng bài báo đang ở trạng thái nháp (chưa gán nguồn).
   @Query("select count(a) from Article a where a.source is null or trim(a.source) = ''")
   long countDraftArticles();
 
@@ -33,6 +37,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
   @Query("select a from Article a where a.source is null or trim(a.source) = '' order by a.id desc")
   List<Article> findDraftArticles(Pageable pageable);
 
+  // Lấy danh sách bài báo phục vụ bảng quản lý của Admin.
   @Query("""
       select a.id as id,
              a.title as title,
@@ -54,6 +59,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
       """)
   List<ArticleManagementProjection> findArticleManagementRows();
 
+  // Lấy danh sách bài báo đã xóa mềm (phục vụ thùng rác).
   @Query(value = """
       select a.id as id,
              a.title as title,
@@ -76,6 +82,8 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
       """, nativeQuery = true)
   List<ArticleManagementProjection> findDeletedRows();
 
+  // Truy vấn danh sách bài báo dành cho người dùng học tập.
+  // Chỉ lấy các bài báo "Đã xuất bản" và thuộc về các chủ đề đang hoạt động.
   @Query("""
       select a.id as id,
              a.title as title,

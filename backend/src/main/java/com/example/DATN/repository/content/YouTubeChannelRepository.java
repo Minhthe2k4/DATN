@@ -9,17 +9,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
+// Repository quản lý danh sách các kênh YouTube (YouTube Channels).
 public interface YouTubeChannelRepository extends JpaRepository<YouTubeChannel, Long> {
+        // Xóa vĩnh viễn kênh khỏi database.
         @Modifying
         @Transactional
         @Query(value = "DELETE FROM youtube_channels WHERE id = :id", nativeQuery = true)
         void hardDelete(Long id);
 
+        // Khôi phục kênh đã bị xóa mềm.
         @Modifying
         @Transactional
         @Query(value = "UPDATE youtube_channels SET deleted_at = NULL, status = 'Hoạt động' WHERE id = :id", nativeQuery = true)
         void restore(Long id);
 
+        // Lấy danh sách kênh YouTube kèm theo số lượng video phục vụ trang quản trị.
         @Query("""
                         select c.id as id,
                                c.name as name,
@@ -38,6 +42,7 @@ public interface YouTubeChannelRepository extends JpaRepository<YouTubeChannel, 
                         """)
         List<YouTubeChannelManagementProjection> findChannelManagementRows();
 
+        // Lấy danh sách các kênh đã bị xóa mềm (phục vụ thùng rác).
         @Query(value = """
                         select c.id as id,
                                c.name as name,

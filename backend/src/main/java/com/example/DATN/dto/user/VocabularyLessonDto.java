@@ -28,15 +28,17 @@ public class VocabularyLessonDto {
         public String meaningEn;
         public String meaningVi;
         public String example;
+        public String exampleVi;
 
         public LessonWordDto() {}
 
-        public LessonWordDto(String word, String pronunciation, String meaningEn, String meaningVi, String example) {
+        public LessonWordDto(String word, String pronunciation, String meaningEn, String meaningVi, String example, String exampleVi) {
             this.word = word;
             this.pronunciation = pronunciation;
             this.meaningEn = meaningEn;
             this.meaningVi = meaningVi;
             this.example = example;
+            this.exampleVi = exampleVi;
         }
     }
 }

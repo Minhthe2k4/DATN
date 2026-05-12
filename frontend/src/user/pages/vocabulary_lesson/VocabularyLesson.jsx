@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { usePremiumStatus, isPremiumValid } from '../../../hooks/usePremiumStatus'
 import { getUserSession, getAuthHeader } from '../../utils/authSession'
 import { toast } from '@/utils/toastUtils'
@@ -31,7 +32,7 @@ export function VocabularyLesson() {
 	const [failedLessonWords, setFailedLessonWords] = useState([])
 	const [reviewWords, setReviewWords] = useState([])
 	const [isReviewPhase, setIsReviewPhase] = useState(false)
-	
+
 	const session = getUserSession()
 	const isLoggedIn = !!session
 	const premiumStatus = usePremiumStatus(session?.userId)
@@ -39,12 +40,12 @@ export function VocabularyLesson() {
 	const isSRSUnlocked = premiumStatus?.featureLimits?.SRS_GOLDEN_TIME?.IS_LOCKED === false
 	const isReviewUnlocked = premiumStatus?.featureLimits?.VOCABULARY_REVIEW?.IS_LOCKED === false
 	const isVocabFeatureUnlocked = isUserPremium || isSRSUnlocked || isReviewUnlocked
-	
+
 	const [isLessonEntryLoading, setIsLessonEntryLoading] = useState(false)
 	const [lessonEntryProgress, setLessonEntryProgress] = useState(0)
 	const [isLoadingTopics, setIsLoadingTopics] = useState(false)
 	const [isLoadingLessons, setIsLoadingLessons] = useState(false)
-	
+
 	const inputRefs = useRef([])
 	const lessonEntryIntervalRef = useRef(null)
 	const lessonEntryTimeoutRef = useRef(null)
@@ -160,17 +161,21 @@ export function VocabularyLesson() {
 		setMode('lessons')
 	}
 
+	// Bắt đầu một bài học cụ thể
 	const handlePickLesson = (lessonId) => {
 		if (!isLoggedIn) {
 			toast.warning('Vui lòng đăng nhập để bắt đầu học.')
 			return
 		}
+		
+		// Kiểm tra quyền Premium nếu bài học yêu cầu
 		const lesson = selectedTopic?.lessons.find(l => l.id === lessonId)
 		if (lesson?.isPremium && !isVocabFeatureUnlocked) {
 			toast.error('Bài học Premium. Vui lòng nâng cấp tài khoản!')
 			return
 		}
 
+		// Kích hoạt hiệu ứng loading chuyển cảnh (Entry Overlay)
 		setIsLessonEntryLoading(true)
 		setLessonEntryProgress(0)
 		lessonEntryIntervalRef.current = window.setInterval(() => {
@@ -181,6 +186,7 @@ export function VocabularyLesson() {
 			window.clearInterval(lessonEntryIntervalRef.current)
 			setLessonEntryProgress(100)
 			window.setTimeout(() => {
+				// Reset các trạng thái và vào màn hình học tập (Study Mode)
 				setSelectedLessonId(lessonId)
 				setWordIndex(0)
 				setStudyStep('card')
@@ -194,15 +200,21 @@ export function VocabularyLesson() {
 		}, 780)
 	}
 
+	// Xử lý khi người dùng gõ ký tự vào ô input trong bước Typing Study
 	const handleTypeChange = (index, value) => {
 		if (!currentWord || hintPositions.includes(index)) return
+		
+		// Chỉ lấy ký tự cuối cùng và lọc bỏ các ký tự không phải chữ cái
 		const nextChar = value.slice(-1).toLowerCase().replace(/[^a-z]/g, '')
+		
 		setTypedLetters((prev) => {
 			const next = [...prev]
 			next[index] = nextChar
 			return next
 		})
 		setCheckState('idle')
+		
+		// Tự động chuyển sang ô input tiếp theo nếu vừa gõ một ký tự
 		if (nextChar) {
 			const nextEditableIndex = typedLetters.findIndex((_, idx) => idx > index && !hintPositions.includes(idx))
 			if (nextEditableIndex >= 0) inputRefs.current[nextEditableIndex]?.focus()
@@ -210,16 +222,28 @@ export function VocabularyLesson() {
 	}
 
 	const handleKeyDown = (index, event) => {
+		if (event.key === 'Enter') {
+			if (popupData) {
+				handleNextWord()
+			} else {
+				handleCheckWord()
+			}
+			return
+		}
+
 		if (event.key === 'Backspace' && !typedLetters[index]) {
 			const previousEditableIndex = [...typedLetters].map((_, idx) => idx).filter((idx) => idx < index && !hintPositions.includes(idx)).pop()
 			if (previousEditableIndex !== undefined) inputRefs.current[previousEditableIndex]?.focus()
 		}
 	}
 
+	// Kiểm tra xem từ vừa gõ có đúng với từ khóa không
 	const handleCheckWord = () => {
 		if (!currentWord) return
 		const isCorrect = typedLetters.join('').toLowerCase() === currentWord.word.toLowerCase()
 		setCheckState(isCorrect ? 'correct' : 'wrong')
+		
+		// Hiển thị Popup kết quả (Đúng/Sai kèm chi tiết)
 		setPopupData({ isCorrect, details: currentWord })
 	}
 
@@ -256,7 +280,7 @@ export function VocabularyLesson() {
 			setSelectedLessonId(null)
 			setWordIndex(0)
 			setIsReviewPhase(false)
-			
+
 			if (isLoggedIn) {
 				fetch(`/api/user/learning/complete-lesson/${selectedLesson.id}`, {
 					method: 'POST',
@@ -295,10 +319,10 @@ export function VocabularyLesson() {
 				)}
 
 				{mode === 'lessons' && selectedTopic && (
-					<LessonSelection 
-						topic={selectedTopic} 
-						onPickLesson={handlePickLesson} 
-						onBack={() => setMode('topics')} 
+					<LessonSelection
+						topic={selectedTopic}
+						onPickLesson={handlePickLesson}
+						onBack={() => setMode('topics')}
 						isLoading={isLoadingLessons}
 						isVocabFeatureUnlocked={isVocabFeatureUnlocked}
 					/>
@@ -312,21 +336,21 @@ export function VocabularyLesson() {
 								Quay lại danh sách
 							</button>
 							<div className="vlesson-progress">
-								{isReviewPhase ? 'Ôn tập lỗi' : `${selectedTopic?.title} / ${selectedLesson?.title}`} 
+								{isReviewPhase ? 'Ôn tập lỗi' : `${selectedTopic?.title} / ${selectedLesson?.title}`}
 								{` • Từ ${wordIndex + 1}/${currentWordsSource.length}`}
 							</div>
 						</div>
 
 						{studyStep === 'card' ? (
-							<FlashcardStudy 
-								word={currentWord} 
-								isFlipped={isFlipped} 
-								onFlip={() => setIsFlipped(!isFlipped)} 
+							<FlashcardStudy
+								word={currentWord}
+								isFlipped={isFlipped}
+								onFlip={() => setIsFlipped(!isFlipped)}
 								onSkip={() => { setPopupData(null); handleNextWord(); }}
 								onNextStep={startTypingStep}
 							/>
 						) : (
-							<TypingStudy 
+							<TypingStudy
 								word={currentWord}
 								typedLetters={typedLetters}
 								hintPositions={hintPositions}
@@ -343,10 +367,10 @@ export function VocabularyLesson() {
 				)}
 
 				<LessonResultPopup data={popupData} onNext={handleNextWord} />
-				<LessonCompletedModal 
-					data={completedLessonData} 
-					onReplay={() => handlePickLesson(completedLessonData.lessonId)} 
-					onClose={() => setCompletedLessonData(null)} 
+				<LessonCompletedModal
+					data={completedLessonData}
+					onReplay={() => handlePickLesson(completedLessonData.lessonId)}
+					onClose={() => setCompletedLessonData(null)}
 				/>
 			</div>
 		</div>

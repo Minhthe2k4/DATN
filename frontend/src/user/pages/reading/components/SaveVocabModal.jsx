@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 export function SpeakerIcon() {
     return (
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
@@ -16,9 +17,15 @@ export function SaveVocabModal({
     pronunciationUk,
     pronunciationUs
 }) {
-    if (!lookupState.saveModalOpen || !lookupState.saveDraft) return null;
+    const [container, setContainer] = React.useState(null);
 
-    return (
+    React.useEffect(() => {
+        setContainer(document.body);
+    }, []);
+
+    if (!container || !lookupState.saveModalOpen || !lookupState.saveDraft) return null;
+
+    return createPortal(
         <div className="reading-save-modal-overlay" onClick={handleCloseSaveMeaningModal}>
             <div className="reading-save-modal" onClick={(event) => event.stopPropagation()}>
                 <h2 className="reading-save-modal__title">Luu tu vung da chon</h2>
@@ -106,6 +113,7 @@ export function SaveVocabModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        container
     );
 }

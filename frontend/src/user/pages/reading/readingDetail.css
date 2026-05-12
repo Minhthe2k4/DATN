@@ -396,10 +396,12 @@
 .dictionary-modal {
     position: fixed;
     inset: 0;
-    z-index: 1000;
-    display: grid;
-    place-items: center;
-    padding: 8px;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 100px 10px;
+    overflow-y: auto;
 }
 
 .dictionary-modal__backdrop {
@@ -818,12 +820,15 @@
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: rgba(0, 0, 0, 0.5);
+	background: rgba(15, 23, 42, 0.5);
+	backdrop-filter: blur(6px);
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: center;
-	z-index: 1000;
-	animation: fadeIn 0.2s ease-out;
+	padding: 100px 10px;
+	overflow-y: auto;
+	z-index: 9999;
+	animation: fadeIn 0.25s ease-out;
 }
 
 @keyframes fadeIn {

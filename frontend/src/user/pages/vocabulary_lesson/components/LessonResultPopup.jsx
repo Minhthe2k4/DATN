@@ -25,7 +25,7 @@ export function LessonResultPopup({ data, onNext }) {
 				<div className="vtest-word-popup__word-row">
 					<div>
 						<h3 className="vtest-word-popup__word">{details.word}</h3>
-						<p className="vtest-word-popup__phonetic">{details.phonetic}</p>
+						<p className="vtest-word-popup__phonetic">{details.pronunciation}</p>
 					</div>
 					<button
 						type="button"
@@ -40,7 +40,12 @@ export function LessonResultPopup({ data, onNext }) {
 				<div className="vtest-word-popup__content">
 					<p><strong>EN:</strong> {details.meaningEn}</p>
 					<p><strong>VI:</strong> {details.meaningVi}</p>
-					<p><strong>Ví dụ:</strong> {details.example}</p>
+					<div className="vtest-word-popup__example-box">
+						<p><strong>Ví dụ:</strong> {details.example}</p>
+						{details.exampleVi && (
+							<p className="vtest-word-popup__example-vi"><em>({details.exampleVi})</em></p>
+						)}
+					</div>
 				</div>
 
 				<div className="vtest-word-popup__footer">

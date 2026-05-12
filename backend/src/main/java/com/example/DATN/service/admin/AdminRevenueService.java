@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+// Service xử lý dữ liệu doanh thu và thống kê tài chính.
+// Tổng hợp dữ liệu từ các giao dịch thanh toán để tạo ra các báo cáo về:
+// Doanh thu theo thời gian (Ngày/Tháng/Năm), hiệu quả theo từng gói Premium và danh sách giao dịch.
 @Service
 public class AdminRevenueService {
     private static final Set<String> SUCCESS_STATUSES = Set.of("SUCCESS", "SUCCEEDED", "PAID", "APPROVED", "COMPLETED");
@@ -39,6 +42,7 @@ public class AdminRevenueService {
         this.userSubscriptionRepository = userSubscriptionRepository;
     }
 
+    // Tính toán tổng quan doanh thu và các xu hướng tăng trưởng.
     public AdminRevenueOverviewResponse getOverview() {
         List<RevenueTransactionProjection> rows = transactionRepository.findRevenueRows(PageRequest.of(0, 1000));
 
@@ -59,17 +63,21 @@ public class AdminRevenueService {
         Map<LocalDate, Double> dayRevenue = new LinkedHashMap<>();
         Map<Integer, Double> yearRevenue = new LinkedHashMap<>();
 
-        // Initialize trends
+        // Khởi tạo dữ liệu xu hướng mặc định (để đảm bảo biểu đồ không bị trống)
+        // Khởi tạo xu hướng 6 tháng gần nhất
         for (int i = 5; i >= 0; i--) {
             monthRevenue.put(currentMonth.minusMonths(i), 0.0);
         }
+        // Khởi tạo xu hướng 7 ngày gần nhất
         for (int i = 6; i >= 0; i--) {
             dayRevenue.put(now.minusDays(i), 0.0);
         }
+        // Khởi tạo xu hướng 3 năm gần nhất
         for (int i = 2; i >= 0; i--) {
             yearRevenue.put(now.getYear() - i, 0.0);
         }
 
+        // Duyệt qua danh sách giao dịch để phân loại và cộng dồn doanh thu
         for (RevenueTransactionProjection row : rows) {
             double amount = safeAmount(row.getAmount());
             String status = normalizeStatus(row.getStatus());

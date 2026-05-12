@@ -41,6 +41,10 @@
 .modal-notify-icon.is-error { background: #fef2f2; }
 .modal-notify-icon.is-warning { background: #fffbeb; }
 .modal-notify-icon.is-info { background: #eff6ff; }
+.modal-notify-icon.is-premium { 
+    background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+}
 
 .modal-notify-title {
     font-size: 1.5rem;
@@ -76,6 +80,28 @@
 
 .modal-notify-btn.is-info { background: #3b82f6; color: white; }
 .modal-notify-btn.is-info:hover { background: #2563eb; transform: translateY(-2px); }
+
+.modal-notify-btn.is-premium-action {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
+}
+
+.modal-notify-btn.is-premium-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -3px rgba(245, 158, 11, 0.4);
+}
+
+.modal-notify-btn.is-ghost {
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.modal-notify-btn.is-ghost:hover {
+    background: #f8fafc;
+}
 
 @keyframes modalFadeIn {
     from { opacity: 0; }
